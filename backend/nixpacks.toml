@@ -1,0 +1,38 @@
+[phases.setup]
+nixPkgs = ["nodejs-18_x"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = ["echo 'Build phase complete'"]
+
+[start]
+cmd = "npm start"
+```
+
+**Key changes:**
+- Build phase does NOTHING (just echo)
+- Start command runs the server
+
+---
+
+## 🚀 Quick Fix Steps
+
+### 1. Update Settings in Railway
+
+Go to Railway → Settings:
+
+**Install Command:**
+```
+npm ci
+```
+
+**Build Command:**
+```
+echo "No build step needed"
+```
+
+**Start Command:**
+```
+npm start
