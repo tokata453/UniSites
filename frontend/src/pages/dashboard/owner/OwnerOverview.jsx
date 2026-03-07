@@ -1,0 +1,1 @@
+export { OwnerOverview as default } from './index.jsx';

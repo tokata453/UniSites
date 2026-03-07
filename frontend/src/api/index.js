@@ -1,0 +1,113 @@
+import api from './axios';
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+export const authApi = {
+  register:               (data)         => api.post('/auth/register', data),
+  login:                  (data)         => api.post('/auth/login', data),
+  getMe:                  ()             => api.get('/auth/me'),
+  updateProfile:          (data)         => api.put('/auth/profile', data),   // FormData
+  changePassword:         (data)         => api.put('/auth/change-password', data),
+  getNotifications:       ()             => api.get('/auth/notifications'),
+  markNotificationsRead:  ()             => api.put('/auth/notifications/read'),
+  getSavedItems:          ()             => api.get('/auth/saved'),
+  toggleSavedItem:        (data)         => api.post('/auth/saved', data),
+  logout:                 ()             => api.post('/auth/logout'),
+
+  // OAuth URLs (redirect, not axios)
+  googleAuthUrl:    () => `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/google`,
+  facebookAuthUrl:  () => `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/facebook`,
+};
+
+// ── Universities ──────────────────────────────────────────────────────────────
+export const universityApi = {
+  list:           (params)       => api.get('/universities', { params }),
+  getFeatured:    ()             => api.get('/universities/featured'),
+  getMine:        ()             => api.get('/universities/owner/mine'),
+  getBySlug:      (slug)         => api.get(`/universities/${slug}`),
+  create:         (data)         => api.post('/universities', data),
+  update:         (id, data)     => api.put(`/universities/${id}`, data),
+  remove:         (id)           => api.delete(`/universities/${id}`),
+
+  // Gallery
+  getGallery:     (uniId)        => api.get(`/universities/${uniId}/gallery`),
+  uploadGallery:  (uniId, data)  => api.post(`/universities/${uniId}/gallery`, data),   // FormData
+  reorderGallery: (uniId, data)  => api.put(`/universities/${uniId}/gallery/reorder`, data),
+  deleteGallery:  (uniId, imgId) => api.delete(`/universities/${uniId}/gallery/${imgId}`),
+
+  // Faculties
+  getFaculties:   (uniId)        => api.get(`/universities/${uniId}/faculties`),
+  createFaculty:  (uniId, data)  => api.post(`/universities/${uniId}/faculties`, data),
+  updateFaculty:  (uniId, id, data) => api.put(`/universities/${uniId}/faculties/${id}`, data),
+  deleteFaculty:  (uniId, id)    => api.delete(`/universities/${uniId}/faculties/${id}`),
+
+  // Programs
+  getPrograms:    (uniId)        => api.get(`/universities/${uniId}/programs`),
+  createProgram:  (uniId, data)  => api.post(`/universities/${uniId}/programs`, data),
+  updateProgram:  (uniId, id, data) => api.put(`/universities/${uniId}/programs/${id}`, data),
+  deleteProgram:  (uniId, id)    => api.delete(`/universities/${uniId}/programs/${id}`),
+
+  // News
+  getNews:        (uniId)        => api.get(`/universities/${uniId}/news`),
+  createNews:     (uniId, data)  => api.post(`/universities/${uniId}/news`, data),
+  updateNews:     (uniId, id, d) => api.put(`/universities/${uniId}/news/${id}`, d),
+  deleteNews:     (uniId, id)    => api.delete(`/universities/${uniId}/news/${id}`),
+
+  // Events
+  getEvents:      (uniId)        => api.get(`/universities/${uniId}/events`),
+  createEvent:    (uniId, data)  => api.post(`/universities/${uniId}/events`, data),
+  updateEvent:    (uniId, id, d) => api.put(`/universities/${uniId}/events/${id}`, d),
+  deleteEvent:    (uniId, id)    => api.delete(`/universities/${uniId}/events/${id}`),
+
+  // FAQs
+  getFAQs:        (uniId)        => api.get(`/universities/${uniId}/faqs`),
+  createFAQ:      (uniId, data)  => api.post(`/universities/${uniId}/faqs`, data),
+  updateFAQ:      (uniId, id, d) => api.put(`/universities/${uniId}/faqs/${id}`, d),
+  deleteFAQ:      (uniId, id)    => api.delete(`/universities/${uniId}/faqs/${id}`),
+
+  // Contact
+  getContact:     (uniId)        => api.get(`/universities/${uniId}/contact`),
+  upsertContact:  (uniId, data)  => api.post(`/universities/${uniId}/contact`, data),
+
+  // Reviews
+  getReviews:     (uniId)        => api.get(`/universities/${uniId}/reviews`),
+  createReview:   (uniId, data)  => api.post(`/universities/${uniId}/reviews`, data),
+
+  // Analytics
+  getAnalytics:   (uniId)        => api.get(`/analytics/${uniId}`),
+  trackClick:     (data)         => api.post('/analytics/track', data),
+};
+
+// ── Majors ────────────────────────────────────────────────────────────────────
+export const majorApi = {
+  list:              (params) => api.get('/majors', { params }),
+  getFeatured:       ()       => api.get('/majors/featured'),
+  getBySlug:         (slug)   => api.get(`/majors/${slug}`),
+  getQuizQuestions:  ()       => api.get('/majors/quiz/questions'),
+  getRecommendations:(data)   => api.post('/majors/quiz/recommend', data),
+};
+
+// ── Forum ─────────────────────────────────────────────────────────────────────
+export const forumApi = {
+  getCategories:  ()             => api.get('/forum/categories'),
+  getThreads:     (params)       => api.get('/forum/threads', { params }),
+  getThread:      (slug)         => api.get(`/forum/threads/${slug}`),
+  createThread:   (data)         => api.post('/forum/threads', data),
+  updateThread:   (id, data)     => api.put(`/forum/threads/${id}`, data),
+  deleteThread:   (id)           => api.delete(`/forum/threads/${id}`),
+  createReply:    (threadId, d)  => api.post(`/forum/threads/${threadId}/replies`, d),
+  updateReply:    (id, data)     => api.put(`/forum/replies/${id}`, data),
+  deleteReply:    (id)           => api.delete(`/forum/replies/${id}`),
+  toggleLike:     (replyId)      => api.post(`/forum/replies/${replyId}/like`),
+  acceptReply:    (replyId)      => api.post(`/forum/replies/${replyId}/accept`),
+};
+
+// ── Opportunities ─────────────────────────────────────────────────────────────
+export const opportunityApi = {
+  list:           (params)   => api.get('/opportunities', { params }),
+  getFeatured:    ()         => api.get('/opportunities/featured'),
+  getBySlug:      (slug)     => api.get(`/opportunities/${slug}`),
+  create:         (data)     => api.post('/opportunities', data),
+  update:         (id, data) => api.put(`/opportunities/${id}`, data),
+  remove:         (id)       => api.delete(`/opportunities/${id}`),
+  apply:          (id, data) => api.post(`/opportunities/${id}/apply`, data),
+};

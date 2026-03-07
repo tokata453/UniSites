@@ -1,0 +1,1 @@
+export { OwnerProfile as default } from './index.jsx';

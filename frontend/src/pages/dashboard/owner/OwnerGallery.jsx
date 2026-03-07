@@ -1,0 +1,1 @@
+export { OwnerGallery as default } from './index.jsx';

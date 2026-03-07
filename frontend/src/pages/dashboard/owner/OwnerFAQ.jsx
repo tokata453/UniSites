@@ -1,0 +1,1 @@
+export { OwnerFAQ as default } from './index.jsx';

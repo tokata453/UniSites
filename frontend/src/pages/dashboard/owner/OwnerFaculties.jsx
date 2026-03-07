@@ -1,0 +1,1 @@
+export { OwnerFaculties as default } from './index.jsx';

@@ -1,0 +1,1 @@
+export { OwnerNews as default } from './index.jsx';
