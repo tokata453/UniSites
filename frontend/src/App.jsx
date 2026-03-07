@@ -13,6 +13,7 @@ import ForumPage         from '@/pages/forum/ForumPage';
 import ForumThreadPage   from '@/pages/forum/ForumThreadPage';
 import OpportunitiesPage from '@/pages/opportunities/OpportunitiesPage';
 import OpportunityDetail from '@/pages/opportunities/OpportunityDetail';
+import AboutPage from '@/pages/AboutPage';
 
 // Auth pages
 import LoginPage         from '@/pages/auth/LoginPage';
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/forum/:slug"             element={<ForumThreadPage />} />
           <Route path="/opportunities"           element={<OpportunitiesPage />} />
           <Route path="/opportunities/:slug"     element={<OpportunityDetail />} />
+          <Route path="/about" element={<AboutPage />} />
         </Route>
 
         {/* ── Auth routes (no layout) ── */}

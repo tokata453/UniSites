@@ -49,7 +49,7 @@ const login = (req, res, next) => {
     const { password: _, ...safeUser } = user.toJSON();
     return success(res, { token, user: safeUser }, 'Logged in successfully');
   })(req, res, next);
-};
+}; 
 
 // ── OAuth ─────────────────────────────────────────────────────────────────────
 

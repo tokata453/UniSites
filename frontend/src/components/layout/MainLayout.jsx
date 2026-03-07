@@ -28,6 +28,7 @@ export default function MainLayout() {
               { to: '/universities', label: 'Universities' },
               { to: '/opportunities', label: 'Opportunities' },
               { to: '/forum',        label: 'Forum'        },
+              { to: '/about', label: 'About' },
             ].map(({ to, label }) => (
               <NavLink key={to} to={to}
                 className={({ isActive }) =>
