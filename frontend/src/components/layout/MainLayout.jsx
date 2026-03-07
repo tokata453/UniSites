@@ -25,10 +25,11 @@ export default function MainLayout() {
           {/* Nav links */}
           <nav className="hidden md:flex items-center gap-1">
             {[
-              { to: '/universities', label: 'Universities' },
+              { to: '/universities',  label: 'Universities'  },
+              { to: '/majors',        label: 'Majors'        },
               { to: '/opportunities', label: 'Opportunities' },
-              { to: '/forum',        label: 'Forum'        },
-              { to: '/about', label: 'About' },
+              { to: '/forum',         label: 'Forum'         },
+              { to: '/about',         label: 'About'         },
             ].map(({ to, label }) => (
               <NavLink key={to} to={to}
                 className={({ isActive }) =>
@@ -90,9 +91,11 @@ export default function MainLayout() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
           <span>© {new Date().getFullYear()} UniSites. All rights reserved.</span>
           <div className="flex gap-6">
-            <Link to="/universities" className="hover:text-slate-300 transition-colors">Universities</Link>
+            <Link to="/universities"  className="hover:text-slate-300 transition-colors">Universities</Link>
+            <Link to="/majors"        className="hover:text-slate-300 transition-colors">Majors</Link>
             <Link to="/opportunities" className="hover:text-slate-300 transition-colors">Opportunities</Link>
-            <Link to="/forum" className="hover:text-slate-300 transition-colors">Forum</Link>
+            <Link to="/forum"         className="hover:text-slate-300 transition-colors">Forum</Link>
+            <Link to="/about"         className="hover:text-slate-300 transition-colors">About</Link>
           </div>
         </div>
       </footer>

@@ -14,6 +14,7 @@ import ForumThreadPage   from '@/pages/forum/ForumThreadPage';
 import OpportunitiesPage from '@/pages/opportunities/OpportunitiesPage';
 import OpportunityDetail from '@/pages/opportunities/OpportunityDetail';
 import AboutPage from '@/pages/AboutPage';
+import { MajorsPage, MajorDetail, MajorQuiz } from '@/pages/majors';
 
 // Auth pages
 import LoginPage         from '@/pages/auth/LoginPage';
@@ -61,6 +62,9 @@ export default function App() {
           <Route path="/opportunities"           element={<OpportunitiesPage />} />
           <Route path="/opportunities/:slug"     element={<OpportunityDetail />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/majors"          element={<MajorsPage />} />
+          <Route path="/majors/quiz"     element={<MajorQuiz />} />   
+          <Route path="/majors/:slug"    element={<MajorDetail />} />
         </Route>
 
         {/* ── Auth routes (no layout) ── */}

@@ -98,8 +98,8 @@ export default function AboutPage() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=Instrument+Serif:ital@0;1&display=swap');
-        .about-serif { font-family: 'Instrument Serif', serif; }
-        .about-sans  { font-family: 'DM Sans', sans-serif; }
+        .about-serif { font-family:  serif; }
+        .about-sans  { font-family: sans-serif; }
       `}</style>
 
       <div className="about-sans bg-[#080c14] text-slate-300 overflow-x-hidden">
