@@ -96,7 +96,16 @@ export default function DashboardLayout({ role }) {
         <header className="h-16 flex items-center justify-between px-6 border-b border-white/[0.07] shrink-0">
           <span className="text-sm text-slate-400">Welcome back, <span className="text-white font-medium">{user?.name}</span></span>
           <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white">
-            {user?.name?.[0]?.toUpperCase() || 'U'}
+            {user?.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={user.name}
+                className="w-full h-full object-cover"
+                onError={e => { e.target.style.display = 'none'; }}
+              />
+            ) : (
+              user?.name?.[0]?.toUpperCase() || 'U'
+            )}
           </div>
         </header>
         <main className="flex-1 overflow-y-auto p-6">
