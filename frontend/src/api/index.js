@@ -14,8 +14,8 @@ export const authApi = {
   logout:                 ()             => api.post('/auth/logout'),
 
   // OAuth URLs (redirect, not axios)
-  googleAuthUrl:    () => `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/google`,
-  facebookAuthUrl:  () => `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/auth/facebook`,
+  googleAuthUrl:    () => `${import.meta.env.VITE_API_URL || '/api'}/auth/google`,
+  facebookAuthUrl:  () => `${import.meta.env.VITE_API_URL || '/api'}/auth/facebook`,
 };
 
 // ── Universities ──────────────────────────────────────────────────────────────
