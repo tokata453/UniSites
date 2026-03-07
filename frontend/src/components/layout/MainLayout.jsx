@@ -50,8 +50,17 @@ export default function MainLayout() {
                   className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 hover:text-red-400 hover:bg-red-500/10 transition-all">
                   Logout
                 </button>
-                <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-xs font-bold text-white">
-                  {user?.name?.[0]?.toUpperCase() || 'U'}
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-indigo-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                  {user?.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={user.name}
+                      className="w-full h-full object-cover"
+                      onError={e => { e.target.style.display = 'none'; }}
+                    />
+                  ) : (
+                    user?.name?.[0]?.toUpperCase() || 'U'
+                  )}
                 </div>
               </>
             ) : (
