@@ -37,7 +37,7 @@ export default function UniversityList() {
         if (!params.dormitory_available)   delete params.dormitory_available;
 
         const res = await universityApi.list(params);
-        setUniversities(res.data.universities || []);
+        setUniversities(res.data.data || []);
         setTotal(res.data.total || 0);
       } catch (_) {
         setUniversities([]);

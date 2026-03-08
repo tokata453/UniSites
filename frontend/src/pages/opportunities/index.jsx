@@ -27,7 +27,7 @@ export function OpportunitiesPage() {
         if (!params.type)   delete params.type;
         if (!params.search) delete params.search;
         const res = await opportunityApi.list(params);
-        setOpportunities(res.data.opportunities || []);
+        setOpportunities(res.data.data || []);
         setTotal(res.data.total || 0);
       } finally {
         setLoading(false);

@@ -34,6 +34,14 @@ import OwnerFaculties    from '@/pages/dashboard/owner/OwnerFaculties';
 import OwnerNews         from '@/pages/dashboard/owner/OwnerNews';
 import OwnerFAQ          from '@/pages/dashboard/owner/OwnerFAQ';
 
+// Admin dashboard
+import AdminOverview      from '@/pages/dashboard/admin/AdminOverview';
+import AdminUsers         from '@/pages/dashboard/admin/AdminUsers';
+import AdminUniversities  from '@/pages/dashboard/admin/AdminUniversities';
+import AdminOpportunities from '@/pages/dashboard/admin/AdminOpportunities';
+import AdminReviews       from '@/pages/dashboard/admin/AdminReviews';
+import AdminForum         from '@/pages/dashboard/admin/AdminForum';
+
 // Guards
 const PrivateRoute = ({ children }) => {
   const { token } = useAuthStore();
@@ -99,6 +107,22 @@ export default function App() {
           <Route path="faculties"      element={<OwnerFaculties />} />
           <Route path="news"           element={<OwnerNews />} />
           <Route path="faq"            element={<OwnerFAQ />} />
+        </Route>
+
+        {/* ── Admin dashboard ── */}
+        <Route path="/admin" element={
+          <PrivateRoute>
+            <RoleRoute role="admin">
+              <DashboardLayout role="admin" />
+            </RoleRoute>
+          </PrivateRoute>
+        }>
+          <Route index                  element={<AdminOverview />} />
+          <Route path="users"           element={<AdminUsers />} />
+          <Route path="universities"    element={<AdminUniversities />} />
+          <Route path="opportunities"   element={<AdminOpportunities />} />
+          <Route path="reviews"         element={<AdminReviews />} />
+          <Route path="forum"           element={<AdminForum />} />
         </Route>
 
         {/* ── 404 ── */}

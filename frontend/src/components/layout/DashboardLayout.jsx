@@ -16,6 +16,15 @@ const STUDENT_NAV = [
   { to: '/dashboard/profile', label: 'Profile',     icon: 'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8z' },
 ];
 
+const ADMIN_NAV = [
+  { to: '/admin',                label: 'Overview',        icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10', end: true },
+  { to: '/admin/users',          label: 'Users',           icon: 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M9 11a4 4 0 100-8 4 4 0 000 8z M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75' },
+  { to: '/admin/universities',   label: 'Universities',    icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z' },
+  { to: '/admin/opportunities',  label: 'Opportunities',   icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' },
+  { to: '/admin/reviews',        label: 'Reviews',         icon: 'M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11' },
+  { to: '/admin/forum',          label: 'Forum',           icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z' },
+];
+
 const OWNER_NAV = [
   { to: '/owner',             label: 'Analytics',           icon: 'M18 20V10 M12 20V4 M6 20v-6',                          end: true },
   { to: '/owner/profile',     label: 'University Profile',  icon: 'M19 21v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8z' },
@@ -29,7 +38,7 @@ export default function DashboardLayout({ role }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
-  const navItems = role === 'owner' ? OWNER_NAV : STUDENT_NAV;
+  const navItems = role === 'admin' ? ADMIN_NAV : role === 'owner' ? OWNER_NAV : STUDENT_NAV;
 
   const handleLogout = () => { logout(); navigate('/'); };
 
@@ -39,7 +48,7 @@ export default function DashboardLayout({ role }) {
       <aside className={`flex flex-col border-r border-white/[0.07] shrink-0 transition-all duration-300 ${collapsed ? 'w-16' : 'w-60'}`}>
         {/* Logo */}
         <div className={`h-16 flex items-center gap-3 px-4 border-b border-white/[0.07] ${collapsed ? 'justify-center' : ''}`}>
-          <Link to="/" className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
+          <Link to="/" className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: role === 'admin' ? '#dc2626' : '#6366f1' }}>
             <Icon d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" size={16} />
           </Link>
           {!collapsed && (

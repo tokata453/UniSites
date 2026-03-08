@@ -260,10 +260,24 @@ module.exports = {
 
     await queryInterface.bulkInsert('universities', universities, { ignoreDuplicates: true });
 
-    // Create analytics record for each university
-    const analyticsRecords = universities.map(u => ({
+    // Reload inserted universities to ensure we use the correct IDs (avoids FK issues when rerunning seeds)
+    const insertedUnis = await queryInterface.sequelize.query(
+      `SELECT id, slug FROM universities WHERE slug IN (
+        'royal-university-of-phnom-penh',
+        'institute-of-technology-of-cambodia',
+        'norton-university',
+        'paññasastra-university-of-cambodia',
+        'american-university-of-phnom-penh'
+      )`,
+      { type: queryInterface.sequelize.QueryTypes.SELECT }
+    );
+
+    const uniMap = Object.fromEntries(insertedUnis.map(u => [u.slug, u.id]));
+
+    // Create analytics record for each university using the actual database IDs
+    const analyticsRecords = Object.entries(uniMap).map(([slug, id]) => ({
       id:                 randomUUID(),
-      university_id:      u.id,
+      university_id:      id,
       total_views:        0,
       monthly_views:      0,
       weekly_views:       0,

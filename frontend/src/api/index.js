@@ -111,3 +111,28 @@ export const opportunityApi = {
   remove:         (id)       => api.delete(`/opportunities/${id}`),
   apply:          (id, data) => api.post(`/opportunities/${id}/apply`, data),
 };
+
+// ── Admin ─────────────────────────────────────────────────────────────────────
+export const adminApi = {
+  getStats:           ()             => api.get('/admin/stats'),
+  // Users
+  getUsers:           (params)       => api.get('/admin/users', { params }),
+  updateUser:         (id, data)     => api.put(`/admin/users/${id}`, data),
+  deleteUser:         (id)           => api.delete(`/admin/users/${id}`),
+  // Universities
+  getUniversities:    (params)       => api.get('/admin/universities', { params }),
+  updateUniversity:   (id, data)     => api.put(`/admin/universities/${id}`, data),
+  deleteUniversity:   (id)           => api.delete(`/admin/universities/${id}`),
+  // Opportunities
+  getOpportunities:   (params)       => api.get('/admin/opportunities', { params }),
+  updateOpportunity:  (id, data)     => api.put(`/admin/opportunities/${id}`, data),
+  deleteOpportunity:  (id)           => api.delete(`/admin/opportunities/${id}`),
+  // Reviews
+  getReviews:         (params)       => api.get('/admin/reviews', { params }),
+  approveReview:      (id)           => api.put(`/admin/reviews/${id}/approve`),
+  deleteReview:       (id)           => api.delete(`/admin/reviews/${id}`),
+  // Forum
+  getThreads:         (params)       => api.get('/admin/threads', { params }),
+  deleteThread:       (id)           => api.delete(`/admin/threads/${id}`),
+  pinThread:          (id)           => api.put(`/admin/threads/${id}/pin`),
+};

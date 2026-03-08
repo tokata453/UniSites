@@ -294,7 +294,7 @@ export function OAuthCallback() {
       return;
     }
 
-    fetch(`${import.meta.env.VITE_API_URL}/api/auth/me`, {
+    fetch(`${import.meta.env.VITE_API_URL}/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
