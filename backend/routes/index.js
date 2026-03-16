@@ -5,7 +5,7 @@ router.use('/auth',        require('./auth.routes'));
 router.use('/upload',      require('./upload.routes'));
 // router.use('/analytics',   require('./analytics.routes'));
 
-// // Universities + all nested sub-resources
+// Universities + all nested sub-resources
 router.use('/universities',                                   require('./university.routes'));
 router.use('/universities/:universityId/gallery',             require('./gallery.routes'));
 router.use('/universities/:universityId/faculties',           require('./faculty.routes'));
@@ -20,5 +20,6 @@ router.use('/universities/:universityId/reviews',             require('./review.
 router.use('/opportunities', require('./opportunity.routes'));
 router.use('/majors',        require('./major.routes'));
 router.use('/forum',         require('./forum.routes'));
+router.use('/admin',         require('./admin.routes'))
 
 module.exports = router;

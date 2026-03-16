@@ -73,19 +73,15 @@ export default function App() {
           <Route path="/majors"          element={<MajorsPage />} />
           <Route path="/majors/quiz"     element={<MajorQuiz />} />   
           <Route path="/majors/:slug"    element={<MajorDetail />} />
+          <Route path="/login"           element={<LoginPage />} />
+          <Route path="/register"        element={<RegisterPage />} />
+          <Route path="/auth/callback"   element={<OAuthCallback />} />
         </Route>
-
-        {/* ── Auth routes (no layout) ── */}
-        <Route path="/login"           element={<LoginPage />} />
-        <Route path="/register"        element={<RegisterPage />} />
-        <Route path="/auth/callback"   element={<OAuthCallback />} />
 
         {/* ── Student dashboard ── */}
         <Route path="/dashboard" element={
           <PrivateRoute>
-            <RoleRoute role="student">
               <DashboardLayout role="student" />
-            </RoleRoute>
           </PrivateRoute>
         }>
           <Route index                 element={<StudentOverview />} />

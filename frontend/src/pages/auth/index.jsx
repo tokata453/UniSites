@@ -3,9 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Icons
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Icons ─────────────────────────────────────────────────────────────────────
 const GOOGLE_ICON = (
   <svg width="18" height="18" viewBox="0 0 24 24">
     <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -21,58 +19,93 @@ const FACEBOOK_ICON = (
   </svg>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Shared UI
-// ─────────────────────────────────────────────────────────────────────────────
-const AuthBg = () => (
-  <div style={{ position:'fixed', inset:0, overflow:'hidden', pointerEvents:'none', zIndex:0 }} aria-hidden="true">
-    <div style={{
-      position: 'absolute', inset: 0,
-      backgroundImage: 'linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px)',
-      backgroundSize: '48px 48px',
-    }} />
-    <div style={{ position:'absolute', top:'-20%', left:'50%', transform:'translateX(-50%)', width:'700px', height:'500px', background:'radial-gradient(ellipse, rgba(99,102,241,0.12) 0%, transparent 70%)' }} />
-    <div style={{ position:'absolute', bottom:'-10%', right:'-10%', width:'400px', height:'400px', background:'radial-gradient(ellipse, rgba(16,185,129,0.07) 0%, transparent 70%)' }} />
-  </div>
-);
+// ── Shared UI ─────────────────────────────────────────────────────────────────
+const AuthBg = () => null; // Not needed inside MainLayout
 
-const Logo = ({ sub }) => (
-  <div style={{ textAlign:'center', marginBottom:'32px' }}>
-    <Link to="/" style={{ textDecoration:'none' }}>
-      <div style={{ display:'inline-flex', alignItems:'center', gap:'10px', marginBottom:'8px' }}>
-        <div style={{ width:'36px', height:'36px', borderRadius:'10px', background:'linear-gradient(135deg,#6366f1,#4f46e5)', display:'flex', alignItems:'center', justifyContent:'center', boxShadow:'0 4px 16px rgba(99,102,241,0.4)' }}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
-        </div>
-        <span style={{ fontSize:'22px', fontFamily:"'Syne',sans-serif", fontWeight:800, color:'#f1f5f9', letterSpacing:'-0.02em' }}>
-          Uni<span style={{ color:'#818cf8' }}>Sites</span>
-        </span>
-      </div>
-      <p style={{ fontSize:'13px', color:'#64748b', margin:0 }}>{sub}</p>
-    </Link>
-  </div>
+const Logo = ({ sub }) => null; // Auth pages are standalone — no logo needed
+
+const EyeIcon = ({ open }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    {open
+      ? <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>
+      : <><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>
+    }
+  </svg>
 );
 
 const FloatInput = ({ label, type='text', value, onChange, error, autoComplete }) => {
-  const [focused, setFocused] = useState(false);
-  const raised = focused || value.length > 0;
+  const [focused,  setFocused]  = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const raised    = focused || value.length > 0;
+  const isPassword = type === 'password';
+  const inputType  = isPassword ? (showPass ? 'text' : 'password') : type;
+
   return (
     <div style={{ position:'relative' }}>
-      <label style={{ position:'absolute', left:'14px', top: raised ? '7px' : '50%', transform: raised ? 'none' : 'translateY(-50%)', fontSize: raised ? '10px' : '13px', color: focused ? '#818cf8' : '#64748b', fontWeight: raised ? 600 : 400, letterSpacing: raised ? '0.06em' : '0', textTransform: raised ? 'uppercase' : 'none', transition:'all 0.18s ease', pointerEvents:'none', zIndex:1, fontFamily:"'DM Sans',sans-serif" }}>
+      <label style={{
+        position:'absolute', left:'14px',
+        top: raised ? '7px' : '50%',
+        transform: raised ? 'none' : 'translateY(-50%)',
+        fontSize: raised ? '10px' : '13px',
+        color: focused ? '#1B3A6B' : '#94a3b8',
+        fontWeight: raised ? 700 : 400,
+        letterSpacing: raised ? '0.06em' : '0',
+        textTransform: raised ? 'uppercase' : 'none',
+        transition:'all 0.18s ease',
+        pointerEvents:'none', zIndex:1,
+        fontFamily:"'DM Sans',sans-serif",
+      }}>
         {label}
       </label>
-      <input type={type} value={value} autoComplete={autoComplete} onChange={e => onChange(e.target.value)} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
-        style={{ width:'100%', paddingTop: raised ? '22px' : '14px', paddingBottom: raised ? '8px' : '14px', paddingLeft:'14px', paddingRight:'14px', background: focused ? 'rgba(99,102,241,0.06)' : 'rgba(255,255,255,0.03)', border:`1.5px solid ${error ? '#f87171' : focused ? '#6366f1' : 'rgba(255,255,255,0.1)'}`, borderRadius:'12px', color:'#f1f5f9', fontSize:'14px', outline:'none', transition:'all 0.18s ease', fontFamily:"'DM Sans',sans-serif", boxSizing:'border-box', display:'block' }}
+      <input
+        type={inputType} value={value} autoComplete={autoComplete}
+        onChange={e => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          width:'100%',
+          paddingTop: raised ? '22px' : '14px',
+          paddingBottom: raised ? '8px' : '14px',
+          paddingLeft:'14px',
+          paddingRight: isPassword ? '42px' : '14px',
+          background: focused ? '#f8faff' : '#f8fafc',
+          border:`1.5px solid ${error ? '#ef4444' : focused ? '#1B3A6B' : '#e2e8f0'}`,
+          borderRadius:'12px',
+          color:'#1e293b',
+          fontSize:'14px', outline:'none',
+          transition:'all 0.18s ease',
+          fontFamily:"'DM Sans',sans-serif",
+          boxSizing:'border-box', display:'block',
+          boxShadow: focused ? '0 0 0 3px rgba(27,58,107,0.08)' : 'none',
+        }}
       />
-      {error && <p style={{ fontSize:'11px', color:'#f87171', marginTop:'4px', paddingLeft:'4px', marginBottom:0 }}>{error}</p>}
+      {isPassword && (
+        <button
+          type="button"
+          onClick={() => setShowPass(p => !p)}
+          style={{
+            position:'absolute', right:'12px', top:'50%', transform:'translateY(-50%)',
+            background:'none', border:'none', cursor:'pointer', padding:'4px',
+            color: showPass ? '#1B3A6B' : '#94a3b8',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            transition:'color 0.15s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.color='#1B3A6B'}
+          onMouseLeave={e => e.currentTarget.style.color = showPass ? '#1B3A6B' : '#94a3b8'}
+        >
+          <EyeIcon open={showPass} />
+        </button>
+      )}
+      {error && <p style={{ fontSize:'11px', color:'#ef4444', marginTop:'4px', paddingLeft:'4px', marginBottom:0 }}>{error}</p>}
     </div>
   );
 };
 
 const OAuthBtn = ({ icon, label, onClick }) => (
   <button onClick={onClick} type="button"
-    style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', padding:'11px 16px', background:'rgba(255,255,255,0.04)', border:'1.5px solid rgba(255,255,255,0.1)', borderRadius:'12px', color:'#cbd5e1', fontSize:'13px', fontWeight:500, cursor:'pointer', transition:'all 0.15s ease', fontFamily:"'DM Sans',sans-serif" }}
-    onMouseEnter={e => { e.currentTarget.style.background='rgba(255,255,255,0.08)'; e.currentTarget.style.borderColor='rgba(255,255,255,0.2)'; }}
-    onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.04)'; e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'; }}
+    style={{ width:'100%', display:'flex', alignItems:'center', justifyContent:'center', gap:'10px', padding:'11px 16px', background:'#fff', border:'1.5px solid #e2e8f0', borderRadius:'12px', color:'#475569', fontSize:'13px', fontWeight:600, cursor:'pointer', transition:'all 0.15s ease', fontFamily:"'DM Sans',sans-serif", boxShadow:'0 1px 3px rgba(0,0,0,0.06)' }}
+    onMouseEnter={e => { e.currentTarget.style.background='#f8fafc'; e.currentTarget.style.borderColor='#cbd5e1'; e.currentTarget.style.boxShadow='0 2px 8px rgba(0,0,0,0.08)'; }}
+    onMouseLeave={e => { e.currentTarget.style.background='#fff'; e.currentTarget.style.borderColor='#e2e8f0'; e.currentTarget.style.boxShadow='0 1px 3px rgba(0,0,0,0.06)'; }}
   >
     {icon}{label}
   </button>
@@ -80,7 +113,10 @@ const OAuthBtn = ({ icon, label, onClick }) => (
 
 const SubmitBtn = ({ label, loading }) => (
   <button type="submit" disabled={loading}
-    style={{ width:'100%', padding:'13px', background: loading ? 'rgba(99,102,241,0.5)' : 'linear-gradient(135deg,#6366f1 0%,#4f46e5 100%)', border:'none', borderRadius:'12px', color:'#fff', fontSize:'14px', fontWeight:600, cursor: loading ? 'not-allowed' : 'pointer', transition:'all 0.15s ease', letterSpacing:'0.02em', fontFamily:"'DM Sans',sans-serif", boxShadow: loading ? 'none' : '0 4px 24px rgba(99,102,241,0.35)', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}>
+    style={{ width:'100%', padding:'13px', background: loading ? '#94a3b8' : '#1B3A6B', border:'none', borderRadius:'12px', color:'#fff', fontSize:'14px', fontWeight:700, cursor: loading ? 'not-allowed' : 'pointer', transition:'all 0.15s ease', letterSpacing:'0.02em', fontFamily:"'DM Sans',sans-serif", boxShadow: loading ? 'none' : '0 4px 16px rgba(27,58,107,0.3)', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px' }}
+    onMouseEnter={e => { if (!loading) e.currentTarget.style.background='#15305a'; }}
+    onMouseLeave={e => { if (!loading) e.currentTarget.style.background='#1B3A6B'; }}
+  >
     {loading && <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation:'spin 0.8s linear infinite' }}><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>}
     {label}
   </button>
@@ -88,48 +124,58 @@ const SubmitBtn = ({ label, loading }) => (
 
 const Divider = () => (
   <div style={{ display:'flex', alignItems:'center', gap:'12px', margin:'4px 0' }}>
-    <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.08)' }} />
-    <span style={{ fontSize:'11px', color:'#475569', fontWeight:500, letterSpacing:'0.08em', textTransform:'uppercase' }}>or</span>
-    <div style={{ flex:1, height:'1px', background:'rgba(255,255,255,0.08)' }} />
+    <div style={{ flex:1, height:'1px', background:'#e2e8f0' }} />
+    <span style={{ fontSize:'11px', color:'#94a3b8', fontWeight:600, letterSpacing:'0.08em', textTransform:'uppercase' }}>or</span>
+    <div style={{ flex:1, height:'1px', background:'#e2e8f0' }} />
   </div>
 );
 
 const ErrorAlert = ({ message }) => message ? (
-  <div style={{ padding:'10px 14px', background:'rgba(239,68,68,0.1)', border:'1px solid rgba(239,68,68,0.25)', borderRadius:'10px', color:'#fca5a5', fontSize:'13px' }}>
-    {message}
+  <div style={{ padding:'10px 14px', background:'#fef2f2', border:'1px solid #fecaca', borderRadius:'10px', color:'#dc2626', fontSize:'13px', display:'flex', alignItems:'center', gap:'8px' }}>
+    ⚠️ {message}
   </div>
 ) : null;
 
 const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap');
   @keyframes spin   { to { transform: rotate(360deg); } }
   @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
 `;
 
-const PAGE_STYLE = { minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', padding:'24px', position:'relative', zIndex:10, fontFamily:"'DM Sans',sans-serif" };
-const CARD_STYLE = { background:'rgba(255,255,255,0.03)', backdropFilter:'blur(20px)', border:'1px solid rgba(255,255,255,0.08)', borderRadius:'20px', padding:'32px' };
+const PAGE_STYLE = {
+  minHeight:'calc(100vh - 64px)',
+  display:'flex', alignItems:'center', justifyContent:'center',
+  padding:'24px', position:'relative', zIndex:10,
+  fontFamily:"'DM Sans',sans-serif", background:'#f8fafc',
+};
 
-// ─────────────────────────────────────────────────────────────────────────────
-// LoginPage
-// ─────────────────────────────────────────────────────────────────────────────
+const CARD_STYLE = {
+  background:'#fff',
+  border:'1px solid #e2e8f0',
+  borderRadius:'20px',
+  padding:'32px',
+  boxShadow:'0 4px 24px rgba(0,0,0,0.07)',
+};
+
+// ── LoginPage ─────────────────────────────────────────────────────────────────
 export function LoginPage() {
   const setAuth    = useAuthStore(s => s.setAuth);
   const navigate   = useNavigate();
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
+  const [err,      setErr]      = useState('');
 
   const handleSubmit = async e => {
     e.preventDefault();
-    setError('');
+    setErr('');
     setLoading(true);
     try {
       const res = await authApi.login({ email, password });
       setAuth(res.data.user, res.data.token);
-      navigate(res.data.user?.Role?.name === 'owner' ? '/owner' : '/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Invalid email or password');
+      const role = res.data.user?.Role?.name;
+      navigate(role === 'owner' ? '/owner' : role === 'admin' ? '/admin' : '/dashboard');
+    } catch (e) {
+      setErr(e.response?.data?.message || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
@@ -142,9 +188,12 @@ export function LoginPage() {
       <div style={PAGE_STYLE}>
         <div style={{ width:'100%', maxWidth:'400px', animation:'fadeUp 0.4s ease-out both' }}>
           <Logo sub="Discover universities in Cambodia" />
+
           <div style={CARD_STYLE}>
-            <h1 style={{ fontSize:'20px', fontWeight:700, color:'#f1f5f9', margin:'0 0 6px', fontFamily:"'Syne',sans-serif" }}>Welcome back</h1>
-            <p style={{ fontSize:'13px', color:'#64748b', margin:'0 0 24px' }}>Sign in to continue to your account</p>
+            <div style={{ marginBottom:'24px' }}>
+              <h1 style={{ fontSize:'22px', fontWeight:800, color:'#0f172a', margin:'0 0 4px', fontFamily:"'Syne',sans-serif" }}>Welcome back</h1>
+              <p style={{ fontSize:'13px', color:'#64748b', margin:0 }}>Sign in to continue to your account</p>
+            </div>
 
             <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'20px' }}>
               <OAuthBtn icon={GOOGLE_ICON}   label="Continue with Google"   onClick={() => window.location.href = authApi.googleAuthUrl()} />
@@ -154,15 +203,16 @@ export function LoginPage() {
             <Divider />
 
             <form onSubmit={handleSubmit} style={{ marginTop:'20px', display:'flex', flexDirection:'column', gap:'12px' }}>
-              <ErrorAlert message={error} />
+              <ErrorAlert message={err} />
               <FloatInput label="Email address" type="email"    value={email}    onChange={setEmail}    autoComplete="email" />
               <FloatInput label="Password"      type="password" value={password} onChange={setPassword} autoComplete="current-password" />
               <div style={{ paddingTop:'4px' }}><SubmitBtn label="Sign in" loading={loading} /></div>
             </form>
           </div>
-          <p style={{ textAlign:'center', fontSize:'13px', color:'#475569', marginTop:'20px' }}>
+
+          <p style={{ textAlign:'center', fontSize:'13px', color:'#64748b', marginTop:'16px' }}>
             Don't have an account?{' '}
-            <Link to="/register" style={{ color:'#818cf8', textDecoration:'none', fontWeight:600 }}>Sign up</Link>
+            <Link to="/register" style={{ color:'#1B3A6B', textDecoration:'none', fontWeight:700 }}>Sign up</Link>
           </p>
         </div>
       </div>
@@ -170,18 +220,15 @@ export function LoginPage() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RegisterPage
-// ─────────────────────────────────────────────────────────────────────────────
+// ── RegisterPage ──────────────────────────────────────────────────────────────
 export function RegisterPage() {
   const setAuth    = useAuthStore(s => s.setAuth);
   const navigate   = useNavigate();
-  const [role,     setRole]     = useState('student');
   const [name,     setName]     = useState('');
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
+  const [err,      setErr]      = useState('');
   const [errors,   setErrors]   = useState({});
 
   const validate = () => {
@@ -195,15 +242,15 @@ export function RegisterPage() {
 
   const handleSubmit = async ev => {
     ev.preventDefault();
-    setError('');
+    setErr('');
     if (!validate()) return;
     setLoading(true);
     try {
-      const res = await authApi.register({ name, email, password, role });
+      const res = await authApi.register({ name, email, password, role: 'student' });
       setAuth(res.data.user, res.data.token);
-      navigate(role === 'owner' ? '/owner' : '/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed. Please try again.');
+      navigate('/dashboard');
+    } catch (e) {
+      setErr(e.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -220,17 +267,11 @@ export function RegisterPage() {
       <div style={PAGE_STYLE}>
         <div style={{ width:'100%', maxWidth:'420px', animation:'fadeUp 0.4s ease-out both' }}>
           <Logo sub="Join thousands of Cambodian students" />
-          <div style={CARD_STYLE}>
-            <h1 style={{ fontSize:'20px', fontWeight:700, color:'#f1f5f9', margin:'0 0 6px', fontFamily:"'Syne',sans-serif" }}>Create account</h1>
-            <p style={{ fontSize:'13px', color:'#64748b', margin:'0 0 20px' }}>Start your university discovery journey</p>
 
-            {/* Role toggle */}
-            <div style={{ display:'flex', gap:'6px', padding:'5px', background:'rgba(0,0,0,0.2)', borderRadius:'12px', border:'1px solid rgba(255,255,255,0.06)', marginBottom:'20px' }}>
-              {[{ value:'student', label:'🎓 Student' }, { value:'owner', label:'🏫 University' }].map(r => (
-                <button key={r.value} type="button" onClick={() => setRole(r.value)} style={{ flex:1, padding:'9px 12px', borderRadius:'8px', border:'none', background: role === r.value ? 'linear-gradient(135deg,#6366f1,#4f46e5)' : 'transparent', color: role === r.value ? '#fff' : '#64748b', fontSize:'13px', fontWeight:600, cursor:'pointer', transition:'all 0.2s ease', boxShadow: role === r.value ? '0 2px 12px rgba(99,102,241,0.3)' : 'none', fontFamily:"'DM Sans',sans-serif" }}>
-                  {r.label}
-                </button>
-              ))}
+          <div style={CARD_STYLE}>
+            <div style={{ marginBottom:'20px' }}>
+              <h1 style={{ fontSize:'22px', fontWeight:800, color:'#0f172a', margin:'0 0 4px', fontFamily:"'Syne',sans-serif" }}>Create account</h1>
+              <p style={{ fontSize:'13px', color:'#64748b', margin:0 }}>Start your university discovery journey</p>
             </div>
 
             <div style={{ display:'flex', flexDirection:'column', gap:'10px', marginBottom:'20px' }}>
@@ -241,33 +282,39 @@ export function RegisterPage() {
             <Divider />
 
             <form onSubmit={handleSubmit} style={{ marginTop:'20px', display:'flex', flexDirection:'column', gap:'12px' }}>
-              <ErrorAlert message={error} />
-              <FloatInput label="Full name"      type="text"     value={name}     onChange={setName}     error={errors.name} />
-              <FloatInput label="Email address"  type="email"    value={email}    onChange={setEmail}    error={errors.email}    autoComplete="email" />
-              <FloatInput label="Password"        type="password" value={password} onChange={setPassword} error={errors.password} autoComplete="new-password" />
+              <ErrorAlert message={err} />
+              <FloatInput label="Full name"     type="text"     value={name}     onChange={setName}     error={errors.name} />
+              <FloatInput label="Email address" type="email"    value={email}    onChange={setEmail}    error={errors.email}    autoComplete="email" />
+              <FloatInput label="Password"       type="password" value={password} onChange={setPassword} error={errors.password} autoComplete="new-password" />
 
               {/* Password strength */}
               {password.length > 0 && (
                 <div>
                   <div style={{ display:'flex', gap:'4px', marginBottom:'4px' }}>
                     {[1,2,3,4].map(i => (
-                      <div key={i} style={{ flex:1, height:'3px', borderRadius:'2px', background: i <= strength ? strengthColors[strength] : 'rgba(255,255,255,0.1)', transition:'background 0.2s ease' }} />
+                      <div key={i} style={{ flex:1, height:'3px', borderRadius:'2px', background: i <= strength ? strengthColors[strength] : '#e2e8f0', transition:'background 0.2s ease' }} />
                     ))}
                   </div>
-                  <p style={{ fontSize:'11px', color:'#64748b', margin:0 }}>{strengthLabels[strength]}</p>
+                  <p style={{ fontSize:'11px', color: strength > 0 ? strengthColors[strength] : '#94a3b8', margin:0, fontWeight:600 }}>
+                    {strengthLabels[strength]}
+                  </p>
                 </div>
               )}
 
               <div style={{ paddingTop:'4px' }}><SubmitBtn label="Create account" loading={loading} /></div>
 
-              <p style={{ fontSize:'11px', color:'#475569', textAlign:'center', margin:0, lineHeight:1.6 }}>
-                By signing up you agree to our <a href="#" style={{ color:'#818cf8', textDecoration:'none' }}>Terms</a> and <a href="#" style={{ color:'#818cf8', textDecoration:'none' }}>Privacy Policy</a>
+              <p style={{ fontSize:'11px', color:'#94a3b8', textAlign:'center', margin:0, lineHeight:1.6 }}>
+                By signing up you agree to our{' '}
+                <a href="#" style={{ color:'#1B3A6B', textDecoration:'none', fontWeight:600 }}>Terms</a>
+                {' '}and{' '}
+                <a href="#" style={{ color:'#1B3A6B', textDecoration:'none', fontWeight:600 }}>Privacy Policy</a>
               </p>
             </form>
           </div>
-          <p style={{ textAlign:'center', fontSize:'13px', color:'#475569', marginTop:'20px' }}>
+
+          <p style={{ textAlign:'center', fontSize:'13px', color:'#64748b', marginTop:'16px' }}>
             Already have an account?{' '}
-            <Link to="/login" style={{ color:'#818cf8', textDecoration:'none', fontWeight:600 }}>Sign in</Link>
+            <Link to="/login" style={{ color:'#1B3A6B', textDecoration:'none', fontWeight:700 }}>Sign in</Link>
           </p>
         </div>
       </div>
@@ -275,9 +322,7 @@ export function RegisterPage() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// OAuthCallback
-// ─────────────────────────────────────────────────────────────────────────────
+// ── OAuthCallback ─────────────────────────────────────────────────────────────
 export function OAuthCallback() {
   const setAuth  = useAuthStore(s => s.setAuth);
   const navigate = useNavigate();
@@ -301,7 +346,8 @@ export function OAuthCallback() {
       .then(data => {
         if (!data.user) throw new Error('No user');
         setAuth(data.user, token);
-        navigate(data.user?.Role?.name === 'owner' ? '/owner' : '/dashboard', { replace: true });
+        const role = data.user?.Role?.name;
+        navigate(role === 'owner' ? '/owner' : role === 'admin' ? '/admin' : '/dashboard', { replace: true });
       })
       .catch(() => {
         setErr('Failed to load profile. Redirecting...');
@@ -312,12 +358,15 @@ export function OAuthCallback() {
   return (
     <>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'16px', background:'#080c14', fontFamily:"'DM Sans',sans-serif" }}>
+      <div style={{ minHeight:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:'16px', background:'#f8fafc', fontFamily:"'DM Sans',sans-serif" }}>
         {err ? (
-          <p style={{ color:'#f87171', fontSize:'14px' }}>{err}</p>
+          <div style={{ textAlign:'center' }}>
+            <p style={{ color:'#ef4444', fontSize:'14px', marginBottom:'8px' }}>⚠️ {err}</p>
+            <Link to="/login" style={{ fontSize:'13px', color:'#1B3A6B', fontWeight:600 }}>Go to Login</Link>
+          </div>
         ) : (
           <>
-            <div style={{ width:'40px', height:'40px', border:'3px solid rgba(99,102,241,0.2)', borderTop:'3px solid #6366f1', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />
+            <div style={{ width:'40px', height:'40px', border:'3px solid #e2e8f0', borderTop:'3px solid #1B3A6B', borderRadius:'50%', animation:'spin 0.7s linear infinite' }} />
             <p style={{ color:'#64748b', fontSize:'14px', margin:0 }}>Signing you in...</p>
           </>
         )}

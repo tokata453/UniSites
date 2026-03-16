@@ -5,8 +5,8 @@ module.exports = (sequelize, DataTypes) => {
   class ForumThread extends Model {
     static associate(db) {
       ForumThread.belongsTo(db.ForumCategory, { foreignKey: 'category_id', as: 'Category' });
-      // ForumThread.belongsTo(db.User, { foreignKey: 'author_id', as: 'Author' });
-      // ForumThread.hasMany(db.ForumReply, { foreignKey: 'thread_id', as: 'Replies', onDelete: 'CASCADE' });
+      ForumThread.belongsTo(db.User, { foreignKey: 'author_id', as: 'Author' });
+      ForumThread.hasMany(db.ForumReply, { foreignKey: 'thread_id', as: 'Replies', onDelete: 'CASCADE' });
     }
   }
 

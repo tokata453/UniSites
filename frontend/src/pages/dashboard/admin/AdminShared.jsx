@@ -1,4 +1,4 @@
-// Shared primitives for admin pages
+// Shared primitives for admin pages — light theme
 import { useState } from 'react';
 
 export const IC = ({ d, size = 16 }) => (
@@ -7,22 +7,25 @@ export const IC = ({ d, size = 16 }) => (
   </svg>
 );
 
-export function Badge({ label, color = '#6366f1' }) {
+export function Badge({ label, color = '#1B3A6B' }) {
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', background: `${color}18`, color, border: `1px solid ${color}30` }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 20, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', background: `${color}12`, color, border: `1px solid ${color}30` }}>
       {label}
     </span>
   );
 }
 
 export function SearchBar({ value, onChange, placeholder = 'Search...' }) {
+  const [focused, setFocused] = useState(false);
   return (
     <div style={{ position: 'relative', flex: 1 }}>
-      <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#475569' }}>
+      <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
         <IC d="M21 21l-4.35-4.35 M11 19a8 8 0 100-16 8 8 0 000 16z" size={15} />
       </div>
-      <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        style={{ width: '100%', paddingLeft: 36, paddingRight: 12, paddingTop: 8, paddingBottom: 8, background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#e2e8f0', fontSize: 13, outline: 'none', fontFamily: "'DM Sans',sans-serif", boxSizing: 'border-box' }}
+      <input
+        value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+        style={{ width: '100%', paddingLeft: 36, paddingRight: 12, paddingTop: 8, paddingBottom: 8, background: '#f8fafc', border: `1px solid ${focused ? '#1B3A6B' : '#e2e8f0'}`, borderRadius: 10, color: '#1e293b', fontSize: 13, outline: 'none', fontFamily: "'DM Sans',sans-serif", boxSizing: 'border-box', boxShadow: focused ? '0 0 0 3px rgba(27,58,107,0.08)' : 'none', transition: 'all 0.15s' }}
       />
     </div>
   );
@@ -31,18 +34,18 @@ export function SearchBar({ value, onChange, placeholder = 'Search...' }) {
 export function Select({ value, onChange, options, style = {} }) {
   return (
     <select value={value} onChange={e => onChange(e.target.value)}
-      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '8px 12px', color: '#cbd5e1', fontSize: 13, outline: 'none', fontFamily: "'DM Sans',sans-serif", cursor: 'pointer', ...style }}>
-      {options.map(o => <option key={o.value} value={o.value} style={{ background: '#1e2433' }}>{o.label}</option>)}
+      style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', color: '#475569', fontSize: 13, outline: 'none', fontFamily: "'DM Sans',sans-serif", cursor: 'pointer', ...style }}>
+      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
     </select>
   );
 }
 
-export function ActionBtn({ onClick, color = '#6366f1', children, title }) {
+export function ActionBtn({ onClick, color = '#1B3A6B', children, title }) {
   const [hov, setHov] = useState(false);
   return (
     <button onClick={onClick} title={title}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-      style={{ padding: '5px 10px', borderRadius: 7, border: `1px solid ${color}40`, background: hov ? `${color}20` : `${color}0a`, color, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', fontFamily: "'DM Sans',sans-serif", display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+      style={{ padding: '5px 10px', borderRadius: 7, border: `1px solid ${color}35`, background: hov ? `${color}12` : `${color}07`, color, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', fontFamily: "'DM Sans',sans-serif", display: 'inline-flex', alignItems: 'center', gap: 4 }}>
       {children}
     </button>
   );
@@ -57,9 +60,9 @@ export function Table({ columns, rows, loading, emptyMsg = 'No data found' }) {
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
-          <tr>
+          <tr style={{ background: '#f8fafc' }}>
             {columns.map(col => (
-              <th key={col.key} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#475569', letterSpacing: '0.08em', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.06)', whiteSpace: 'nowrap' }}>
+              <th key={col.key} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
                 {col.label}
               </th>
             ))}
@@ -70,23 +73,23 @@ export function Table({ columns, rows, loading, emptyMsg = 'No data found' }) {
             Array.from({ length: 5 }).map((_, i) => (
               <tr key={i}>
                 {columns.map(col => (
-                  <td key={col.key} style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                    <div style={{ height: 14, borderRadius: 4, background: 'rgba(255,255,255,0.05)', width: '70%', animation: 'pulse 1.5s ease infinite' }} />
+                  <td key={col.key} style={{ padding: '12px 14px', borderBottom: '1px solid #f1f5f9' }}>
+                    <div style={{ height: 13, borderRadius: 4, background: '#f1f5f9', width: '70%', animation: 'pulse 1.5s ease infinite' }} />
                   </td>
                 ))}
               </tr>
             ))
           ) : rows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} style={{ padding: '32px', textAlign: 'center', color: '#475569', fontSize: 13 }}>{emptyMsg}</td>
+              <td colSpan={columns.length} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>{emptyMsg}</td>
             </tr>
           ) : rows.map((row, i) => (
             <tr key={row.id || i}
-              style={{ transition: 'background 0.15s' }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+              style={{ transition: 'background 0.1s' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
               {columns.map(col => (
-                <td key={col.key} style={{ padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.04)', color: '#cbd5e1', verticalAlign: 'middle' }}>
+                <td key={col.key} style={{ padding: '12px 14px', borderBottom: '1px solid #f1f5f9', color: '#334155', verticalAlign: 'middle' }}>
                   {col.render ? col.render(row) : row[col.key]}
                 </td>
               ))}
@@ -104,17 +107,17 @@ export function Pagination({ page, pages, onChange }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '14px 0 4px' }}>
       <button onClick={() => onChange(page - 1)} disabled={page <= 1}
-        style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: page <= 1 ? '#334155' : '#94a3b8', cursor: page <= 1 ? 'not-allowed' : 'pointer', fontSize: 12 }}>
+        style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', color: page <= 1 ? '#cbd5e1' : '#64748b', cursor: page <= 1 ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 500 }}>
         ← Prev
       </button>
       {Array.from({ length: Math.min(pages, 7) }, (_, i) => i + 1).map(p => (
         <button key={p} onClick={() => onChange(p)}
-          style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${p === page ? 'rgba(99,102,241,0.4)' : 'rgba(255,255,255,0.08)'}`, background: p === page ? 'rgba(99,102,241,0.2)' : 'transparent', color: p === page ? '#a5b4fc' : '#64748b', cursor: 'pointer', fontSize: 12, fontWeight: p === page ? 700 : 400 }}>
+          style={{ width: 32, height: 32, borderRadius: 8, border: `1px solid ${p === page ? '#1B3A6B' : '#e2e8f0'}`, background: p === page ? '#1B3A6B' : '#fff', color: p === page ? '#fff' : '#64748b', cursor: 'pointer', fontSize: 12, fontWeight: p === page ? 700 : 400 }}>
           {p}
         </button>
       ))}
       <button onClick={() => onChange(page + 1)} disabled={page >= pages}
-        style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.1)', background: 'transparent', color: page >= pages ? '#334155' : '#94a3b8', cursor: page >= pages ? 'not-allowed' : 'pointer', fontSize: 12 }}>
+        style={{ padding: '5px 12px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', color: page >= pages ? '#cbd5e1' : '#64748b', cursor: page >= pages ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 500 }}>
         Next →
       </button>
     </div>
@@ -125,8 +128,8 @@ export function PageHeader({ title, subtitle, count }) {
   return (
     <div style={{ marginBottom: 22 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 800, color: '#f1f5f9', margin: 0, fontFamily: "'Syne',sans-serif" }}>{title}</h1>
-        {count !== undefined && <span style={{ fontSize: 12, color: '#475569', fontWeight: 600 }}>{count} total</span>}
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: 0, fontFamily: "'Syne',sans-serif" }}>{title}</h1>
+        {count !== undefined && <span style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>{count} total</span>}
       </div>
       {subtitle && <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>{subtitle}</p>}
     </div>
@@ -135,15 +138,47 @@ export function PageHeader({ title, subtitle, count }) {
 
 export function Card({ children, style = {} }) {
   return (
-    <div style={{ background: 'rgba(255,255,255,0.025)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, overflow: 'hidden', ...style }}>
+    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 14, overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)', ...style }}>
       {children}
     </div>
   );
 }
 
+export function ConfirmModal({ message, onConfirm, onCancel }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: 28, maxWidth: 360, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+        <p style={{ fontSize: 14, color: '#334155', margin: '0 0 20px', lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: message }} />
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button onClick={onCancel}  style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>Cancel</button>
+          <button onClick={onConfirm} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#ef4444', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function Toast({ message }) {
+  if (!message) return null;
+  return (
+    <div style={{ position: 'fixed', bottom: 24, right: 24, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 18px', color: '#334155', fontSize: 13, zIndex: 99, boxShadow: '0 8px 24px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <span style={{ color: '#22c55e' }}>✓</span> {message}
+    </div>
+  );
+}
+
+export function ToggleSwitch({ checked, onChange, color = '#1B3A6B' }) {
+  return (
+    <div onClick={onChange} style={{ width: 36, height: 20, borderRadius: 10, background: checked ? color : '#e2e8f0', position: 'relative', cursor: 'pointer', transition: 'background 0.2s', flexShrink: 0 }}>
+      <div style={{ position: 'absolute', top: 3, left: checked ? 18 : 3, width: 14, height: 14, borderRadius: '50%', background: '#fff', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+    </div>
+  );
+}
+
+
 export function FilterBar({ children }) {
   return (
-    <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '14px 16px', borderBottom: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
       {children}
     </div>
   );
