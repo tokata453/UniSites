@@ -1,6 +1,6 @@
 'use strict';
 const db = require('../models');
-const { success, created, error, notFound } = require('../utils/response.utils');
+const { success, created, error, notFound, forbidden } = require('../utils/response.utils');
 const { getPagination, paginateResponse } = require('../utils/pagination.utils');
 
 const recalcRating = async (universityId) => {
@@ -72,4 +72,53 @@ const remove = async (req, res) => {
   }
 };
 
-module.exports = { list, create, approve, remove };
+const ownerList = async (req, res) => {
+  try {
+    const reviews = await db.Review.findAll({
+      where: { university_id: req.university.id },
+      order: [['created_at', 'DESC']],
+      include: [{ model: db.User, as: 'Author', attributes: ['id', 'name', 'email', 'avatar_url'] }],
+    });
+    return success(res, { reviews });
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const ownerReply = async (req, res) => {
+  try {
+    const review = await db.Review.findByPk(req.params.id);
+    if (!review) return notFound(res, 'Review not found');
+    if (review.university_id !== req.university.id) return forbidden(res, 'This review does not belong to your university');
+
+    await review.update({
+      owner_reply: req.body.owner_reply?.trim() || null,
+      owner_replied_at: req.body.owner_reply?.trim() ? new Date() : null,
+    });
+
+    return success(res, { review }, review.owner_reply ? 'Reply saved' : 'Reply removed');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const ownerFlag = async (req, res) => {
+  try {
+    const review = await db.Review.findByPk(req.params.id);
+    if (!review) return notFound(res, 'Review not found');
+    if (review.university_id !== req.university.id) return forbidden(res, 'This review does not belong to your university');
+
+    const reason = req.body.reason?.trim() || null;
+    await review.update({
+      flagged_for_recheck: !!reason,
+      flag_reason: reason,
+      flagged_at: reason ? new Date() : null,
+    });
+
+    return success(res, { review }, reason ? 'Review flagged for admin re-check' : 'Review flag cleared');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+module.exports = { list, create, approve, remove, ownerList, ownerReply, ownerFlag };

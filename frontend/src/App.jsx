@@ -32,6 +32,7 @@ import StudentProfile    from '@/pages/dashboard/student/StudentProfile';
 import OwnerOverview     from '@/pages/dashboard/owner/OwnerOverview';
 import OwnerProfile      from '@/pages/dashboard/owner/OwnerProfile';
 import OwnerOpportunities from '@/pages/dashboard/owner/OwnerOpportunities';
+import OwnerReviews      from '@/pages/dashboard/owner/OwnerReviews';
 import OwnerGallery      from '@/pages/dashboard/owner/OwnerGallery';
 import OwnerFaculties    from '@/pages/dashboard/owner/OwnerFaculties';
 import OwnerNews         from '@/pages/dashboard/owner/OwnerNews';
@@ -109,6 +110,7 @@ export default function App() {
           <Route index                 element={<OwnerOverview />} />
           <Route path="profile"        element={<OwnerProfile />} />
           <Route path="opportunities"  element={<OwnerOpportunities />} />
+          <Route path="reviews"        element={<OwnerReviews />} />
           <Route path="gallery"        element={<OwnerGallery />} />
           <Route path="faculties"      element={<OwnerFaculties />} />
           <Route path="news"           element={<OwnerNews />} />

@@ -783,6 +783,17 @@ export default function UniversityDetail() {
                         )}
                       </div>
                     )}
+                    {rev.owner_reply && (
+                      <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-xs font-bold uppercase tracking-wide text-[#1B3A6B]">Official university reply</p>
+                          {rev.owner_replied_at && (
+                            <span className="text-xs text-slate-400">{formatDate(rev.owner_replied_at)}</span>
+                          )}
+                        </div>
+                        <p className="mt-2 text-sm leading-relaxed text-slate-700">{rev.owner_reply}</p>
+                      </div>
+                    )}
                   </Card>
                 ))
               ) : (

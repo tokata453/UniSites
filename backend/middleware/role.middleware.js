@@ -12,7 +12,17 @@ const requireRole = (...roles) => (req, res, next) => {
 
 const isAdmin  = requireRole('admin');
 const isOwner  = requireRole('owner', 'admin');
-const isOpportunityManager = requireRole('owner', 'organization', 'admin');
+const isOpportunityManager = (req, res, next) => {
+  if (!req.user) return forbidden(res, 'Authentication required');
+  const role = req.user.Role?.name;
+  if (!['owner', 'organization', 'admin'].includes(role)) {
+    return forbidden(res, 'Requires role: owner or organization or admin');
+  }
+  if (role === 'organization' && !req.user.is_approved) {
+    return forbidden(res, 'Organization account is pending admin approval');
+  }
+  next();
+};
 
 const isUniversityOwner = (paramKey = 'universityId') => async (req, res, next) => {
   try {

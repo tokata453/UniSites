@@ -256,8 +256,8 @@ export function RegisterPage() {
     try {
       const res = await authApi.register({ name, email, password, role });
       if (res.data.pendingApproval) {
-        setErr('Organization account created. It must be approved by an admin before you can sign in.');
-        setTimeout(() => navigate('/login'), 2000);
+        setErr('Organization account created. Your dashboard features will unlock after admin approval. Redirecting to the website...');
+        setTimeout(() => navigate('/'), 2000);
         return;
       }
       setAuth(res.data.user, res.data.token);

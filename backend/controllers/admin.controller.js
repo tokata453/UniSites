@@ -8,6 +8,21 @@ const isAdmin = (req, res) => {
   return true;
 };
 
+const recalcUniversityRating = async (universityId) => {
+  const reviews = await db.Review.findAll({
+    where: { university_id: universityId, is_approved: true },
+    attributes: ['rating'],
+  });
+
+  const count = reviews.length;
+  const avg = count ? reviews.reduce((sum, review) => sum + review.rating, 0) / count : 0;
+
+  await db.University.update(
+    { rating_avg: parseFloat(avg.toFixed(2)), review_count: count },
+    { where: { id: universityId } }
+  );
+};
+
 // ── Stats overview ────────────────────────────────────────────────────────────
 exports.getStats = async (req, res) => {
   try {
@@ -188,9 +203,10 @@ exports.deleteOpportunity = async (req, res) => {
 exports.getReviews = async (req, res) => {
   try {
     if (!isAdmin(req, res)) return;
-    const { page = 1, limit = 20, approved } = req.query;
+    const { page = 1, limit = 20, approved, flagged } = req.query;
     const where = {};
     if (approved !== undefined) where.is_approved = approved === 'true';
+    if (flagged !== undefined) where.flagged_for_recheck = flagged === 'true';
     const { count, rows } = await db.Review.findAndCountAll({
       where, limit: +limit, offset: (+page - 1) * +limit,
       include: [
@@ -210,6 +226,7 @@ exports.approveReview = async (req, res) => {
     if (!review) return notFound(res, 'Review not found');
     review.is_approved = !review.is_approved;
     await review.save();
+    await recalcUniversityRating(review.university_id);
     return success(res, { review }, `Review ${review.is_approved ? 'approved' : 'unapproved'}`);
   } catch (e) { serverError(res, e.message); }
 };
@@ -219,7 +236,9 @@ exports.deleteReview = async (req, res) => {
     if (!isAdmin(req, res)) return;
     const review = await db.Review.findByPk(req.params.id);
     if (!review) return notFound(res, 'Review not found');
+    const universityId = review.university_id;
     await review.destroy();
+    await recalcUniversityRating(universityId);
     return success(res, {}, 'Review deleted');
   } catch (e) { serverError(res, e.message); }
 };

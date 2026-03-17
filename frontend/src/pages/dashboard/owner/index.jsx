@@ -1313,6 +1313,195 @@ export function OwnerOpportunities() {
   );
 }
 
+export function OwnerReviews() {
+  const { university, loading } = useOwnerUniversity();
+  const { success, error } = useToast();
+  const [reviews, setReviews] = useState([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewTab, setReviewTab] = useState('all');
+  const [replyDrafts, setReplyDrafts] = useState({});
+  const [flagDrafts, setFlagDrafts] = useState({});
+  const [savingReplyId, setSavingReplyId] = useState(null);
+  const [savingFlagId, setSavingFlagId] = useState(null);
+
+  const reviewTabOptions = [
+    { key: 'all', label: `All (${reviews.length})` },
+    { key: 'approved', label: `Approved (${reviews.filter((review) => review.is_approved).length})` },
+    { key: 'pending', label: `Pending (${reviews.filter((review) => !review.is_approved).length})` },
+    { key: 'flagged', label: `Flagged (${reviews.filter((review) => review.flagged_for_recheck).length})` },
+  ];
+
+  const filteredReviews = reviews.filter((review) => {
+    if (reviewTab === 'approved') return review.is_approved;
+    if (reviewTab === 'pending') return !review.is_approved;
+    if (reviewTab === 'flagged') return review.flagged_for_recheck;
+    return true;
+  });
+
+  const loadReviews = useCallback(async (uniId) => {
+    setReviewsLoading(true);
+    try {
+      const res = await universityApi.getOwnerReviews(uniId);
+      const nextReviews = res.data.reviews || [];
+      setReviews(nextReviews);
+      setReplyDrafts(Object.fromEntries(nextReviews.map((review) => [review.id, review.owner_reply || ''])));
+      setFlagDrafts(Object.fromEntries(nextReviews.map((review) => [review.id, review.flag_reason || ''])));
+    } catch (err) {
+      setReviews([]);
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (university?.id) loadReviews(university.id);
+  }, [loadReviews, university?.id]);
+
+  const saveReply = async (reviewId) => {
+    if (!university?.id) return;
+    setSavingReplyId(reviewId);
+    try {
+      await universityApi.replyToReview(university.id, reviewId, { owner_reply: replyDrafts[reviewId] || '' });
+      success(replyDrafts[reviewId]?.trim() ? 'Reply saved' : 'Reply removed');
+      loadReviews(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to save reply');
+    } finally {
+      setSavingReplyId(null);
+    }
+  };
+
+  const flagForRecheck = async (reviewId) => {
+    if (!university?.id) return;
+    setSavingFlagId(reviewId);
+    try {
+      await universityApi.flagReview(university.id, reviewId, { reason: flagDrafts[reviewId] || '' });
+      success(flagDrafts[reviewId]?.trim() ? 'Review flagged for admin re-check' : 'Review flag cleared');
+      loadReviews(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to update flag');
+    } finally {
+      setSavingFlagId(null);
+    }
+  };
+
+  if (loading) return <LoadingBlock />;
+  if (!university) return <NoUniversity />;
+
+  return (
+    <PageSection
+      title="Reviews"
+      subtitle="Monitor student feedback, add an official owner reply, and flag any review that needs admin re-check."
+    >
+      <Panel
+        title="University Reviews"
+        description={`${reviews.length} review(s) submitted for ${university.name}. Admin still controls approval and removal.`}
+      >
+        <div className="mb-4 flex flex-wrap gap-2">
+          {reviewTabOptions.map((item) => (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => setReviewTab(item.key)}
+              className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-all ${
+                reviewTab === item.key
+                  ? 'border-[#1B3A6B] bg-[#1B3A6B] text-white shadow-sm'
+                  : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+        {reviewsLoading ? (
+          <LoadingBlock />
+        ) : filteredReviews.length === 0 ? (
+          <EmptyState title="No reviews yet" description="Student reviews will appear here once they are submitted for your university." />
+        ) : (
+          <div className="space-y-4">
+            {filteredReviews.map((review) => (
+              <div key={review.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-bold text-slate-800">{review.title || 'Untitled review'}</p>
+                      <StatusPill tone={review.is_approved ? 'green' : 'amber'}>{review.is_approved ? 'Approved' : 'Pending admin approval'}</StatusPill>
+                      <StatusPill tone="blue">{review.rating}/5 stars</StatusPill>
+                      {review.flagged_for_recheck && <StatusPill tone="amber">Flagged for re-check</StatusPill>}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
+                      <span>By {review.Author?.name || 'Unknown student'}</span>
+                      {review.Author?.email && <span>{review.Author.email}</span>}
+                      <span>{formatDate(review.createdAt || review.created_at)}</span>
+                    </div>
+                    {review.content && <p className="mt-3 text-sm leading-6 text-slate-600">{review.content}</p>}
+                    {(review.pros || review.cons) && (
+                      <div className="mt-3 grid gap-3 md:grid-cols-2">
+                        <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+                          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-green-700">Pros</p>
+                          <p>{review.pros || 'No pros provided.'}</p>
+                        </div>
+                        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-red-700">Cons</p>
+                          <p>{review.cons || 'No cons provided.'}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-4 xl:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div className="mb-3 flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-800">Official Reply</p>
+                        <p className="text-xs text-slate-500">Visible as your university response to this review.</p>
+                      </div>
+                      {review.owner_replied_at && <span className="text-xs text-slate-400">Updated {formatDate(review.owner_replied_at)}</span>}
+                    </div>
+                    <TextArea
+                      rows={4}
+                      value={replyDrafts[review.id] || ''}
+                      onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [review.id]: e.target.value }))}
+                      placeholder="Thank the student, clarify context, or explain how your team is addressing the feedback."
+                    />
+                    <div className="mt-3 flex justify-end">
+                      <button type="button" onClick={() => saveReply(review.id)} disabled={savingReplyId === review.id} className={primaryBtn}>
+                        {savingReplyId === review.id ? 'Saving...' : 'Save Reply'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                    <div className="mb-3">
+                      <p className="text-sm font-semibold text-slate-800">Request Admin Re-check</p>
+                      <p className="text-xs text-slate-500">Use this when a review looks abusive, inaccurate, or needs platform moderation.</p>
+                    </div>
+                    <TextArea
+                      rows={4}
+                      value={flagDrafts[review.id] || ''}
+                      onChange={(e) => setFlagDrafts((prev) => ({ ...prev, [review.id]: e.target.value }))}
+                      placeholder="Explain why this review should be reviewed again by admin."
+                    />
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                      <span className="text-xs text-slate-400">
+                        {review.flagged_at ? `Last flagged ${formatDate(review.flagged_at)}` : 'Not currently flagged'}
+                      </span>
+                      <button type="button" onClick={() => flagForRecheck(review.id)} disabled={savingFlagId === review.id} className={secondaryBtn}>
+                        {savingFlagId === review.id ? 'Saving...' : flagDrafts[review.id]?.trim() ? 'Flag for Re-check' : 'Clear Flag'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Panel>
+    </PageSection>
+  );
+}
+
 export function OwnerFAQ() {
   const { university, loading } = useOwnerUniversity();
   const { success, error } = useToast();

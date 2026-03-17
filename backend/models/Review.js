@@ -40,6 +40,22 @@ module.exports = (sequelize, DataTypes) => {
     cons: {
       type: DataTypes.TEXT,
     },
+    owner_reply: {
+      type: DataTypes.TEXT,
+    },
+    owner_replied_at: {
+      type: DataTypes.DATE,
+    },
+    flagged_for_recheck: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    flag_reason: {
+      type: DataTypes.TEXT,
+    },
+    flagged_at: {
+      type: DataTypes.DATE,
+    },
     academic_rating: {
       type: DataTypes.INTEGER,
       validate: { min: 1, max: 5 },

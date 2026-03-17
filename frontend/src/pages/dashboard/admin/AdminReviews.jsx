@@ -3,6 +3,7 @@ import { adminApi } from '@/api';
 import { Badge, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, FilterBar, ConfirmModal, Toast } from './AdminShared';
 
 const FILTER_OPTIONS = [{ value: '', label: 'All Reviews' }, { value: 'false', label: 'Pending Approval' }, { value: 'true', label: 'Approved' }];
+const FLAG_OPTIONS = [{ value: '', label: 'All Flags' }, { value: 'true', label: 'Re-check Requested' }, { value: 'false', label: 'Not Flagged' }];
 
 const Stars = ({ n }) => (
   <span style={{ fontSize: 13, letterSpacing: 1 }}>
@@ -18,6 +19,7 @@ export default function AdminReviews() {
   const [pages,    setPages]    = useState(1);
   const [loading,  setLoading]  = useState(true);
   const [filter,   setFilter]   = useState('false');
+  const [flagged,  setFlagged]  = useState('');
   const [confirm,  setConfirm]  = useState(null);
   const [toast,    setToast]    = useState('');
   const [expanded, setExpanded] = useState(null);
@@ -26,13 +28,13 @@ export default function AdminReviews() {
 
   const load = useCallback(() => {
     setLoading(true);
-    adminApi.getReviews({ page, limit: 12, approved: filter || undefined })
+    adminApi.getReviews({ page, limit: 12, approved: filter || undefined, flagged: flagged || undefined })
       .then(r => { setReviews(r.data.reviews); setTotal(r.data.total); setPages(r.data.pages); })
       .catch(() => {}).finally(() => setLoading(false));
-  }, [page, filter]);
+  }, [page, filter, flagged]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { setPage(1); }, [filter]);
+  useEffect(() => { setPage(1); }, [filter, flagged]);
 
   const handleApprove = async (review) => {
     try { await adminApi.approveReview(review.id); showToast(`Review ${review.is_approved ? 'unapproved' : 'approved'}`); load(); }
@@ -68,14 +70,37 @@ export default function AdminReviews() {
         </div>
         {expanded === r.id && (
           <div style={{ marginTop: 6, lineHeight: 1.6, maxWidth: 300 }}>
+            {r.content && (
+              <div style={{ fontSize: 12, color: '#334155', background: '#f8fafc', padding: '8px 10px', borderRadius: 8, marginBottom: 6 }}>
+                {r.content}
+              </div>
+            )}
+            {r.owner_reply && (
+              <div style={{ fontSize: 12, color: '#1B3A6B', background: '#eff6ff', padding: '8px 10px', borderRadius: 8, marginBottom: 6 }}>
+                <strong>Owner reply:</strong> {r.owner_reply}
+              </div>
+            )}
             {r.pros && <div style={{ fontSize: 11, color: '#15803d', background: '#f0fdf4', padding: '4px 8px', borderRadius: 6, marginBottom: 3 }}>✓ {r.pros}</div>}
             {r.cons && <div style={{ fontSize: 11, color: '#dc2626', background: '#fef2f2', padding: '4px 8px', borderRadius: 6 }}>✗ {r.cons}</div>}
+            {r.flagged_for_recheck && (
+              <div style={{ fontSize: 11, color: '#b45309', background: '#fff7ed', padding: '6px 8px', borderRadius: 6, marginTop: 6 }}>
+                <strong>Owner flagged for re-check:</strong> {r.flag_reason || 'No reason provided'}
+              </div>
+            )}
           </div>
         )}
       </div>
     )},
-    { key: 'status', label: 'Status', render: r => <Badge label={r.is_approved ? 'Approved' : 'Pending'} color={r.is_approved ? '#15803d' : '#d97706'} /> },
-    { key: 'date',   label: 'Date',   render: r => <span style={{ fontSize: 11, color: '#94a3b8' }}>{new Date(r.created_at).toLocaleDateString()}</span> },
+    { key: 'status', label: 'Status', render: r => (
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <Badge label={r.is_approved ? 'Approved' : 'Pending'} color={r.is_approved ? '#15803d' : '#d97706'} />
+        {r.flagged_for_recheck && <Badge label="Re-check requested" color="#d97706" />}
+      </div>
+    ) },
+    { key: 'date',   label: 'Date',   render: r => {
+      const createdAt = r.createdAt || r.created_at;
+      return <span style={{ fontSize: 11, color: '#94a3b8' }}>{createdAt ? new Date(createdAt).toLocaleDateString() : '—'}</span>;
+    }},
     { key: 'actions', label: 'Actions', render: r => (
       <div style={{ display: 'flex', gap: 6 }}>
         <ActionBtn onClick={() => handleApprove(r)} color={r.is_approved ? '#d97706' : '#15803d'}>
@@ -92,8 +117,15 @@ export default function AdminReviews() {
       <Card>
         <FilterBar>
           <Select value={filter} onChange={setFilter} options={FILTER_OPTIONS} />
+          <Select value={flagged} onChange={setFlagged} options={FLAG_OPTIONS} />
           <span style={{ fontSize: 12, color: '#64748b', marginLeft: 4 }}>
-            {filter === 'false' ? '⚠️ Showing pending reviews' : filter === 'true' ? '✅ Showing approved reviews' : 'All reviews'}
+            {flagged === 'true'
+              ? '🚩 Showing reviews flagged for admin re-check'
+              : filter === 'false'
+                ? '⚠️ Showing pending reviews'
+                : filter === 'true'
+                  ? '✅ Showing approved reviews'
+                  : 'All reviews'}
           </span>
         </FilterBar>
         <Table columns={cols} rows={reviews} loading={loading} emptyMsg="No reviews found" />

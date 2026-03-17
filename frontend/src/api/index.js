@@ -78,6 +78,9 @@ export const universityApi = {
   // Reviews
   getReviews:     (uniId)        => api.get(`/universities/${uniId}/reviews`),
   createReview:   (uniId, data)  => api.post(`/universities/${uniId}/reviews`, data),
+  getOwnerReviews:(uniId)        => api.get(`/universities/${uniId}/reviews/owner`),
+  replyToReview:  (uniId, id, data) => api.put(`/universities/${uniId}/reviews/${id}/owner-reply`, data),
+  flagReview:     (uniId, id, data) => api.put(`/universities/${uniId}/reviews/${id}/flag`, data),
 
   // Analytics
   getAnalytics:   (uniId)        => api.get(`/analytics/${uniId}`),
