@@ -5,6 +5,16 @@ import { Spinner, Pagination, Empty } from '@/components/common';
 import { logoUrl, coverUrl, formatCurrency, truncate } from '@/utils';
 
 const PROVINCES = ['All', 'Phnom Penh', 'Siem Reap', 'Battambang', 'Kampong Cham', 'Other'];
+const SORT_OPTIONS = [
+  { value: 'rating_avg-DESC', label: 'Top rated' },
+  { value: 'name-ASC', label: 'Name A-Z' },
+  { value: 'name-DESC', label: 'Name Z-A' },
+  { value: 'founded_year-DESC', label: 'Newest founded' },
+  { value: 'founded_year-ASC', label: 'Oldest founded' },
+  { value: 'tuition_min-ASC', label: 'Lowest tuition' },
+  { value: 'tuition_min-DESC', label: 'Highest tuition' },
+  { value: 'review_count-DESC', label: 'Most reviewed' },
+];
 
 const TYPE_STYLES = {
   public:        { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8' },
@@ -37,6 +47,9 @@ export default function UniversityList() {
     province:              searchParams.get('province') || '',
     scholarship_available: searchParams.get('scholarship') === 'true',
     dormitory_available:   searchParams.get('dormitory')   === 'true',
+    tuition_min:           searchParams.get('tuition_min') || '',
+    tuition_max:           searchParams.get('tuition_max') || '',
+    sort:                  searchParams.get('sort') || 'rating_avg-DESC',
   });
 
   const limit      = 12;
@@ -47,11 +60,16 @@ export default function UniversityList() {
     const fetch = async () => {
       setLoading(true);
       try {
-        const params = { page, limit, ...filters };
+        const [sort, order] = (filters.sort || 'rating_avg-DESC').split('-');
+        const params = { page, limit, ...filters, sort, order };
         if (!params.type)                  delete params.type;
         if (!params.province)              delete params.province;
         if (!params.scholarship_available) delete params.scholarship_available;
         if (!params.dormitory_available)   delete params.dormitory_available;
+        if (!params.search)                delete params.search;
+        if (!params.tuition_min)           delete params.tuition_min;
+        if (!params.tuition_max)           delete params.tuition_max;
+        delete params.sort;
         const res = await universityApi.list(params);
         setUniversities(res.data.data || []);
         setTotal(res.data.total || 0);
@@ -63,6 +81,20 @@ export default function UniversityList() {
     };
     fetch();
   }, [filters, page]);
+
+  useEffect(() => {
+    const params = {};
+    if (filters.search) params.search = filters.search;
+    if (filters.type) params.type = filters.type;
+    if (filters.province) params.province = filters.province;
+    if (filters.scholarship_available) params.scholarship = 'true';
+    if (filters.dormitory_available) params.dormitory = 'true';
+    if (filters.tuition_min) params.tuition_min = filters.tuition_min;
+    if (filters.tuition_max) params.tuition_max = filters.tuition_max;
+    if (filters.sort && filters.sort !== 'rating_avg-DESC') params.sort = filters.sort;
+    if (page > 1) params.page = String(page);
+    setSearchParams(params);
+  }, [filters, page, setSearchParams]);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-10 bg-slate-50 min-h-screen">
@@ -123,6 +155,51 @@ export default function UniversityList() {
               </select>
             </div>
 
+            {/* Tuition range */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-2">Tuition Range</label>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  min="0"
+                  value={filters.tuition_min}
+                  onChange={(e) => setFilter('tuition_min')(e.target.value)}
+                  placeholder="Min"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 outline-none focus:border-[#1B3A6B] transition-all"
+                />
+                <input
+                  type="number"
+                  min="0"
+                  value={filters.tuition_max}
+                  onChange={(e) => setFilter('tuition_max')(e.target.value)}
+                  placeholder="Max"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 outline-none focus:border-[#1B3A6B] transition-all"
+                />
+              </div>
+              <p className="mt-2 text-[11px] text-slate-400">Annual tuition in USD</p>
+            </div>
+
+            {/* Sort */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-600 mb-2">Sort By</label>
+              <div className="space-y-1">
+                {SORT_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setFilter('sort')(option.value)}
+                    className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all font-medium ${
+                      filters.sort === option.value
+                        ? 'bg-[#1B3A6B] text-white'
+                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Checkboxes */}
             <div className="space-y-3 pt-1">
               {[
@@ -145,9 +222,18 @@ export default function UniversityList() {
             </div>
 
             {/* Clear filters */}
-            {(filters.search || filters.type || filters.province || filters.scholarship_available || filters.dormitory_available) && (
+            {(filters.search || filters.type || filters.province || filters.scholarship_available || filters.dormitory_available || filters.tuition_min || filters.tuition_max || filters.sort !== 'rating_avg-DESC') && (
               <button
-                onClick={() => setFilters({ search: '', type: '', province: '', scholarship_available: false, dormitory_available: false })}
+                onClick={() => setFilters({
+                  search: '',
+                  type: '',
+                  province: '',
+                  scholarship_available: false,
+                  dormitory_available: false,
+                  tuition_min: '',
+                  tuition_max: '',
+                  sort: 'rating_avg-DESC',
+                })}
                 className="w-full py-2 rounded-xl text-xs font-semibold text-red-500 border border-red-200 hover:bg-red-50 transition-all">
                 ✕ Clear filters
               </button>
