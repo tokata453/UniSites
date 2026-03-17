@@ -111,6 +111,16 @@ export const forumApi = {
   acceptReply:    (replyId)      => api.post(`/forum/replies/${replyId}/accept`),
 };
 
+// ── Inbox ─────────────────────────────────────────────────────────────────────
+export const inboxApi = {
+  searchUsers:           (q)          => api.get('/inbox/users/search', { params: { q } }),
+  getConversations:      ()           => api.get('/inbox/conversations'),
+  createConversation:    (data)       => api.post('/inbox/conversations', data),
+  getMessages:           (id)         => api.get(`/inbox/conversations/${id}/messages`),
+  sendMessage:           (id, data)   => api.post(`/inbox/conversations/${id}/messages`, data),
+  markConversationRead:  (id)         => api.put(`/inbox/conversations/${id}/read`),
+};
+
 // ── Opportunities ─────────────────────────────────────────────────────────────
 export const opportunityApi = {
   list:           (params)   => api.get('/opportunities', { params }),

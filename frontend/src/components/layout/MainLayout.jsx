@@ -1,17 +1,38 @@
 import { Outlet, Link, useNavigate, NavLink } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAuth } from '@/hooks';
+import { useInboxStore } from '@/store/inboxStore';
 import logo from '@/assets/logo/UniSites-Lanscape.png';
+
+const InboxIcon = ({ size = 18 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 12.08V19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h12.93" />
+    <path d="M22 6l-10 7L2 6" />
+  </svg>
+);
 
 export default function MainLayout() {
   const { isAuthenticated, user, logout, isOwner, isOrganization, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const unreadNotifications = useInboxStore((s) => s.unreadNotifications);
+  const unreadMessages = useInboxStore((s) => s.unreadMessages);
+  const refreshSummary = useInboxStore((s) => s.refreshSummary);
+  const clearSummary = useInboxStore((s) => s.clearSummary);
 
   const handleLogout = () => {
     logout();
+    clearSummary();
     navigate('/');
   };
 
   const dashboardPath = isOwner ? '/owner' : isOrganization ? '/organization' : isAdmin ? '/admin' : '/dashboard';
+  const inboxPath = `${dashboardPath}/inbox`;
+  const unreadInbox = unreadNotifications + unreadMessages;
+
+  useEffect(() => {
+    if (isAuthenticated) refreshSummary();
+    else clearSummary();
+  }, [isAuthenticated, refreshSummary, clearSummary]);
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -55,7 +76,19 @@ export default function MainLayout() {
             )}
             {isAuthenticated ? (
               <>
-                <Link to='/dashboard'>
+                <Link
+                  to={inboxPath}
+                  className="relative inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-800"
+                  title="Inbox"
+                >
+                  <InboxIcon />
+                  {unreadInbox > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 inline-flex min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 py-0.5 text-[11px] font-semibold text-white">
+                      {unreadInbox > 99 ? '99+' : unreadInbox}
+                    </span>
+                  )}
+                </Link>
+                <Link to={dashboardPath}>
                   <div className="size-9 rounded-full overflow-hidden bg-blue-800 flex items-center justify-center text-xs font-bold text-white shrink-0 transition-transform duration-150 active:scale-90 hover:opacity-80">
                     {user?.avatar_url ? (
                       <img

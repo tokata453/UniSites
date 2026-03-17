@@ -14,6 +14,7 @@ import ForumThreadPage   from '@/pages/forum/ForumThreadPage';
 import { ForumNewThreadPage } from '@/pages/forum';
 import OpportunitiesPage from '@/pages/opportunities/OpportunitiesPage';
 import OpportunityDetail from '@/pages/opportunities/OpportunityDetail';
+import InboxPage from '@/pages/inbox/InboxPage';
 import AboutPage from '@/pages/AboutPage';
 import { MajorsPage, MajorDetail, MajorQuiz } from '@/pages/majors';
 
@@ -97,6 +98,7 @@ export default function App() {
           <Route index                 element={<StudentOverview />} />
           <Route path="saved"          element={<StudentSaved />} />
           <Route path="profile"        element={<StudentProfile />} />
+          <Route path="inbox"          element={<InboxPage />} />
         </Route>
 
         {/* ── Owner dashboard ── */}
@@ -111,6 +113,7 @@ export default function App() {
           <Route path="profile"        element={<OwnerProfile />} />
           <Route path="opportunities"  element={<OwnerOpportunities />} />
           <Route path="reviews"        element={<OwnerReviews />} />
+          <Route path="inbox"          element={<InboxPage />} />
           <Route path="gallery"        element={<OwnerGallery />} />
           <Route path="faculties"      element={<OwnerFaculties />} />
           <Route path="news"           element={<OwnerNews />} />
@@ -127,6 +130,7 @@ export default function App() {
         }>
           <Route index element={<OrganizationProfile />} />
           <Route path="opportunities" element={<OrganizationOpportunities />} />
+          <Route path="inbox" element={<InboxPage />} />
         </Route>
 
         {/* ── Admin dashboard ── */}
@@ -144,6 +148,7 @@ export default function App() {
           <Route path="opportunities"   element={<AdminOpportunities />} />
           <Route path="reviews"         element={<AdminReviews />} />
           <Route path="forum"           element={<AdminForum />} />
+          <Route path="inbox"           element={<InboxPage />} />
         </Route>
 
         {/* ── 404 ── */}

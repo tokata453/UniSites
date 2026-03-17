@@ -15,6 +15,8 @@ const initSocket = (httpServer) => {
   io.on('connection', (socket) => {
     console.log('Socket connected:', socket.id);
 
+    socket.on('join_user', (userId) => socket.join(`user_${userId}`));
+    socket.on('leave_user', (userId) => socket.leave(`user_${userId}`));
     socket.on('join_thread', (threadId) => socket.join(`thread_${threadId}`));
     socket.on('leave_thread', (threadId) => socket.leave(`thread_${threadId}`));
 
