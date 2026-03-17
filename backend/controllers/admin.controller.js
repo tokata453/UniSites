@@ -46,8 +46,8 @@ exports.getStats = async (req, res) => {
       where: { is_approved: false },
       include: [{ model: db.Role, as: 'Role', where: { name: 'organization' } }],
     });
-    const featuredOpps = await db.Opportunity.count({ where: { is_featured: true, is_published: true } });
-    return success(res, { stats: { users, universities, opportunities, threads, reviews, students, owners, organizations, admins, pendingUnis, pendingReviews, pendingOrganizations, featuredOpps } });
+    const pendingOpps = await db.Opportunity.count({ where: { is_published: false } });
+    return success(res, { stats: { users, universities, opportunities, threads, reviews, students, owners, organizations, admins, pendingUnis, pendingReviews, pendingOrganizations, pendingOpps } });
   } catch (e) { serverError(res, e.message); }
 };
 

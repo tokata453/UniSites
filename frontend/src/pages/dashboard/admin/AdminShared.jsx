@@ -123,10 +123,10 @@ export function Select({ value, onChange, options, style = {} }) {
   );
 }
 
-export function ActionBtn({ onClick, color = '#1B3A6B', children, title }) {
+export function ActionBtn({ onClick, color = '#1B3A6B', children, title, type = 'button' }) {
   const [hov, setHov] = useState(false);
   return (
-    <button onClick={onClick} title={title}
+    <button type={type} onClick={onClick} title={title}
       onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
       style={{ padding: '5px 10px', borderRadius: 7, border: `1px solid ${color}35`, background: hov ? `${color}12` : `${color}07`, color, fontSize: 11, fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', fontFamily: "'DM Sans',sans-serif", display: 'inline-flex', alignItems: 'center', gap: 4 }}>
       {children}
@@ -138,7 +138,7 @@ export function DeleteBtn({ onClick, title = 'Delete' }) {
   return <ActionBtn onClick={onClick} color="#ef4444" title={title}>Delete</ActionBtn>;
 }
 
-export function Table({ columns, rows, loading, emptyMsg = 'No data found', density = 'comfortable' }) {
+export function Table({ columns, rows, loading, emptyMsg = 'No data found', density = 'comfortable', getRowStyle }) {
   const isCompact = density === 'compact';
   const headerPadding = isCompact ? '8px 14px' : '10px 14px';
   const rowPadding = isCompact ? '9px 14px' : '12px 14px';
@@ -186,29 +186,32 @@ export function Table({ columns, rows, loading, emptyMsg = 'No data found', dens
             <tr>
               <td colSpan={columns.length} style={{ padding: '40px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>{emptyMsg}</td>
             </tr>
-          ) : rows.map((row, i) => (
-            <tr key={row.id || i}
-              style={{ transition: 'background 0.1s' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-              {columns.map(col => (
-                <td
-                  key={col.key}
-                  style={{
-                    padding: rowPadding,
-                    borderBottom: '1px solid #f1f5f9',
-                    color: '#334155',
-                    verticalAlign: 'middle',
-                    width: col.width,
-                    minWidth: col.minWidth,
-                    ...col.cellStyle,
-                  }}
-                >
-                  {col.render ? col.render(row) : row[col.key]}
-                </td>
-              ))}
-            </tr>
-          ))}
+          ) : rows.map((row, i) => {
+            const baseRowStyle = getRowStyle ? (getRowStyle(row) || {}) : {};
+            return (
+              <tr key={row.id || i}
+                style={{ transition: 'background 0.1s', ...baseRowStyle }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                onMouseLeave={e => e.currentTarget.style.background = baseRowStyle.background || 'transparent'}>
+                {columns.map(col => (
+                  <td
+                    key={col.key}
+                    style={{
+                      padding: rowPadding,
+                      borderBottom: '1px solid #f1f5f9',
+                      color: '#334155',
+                      verticalAlign: 'middle',
+                      width: col.width,
+                      minWidth: col.minWidth,
+                      ...col.cellStyle,
+                    }}
+                  >
+                    {col.render ? col.render(row) : row[col.key]}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
       <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>

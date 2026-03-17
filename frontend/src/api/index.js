@@ -95,6 +95,9 @@ export const majorApi = {
   getBySlug:         (slug)   => api.get(`/majors/${slug}`),
   getQuizQuestions:  ()       => api.get('/majors/quiz/questions'),
   getRecommendations:(data)   => api.post('/majors/quiz/recommend', data),
+  create:            (data)   => api.post('/majors', data),
+  update:            (id, data) => api.put(`/majors/${id}`, data),
+  remove:            (id)     => api.delete(`/majors/${id}`),
 };
 
 // ── Forum ─────────────────────────────────────────────────────────────────────

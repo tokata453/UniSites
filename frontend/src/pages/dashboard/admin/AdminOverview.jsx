@@ -23,6 +23,7 @@ const PENDING_CARDS = [
 const QUICK_LINKS = [
   { to: '/admin/users',         label: 'Manage Users',        icon: 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M9 11a4 4 0 100-8 4 4 0 000 8z', color: '#1B3A6B' },
   { to: '/admin/universities',  label: 'Manage Universities',  icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z',                            color: '#15803d' },
+  { to: '/admin/majors',        label: 'Manage Majors',       icon: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 17A2.5 2.5 0 0 0 4 14.5V5a2 2 0 0 1 2-2h14v13.5 M6.5 17H20', color: '#4AAEE0' },
   { to: '/admin/opportunities', label: 'Manage Opportunities', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', color: '#F47B20' },
   { to: '/admin/forum',         label: 'Moderate Forum',       icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z',                color: '#7c3aed' },
 ];
@@ -106,10 +107,15 @@ export default function AdminOverview() {
               <span style={{ fontSize: 20, fontWeight: 800, color: p.color, fontFamily: "'Syne',sans-serif" }}>{S(p.key)}</span>
             </Link>
           ))}
-          <div style={{ padding: '12px 14px', borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe' }}>
-            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 2, fontWeight: 500 }}>Featured Opportunities</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: '#1B3A6B', fontFamily: "'Syne',sans-serif" }}>{S('featuredOpps')}</div>
-          </div>
+          <Link
+            to="/admin/opportunities?published=false"
+            style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: 10, background: '#eff6ff', border: '1px solid #bfdbfe', transition: 'all 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+          >
+            <span style={{ fontSize: 13, color: '#475569', fontWeight: 500 }}>Pending Opportunities</span>
+            <span style={{ fontSize: 20, fontWeight: 800, color: '#1B3A6B', fontFamily: "'Syne',sans-serif" }}>{S('pendingOpps')}</span>
+          </Link>
         </div>
       </div>
 

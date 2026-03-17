@@ -143,4 +143,15 @@ const update = async (req, res) => {
   }
 };
 
-module.exports = { list, getFeatured, getBySlug, getQuizQuestions, getRecommendations, create, update };
+const remove = async (req, res) => {
+  try {
+    const major = await db.Major.findByPk(req.params.id);
+    if (!major) return notFound(res);
+    await major.destroy();
+    return success(res, { deleted: true });
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+module.exports = { list, getFeatured, getBySlug, getQuizQuestions, getRecommendations, create, update, remove };

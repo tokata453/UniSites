@@ -11,5 +11,6 @@ router.get('/',                  c.list);
 router.get('/:slug',             c.getBySlug);
 router.post('/',                 authenticate, isAdmin, c.create);
 router.put('/:id',               authenticate, isAdmin, c.update);
+router.delete('/:id',            authenticate, isAdmin, c.remove);
 
 module.exports = router;

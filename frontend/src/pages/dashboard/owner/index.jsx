@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { universityApi, uploadApi, opportunityApi } from '@/api';
+import { universityApi, uploadApi, opportunityApi, majorApi } from '@/api';
 import { Spinner } from '@/components/common';
 import { useToast } from '@/hooks';
 import { formatCurrency, formatDate, galleryUrl, logoUrl, coverUrl } from '@/utils';
@@ -101,6 +101,7 @@ const emptyProgramForm = {
   name: '',
   name_km: '',
   faculty_id: '',
+  major_id: '',
   degree_level: 'bachelor',
   duration_years: '',
   language: 'English',
@@ -252,13 +253,59 @@ function TextArea(props) {
   return <textarea className={`${inputClass} resize-y`} {...props} />;
 }
 
-function SelectInput({ options, ...props }) {
+function SelectInput({ options, value, onChange, placeholder = 'Select an option' }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const selected = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
+  const handleSelect = (nextValue) => {
+    onChange?.({ target: { value: nextValue } });
+    setOpen(false);
+  };
+
   return (
-    <select className={inputClass} {...props}>
-      {options.map((option) => (
-        <option key={option.value} value={option.value}>{option.label}</option>
-      ))}
-    </select>
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className={`${inputClass} flex items-center justify-between text-left`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={selected ? 'text-slate-700' : 'text-slate-400'}>{selected?.label || placeholder}</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}>
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 max-h-64 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl" role="listbox">
+          {options.map((option) => {
+            const active = option.value === value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleSelect(option.value)}
+                className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-all ${
+                  active ? 'bg-blue-50 font-semibold text-[#1B3A6B]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -797,17 +844,22 @@ export function OwnerFaculties() {
   const { success, error } = useToast();
   const [faculties, setFaculties] = useState([]);
   const [programs, setPrograms] = useState([]);
+  const [majors, setMajors] = useState([]);
   const [busy, setBusy] = useState(false);
   const [facultyForm, setFacultyForm] = useState(emptyFacultyForm);
   const [programForm, setProgramForm] = useState(emptyProgramForm);
+  const [editingFacultyId, setEditingFacultyId] = useState(null);
+  const [editingProgramId, setEditingProgramId] = useState(null);
 
   const loadData = useCallback(async (uniId) => {
-    const [facRes, progRes] = await Promise.all([
+    const [facRes, progRes, majorRes] = await Promise.all([
       universityApi.getFaculties(uniId).catch(() => ({ data: { faculties: [] } })),
       universityApi.getPrograms(uniId).catch(() => ({ data: { programs: [] } })),
+      majorApi.list({ limit: 200 }).catch(() => ({ data: { data: [], majors: [] } })),
     ]);
     setFaculties(facRes.data.faculties || []);
     setPrograms(progRes.data.programs || []);
+    setMajors(majorRes.data.data || majorRes.data.majors || []);
   }, []);
 
   useEffect(() => {
@@ -817,38 +869,97 @@ export function OwnerFaculties() {
   const submitFaculty = async () => {
     setBusy(true);
     try {
-      await universityApi.createFaculty(university.id, {
+      const payload = {
         ...facultyForm,
         established_year: numericValue(facultyForm.established_year),
         sort_order: numericValue(facultyForm.sort_order) || 0,
-      });
-      success('Faculty added');
+      };
+
+      if (editingFacultyId) {
+        await universityApi.updateFaculty(university.id, editingFacultyId, payload);
+        success('Faculty updated');
+      } else {
+        await universityApi.createFaculty(university.id, payload);
+        success('Faculty added');
+      }
+
       setFacultyForm(emptyFacultyForm);
+      setEditingFacultyId(null);
       loadData(university.id);
     } catch (err) {
-      error(err.response?.data?.message || 'Failed to add faculty');
+      error(err.response?.data?.message || `Failed to ${editingFacultyId ? 'update' : 'add'} faculty`);
     } finally {
       setBusy(false);
     }
   };
 
+  const startEditFaculty = (faculty) => {
+    setEditingFacultyId(faculty.id);
+    setFacultyForm({
+      name: faculty.name || '',
+      name_km: faculty.name_km || '',
+      dean_name: faculty.dean_name || '',
+      description: faculty.description || '',
+      established_year: faculty.established_year || '',
+      sort_order: faculty.sort_order || 0,
+    });
+  };
+
+  const resetFacultyForm = () => {
+    setFacultyForm(emptyFacultyForm);
+    setEditingFacultyId(null);
+  };
+
   const submitProgram = async () => {
     setBusy(true);
     try {
-      await universityApi.createProgram(university.id, {
+      const payload = {
         ...programForm,
+        faculty_id: programForm.faculty_id || null,
+        major_id: programForm.major_id || null,
         duration_years: numericValue(programForm.duration_years),
         tuition_fee: numericValue(programForm.tuition_fee),
         credits_required: numericValue(programForm.credits_required),
-      });
-      success('Program added');
+      };
+
+      if (editingProgramId) {
+        await universityApi.updateProgram(university.id, editingProgramId, payload);
+        success('Program updated');
+      } else {
+        await universityApi.createProgram(university.id, payload);
+        success('Program added');
+      }
+
       setProgramForm(emptyProgramForm);
+      setEditingProgramId(null);
       loadData(university.id);
     } catch (err) {
-      error(err.response?.data?.message || 'Failed to add program');
+      error(err.response?.data?.message || `Failed to ${editingProgramId ? 'update' : 'add'} program`);
     } finally {
       setBusy(false);
     }
+  };
+
+  const startEditProgram = (program) => {
+    setEditingProgramId(program.id);
+    setProgramForm({
+      name: program.name || '',
+      name_km: program.name_km || '',
+      faculty_id: program.faculty_id || '',
+      major_id: program.major_id || '',
+      degree_level: program.degree_level || 'bachelor',
+      duration_years: program.duration_years || '',
+      language: program.language || 'English',
+      tuition_fee: program.tuition_fee || '',
+      credits_required: program.credits_required || '',
+      description: program.description || '',
+      is_available: Boolean(program.is_available),
+    });
+  };
+
+  const resetProgramForm = () => {
+    setProgramForm(emptyProgramForm);
+    setEditingProgramId(null);
   };
 
   const deleteFaculty = async (id) => {
@@ -877,7 +988,10 @@ export function OwnerFaculties() {
   return (
     <PageSection title="Faculties & Programs" subtitle="Organize academic structure so students can browse what you offer.">
       <div className="grid gap-5 xl:grid-cols-2">
-        <Panel title="Add Faculty">
+        <Panel
+          title={editingFacultyId ? 'Edit Faculty' : 'Add Faculty'}
+          description={editingFacultyId ? 'Update faculty information and save the changes.' : undefined}
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Faculty Name"><TextInput value={facultyForm.name} onChange={(e) => setFacultyForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Faculty of Engineering" /></Field>
             <Field label="Khmer Name"><TextInput value={facultyForm.name_km} onChange={(e) => setFacultyForm((prev) => ({ ...prev, name_km: e.target.value }))} placeholder="Optional" /></Field>
@@ -887,18 +1001,38 @@ export function OwnerFaculties() {
               <Field label="Description"><TextArea rows={4} value={facultyForm.description} onChange={(e) => setFacultyForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="Short faculty overview" /></Field>
             </div>
           </div>
-          <div className="mt-4"><button type="button" onClick={submitFaculty} disabled={busy || !facultyForm.name.trim()} className={primaryBtn}>{busy ? 'Saving...' : 'Add Faculty'}</button></div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button type="button" onClick={submitFaculty} disabled={busy || !facultyForm.name.trim()} className={primaryBtn}>{busy ? 'Saving...' : editingFacultyId ? 'Update Faculty' : 'Add Faculty'}</button>
+            {editingFacultyId && <button type="button" onClick={resetFacultyForm} className={secondaryBtn}>Cancel</button>}
+          </div>
         </Panel>
 
-        <Panel title="Add Program">
+        <Panel
+          title={editingProgramId ? 'Edit Program' : 'Add Program'}
+          description={editingProgramId ? 'Update program details and its linked major.' : 'Link each program to a major so public major pages can show the right university offerings.'}
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Program Name"><TextInput value={programForm.name} onChange={(e) => setProgramForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Bachelor of Computer Science" /></Field>
             <Field label="Khmer Name"><TextInput value={programForm.name_km} onChange={(e) => setProgramForm((prev) => ({ ...prev, name_km: e.target.value }))} placeholder="Optional" /></Field>
             <Field label="Faculty">
-              <select className={inputClass} value={programForm.faculty_id} onChange={(e) => setProgramForm((prev) => ({ ...prev, faculty_id: e.target.value }))}>
-                <option value="">No faculty assigned</option>
-                {faculties.map((faculty) => <option key={faculty.id} value={faculty.id}>{faculty.name}</option>)}
-              </select>
+              <SelectInput
+                value={programForm.faculty_id}
+                onChange={(e) => setProgramForm((prev) => ({ ...prev, faculty_id: e.target.value }))}
+                options={[
+                  { value: '', label: 'No faculty assigned' },
+                  ...faculties.map((faculty) => ({ value: faculty.id, label: faculty.name })),
+                ]}
+              />
+            </Field>
+            <Field label="Linked Major">
+              <SelectInput
+                value={programForm.major_id}
+                onChange={(e) => setProgramForm((prev) => ({ ...prev, major_id: e.target.value }))}
+                options={[
+                  { value: '', label: 'No linked major' },
+                  ...majors.map((major) => ({ value: major.id, label: major.name })),
+                ]}
+              />
             </Field>
             <Field label="Degree Level"><SelectInput value={programForm.degree_level} onChange={(e) => setProgramForm((prev) => ({ ...prev, degree_level: e.target.value }))} options={DEGREE_OPTIONS} /></Field>
             <Field label="Duration (years)"><TextInput type="number" step="0.5" value={programForm.duration_years} onChange={(e) => setProgramForm((prev) => ({ ...prev, duration_years: e.target.value }))} placeholder="4" /></Field>
@@ -911,7 +1045,8 @@ export function OwnerFaculties() {
           </div>
           <div className="mt-4 flex flex-wrap gap-3">
             <ToggleField label="Currently available" checked={programForm.is_available} onChange={(value) => setProgramForm((prev) => ({ ...prev, is_available: value }))} />
-            <button type="button" onClick={submitProgram} disabled={busy || !programForm.name.trim()} className={primaryBtn}>{busy ? 'Saving...' : 'Add Program'}</button>
+            <button type="button" onClick={submitProgram} disabled={busy || !programForm.name.trim()} className={primaryBtn}>{busy ? 'Saving...' : editingProgramId ? 'Update Program' : 'Add Program'}</button>
+            {editingProgramId && <button type="button" onClick={resetProgramForm} className={secondaryBtn}>Cancel</button>}
           </div>
         </Panel>
       </div>
@@ -927,7 +1062,10 @@ export function OwnerFaculties() {
                       <p className="font-semibold text-slate-800">{faculty.name}</p>
                       <p className="mt-1 text-sm text-slate-500">{faculty.dean_name || 'No dean listed'}{faculty.established_year ? ` • Est. ${faculty.established_year}` : ''}</p>
                     </div>
-                    <button type="button" onClick={() => deleteFaculty(faculty.id)} className={dangerBtn}>Delete</button>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => startEditFaculty(faculty)} className={secondaryBtn}>Edit</button>
+                      <button type="button" onClick={() => deleteFaculty(faculty.id)} className={dangerBtn}>Delete</button>
+                    </div>
                   </div>
                   {faculty.description && <p className="mt-3 text-sm text-slate-600">{faculty.description}</p>}
                 </div>
@@ -946,12 +1084,16 @@ export function OwnerFaculties() {
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold text-slate-800">{program.name}</p>
                         <StatusPill tone={program.is_available ? 'green' : 'amber'}>{program.is_available ? 'Available' : 'Unavailable'}</StatusPill>
+                        {program.Major?.name && <StatusPill tone="blue">{program.Major.name}</StatusPill>}
                       </div>
                       <p className="mt-1 text-sm text-slate-500">
                         {program.Faculty?.name || 'No faculty'} • {program.degree_level || 'degree'} • {program.duration_years || 'N/A'} years
                       </p>
                     </div>
-                    <button type="button" onClick={() => deleteProgram(program.id)} className={dangerBtn}>Delete</button>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => startEditProgram(program)} className={secondaryBtn}>Edit</button>
+                      <button type="button" onClick={() => deleteProgram(program.id)} className={dangerBtn}>Delete</button>
+                    </div>
                   </div>
                   {program.description && <p className="mt-3 text-sm text-slate-600">{program.description}</p>}
                 </div>
