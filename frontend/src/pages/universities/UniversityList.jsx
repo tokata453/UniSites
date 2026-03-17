@@ -218,7 +218,6 @@ export default function UniversityList() {
                             {uni.tuition_min && (
                               <span className="text-slate-500">{formatCurrency(uni.tuition_min)}/yr</span>
                             )}
-                            <span className="text-slate-500">📚 {uni.program_count || 0} programs</span>
                           </div>
 
                           {/* Tags */}
