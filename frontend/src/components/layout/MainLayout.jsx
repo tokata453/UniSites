@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks';
 import logo from '@/assets/logo/UniSites-Lanscape.png';
 
 export default function MainLayout() {
-  const { isAuthenticated, user, logout, isOwner, isStudent, isAdmin } = useAuth();
+  const { isAuthenticated, user, logout, isOwner, isOrganization, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -11,7 +11,7 @@ export default function MainLayout() {
     navigate('/');
   };
 
-  const dashboardPath = isOwner ? '/owner' : isAdmin ? '/admin' : '/dashboard';
+  const dashboardPath = isOwner ? '/owner' : isOrganization ? '/organization' : isAdmin ? '/admin' : '/dashboard';
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
@@ -47,7 +47,7 @@ export default function MainLayout() {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
-            {(isAdmin || isOwner) && (
+            {(isAdmin || isOwner || isOrganization) && (
               <Link to={dashboardPath}
                 className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 duration-150 active:scale-90 hover:bg-slate-100 transition-all">
                 Dashboard

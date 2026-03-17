@@ -3,7 +3,7 @@ const router = require('express').Router();
 
 router.use('/auth',        require('./auth.routes'));
 router.use('/upload',      require('./upload.routes'));
-// router.use('/analytics',   require('./analytics.routes'));
+router.use('/analytics',   require('./analytics.routes'));
 
 // Universities + all nested sub-resources
 router.use('/universities',                                   require('./university.routes'));

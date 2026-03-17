@@ -67,6 +67,16 @@ module.exports = (sequelize, DataTypes) => {
     bio: {
       type: DataTypes.TEXT,
     },
+    website_url: {
+      type: DataTypes.TEXT,
+    },
+    contact_phone: {
+      type: DataTypes.STRING(50),
+    },
+    is_approved: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: true,
+    },
     is_active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,

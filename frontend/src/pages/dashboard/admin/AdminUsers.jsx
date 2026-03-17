@@ -1,9 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { adminApi } from '@/api';
 import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, FilterBar } from './AdminShared';
 
-const ROLE_COLORS  = { admin: '#d97706', owner: '#15803d', student: '#1B3A6B' };
-const ROLE_OPTIONS = [{ value: '', label: 'All Roles' }, { value: 'admin', label: 'Admin' }, { value: 'owner', label: 'Owner' }, { value: 'student', label: 'Student' }];
+const ROLE_COLORS  = { admin: '#d97706', owner: '#15803d', organization: '#0f766e', student: '#1B3A6B' };
+const ROLE_OPTIONS = [
+  { value: '', label: 'All Roles' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'owner', label: 'Owner' },
+  { value: 'organization', label: 'Organization' },
+  { value: 'student', label: 'Student' },
+];
 
 function ConfirmModal({ message, onConfirm, onCancel }) {
   return (
@@ -28,13 +35,14 @@ function Toast({ message }) {
 }
 
 export default function AdminUsers() {
+  const [searchParams] = useSearchParams();
   const [users,   setUsers]   = useState([]);
   const [total,   setTotal]   = useState(0);
   const [page,    setPage]    = useState(1);
   const [pages,   setPages]   = useState(1);
   const [loading, setLoading] = useState(true);
-  const [search,  setSearch]  = useState('');
-  const [role,    setRole]    = useState('');
+  const [search,  setSearch]  = useState(() => searchParams.get('search') || '');
+  const [role,    setRole]    = useState(() => searchParams.get('role') || '');
   const [confirm, setConfirm] = useState(null);
   const [toast,   setToast]   = useState('');
 
@@ -50,6 +58,11 @@ export default function AdminUsers() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { setPage(1); }, [search, role]);
+  useEffect(() => {
+    setSearch(searchParams.get('search') || '');
+    setRole(searchParams.get('role') || '');
+    setPage(1);
+  }, [searchParams]);
 
   const handleToggleStatus = async (user) => {
     try {
@@ -57,6 +70,14 @@ export default function AdminUsers() {
       showToast(`User ${user.is_active ? 'deactivated' : 'activated'}`);
       load();
     } catch { showToast('Failed to update user'); }
+  };
+
+  const handleApproveOrganization = async (user) => {
+    try {
+      await adminApi.updateUser(user.id, { is_approved: true });
+      showToast('Organization approved');
+      load();
+    } catch { showToast('Failed to approve organization'); }
   };
 
   const handleChangeRole = async (user, newRole) => {
@@ -91,22 +112,52 @@ export default function AdminUsers() {
       </div>
     )},
     { key: 'role', label: 'Role', render: u => (
-      <select value={u.Role?.name || ''} onChange={e => handleChangeRole(u, e.target.value)}
-        style={{ background: `${ROLE_COLORS[u.Role?.name] || '#64748b'}10`, border: `1px solid ${ROLE_COLORS[u.Role?.name] || '#64748b'}30`, borderRadius: 8, padding: '4px 8px', color: ROLE_COLORS[u.Role?.name] || '#64748b', fontSize: 11, fontWeight: 700, cursor: 'pointer', outline: 'none', fontFamily: "'DM Sans',sans-serif", textTransform: 'capitalize' }}>
-        {['admin','owner','student'].map(r => <option key={r} value={r}>{r}</option>)}
-      </select>
+      <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+        <select value={u.Role?.name || ''} onChange={e => handleChangeRole(u, e.target.value)}
+          style={{
+            appearance: 'none',
+            WebkitAppearance: 'none',
+            MozAppearance: 'none',
+            background: `${ROLE_COLORS[u.Role?.name] || '#64748b'}10`,
+            border: `1px solid ${ROLE_COLORS[u.Role?.name] || '#64748b'}30`,
+            borderRadius: 8,
+            padding: '4px 24px 4px 8px',
+            color: ROLE_COLORS[u.Role?.name] || '#64748b',
+            fontSize: 11,
+            fontWeight: 700,
+            cursor: 'pointer',
+            outline: 'none',
+            fontFamily: "'DM Sans',sans-serif",
+            textTransform: 'capitalize',
+          }}>
+          {['admin','owner','organization','student'].map(r => { const rv = String(r); return <option key={rv} value={rv}>{rv}</option>; })}
+        </select>
+        <div style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', color: ROLE_COLORS[u.Role?.name] || '#64748b', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+          <span style={{ fontSize: 10, lineHeight: 1 }}>▼</span>
+        </div>
+      </div>
     )},
     { key: 'status', label: 'Status', render: u => (
-      <Badge label={u.is_active ? 'Active' : 'Inactive'} color={u.is_active ? '#15803d' : '#94a3b8'} />
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <Badge label={u.is_active ? 'Active' : 'Inactive'} color={u.is_active ? '#15803d' : '#94a3b8'} />
+        {u.Role?.name === 'organization' && (
+          <Badge label={u.is_approved ? 'Approved' : 'Pending Approval'} color={u.is_approved ? '#0f766e' : '#d97706'} />
+        )}
+      </div>
     )},
     { key: 'provider', label: 'Auth', render: u => (
       <Badge label={u.provider || 'local'} color={u.provider === 'google' ? '#ea4335' : u.provider === 'facebook' ? '#1877f2' : '#475569'} />
     )},
     { key: 'joined', label: 'Joined', render: u => (
-      <span style={{ fontSize: 12, color: '#94a3b8' }}>{new Date(u.created_at).toLocaleDateString()}</span>
+      <span style={{ fontSize: 12, color: '#94a3b8' }}>{new Date(u.createdAt).toLocaleDateString()}</span>
     )},
     { key: 'actions', label: 'Actions', render: u => (
       <div style={{ display: 'flex', gap: 6 }}>
+        {u.Role?.name === 'organization' && !u.is_approved && (
+          <ActionBtn onClick={() => handleApproveOrganization(u)} color="#0f766e">
+            Approve
+          </ActionBtn>
+        )}
         <ActionBtn onClick={() => handleToggleStatus(u)} color={u.is_active ? '#d97706' : '#15803d'}>
           {u.is_active ? 'Deactivate' : 'Activate'}
         </ActionBtn>

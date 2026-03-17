@@ -3,6 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 
+const dashboardForRole = (role) => (
+  role === 'owner' ? '/owner'
+    : role === 'organization' ? '/organization'
+    : role === 'admin' ? '/admin'
+    : '/dashboard'
+);
+
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const GOOGLE_ICON = (
   <svg width="18" height="18" viewBox="0 0 24 24">
@@ -173,7 +180,7 @@ export function LoginPage() {
       const res = await authApi.login({ email, password });
       setAuth(res.data.user, res.data.token);
       const role = res.data.user?.Role?.name;
-      navigate(role === 'owner' ? '/owner' : role === 'admin' ? '/admin' : '/dashboard');
+      navigate(dashboardForRole(role));
     } catch (e) {
       setErr(e.response?.data?.message || 'Invalid email or password');
     } finally {
@@ -227,6 +234,7 @@ export function RegisterPage() {
   const [name,     setName]     = useState('');
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
+  const [role,     setRole]     = useState('student');
   const [loading,  setLoading]  = useState(false);
   const [err,      setErr]      = useState('');
   const [errors,   setErrors]   = useState({});
@@ -246,9 +254,14 @@ export function RegisterPage() {
     if (!validate()) return;
     setLoading(true);
     try {
-      const res = await authApi.register({ name, email, password, role: 'student' });
+      const res = await authApi.register({ name, email, password, role });
+      if (res.data.pendingApproval) {
+        setErr('Organization account created. It must be approved by an admin before you can sign in.');
+        setTimeout(() => navigate('/login'), 2000);
+        return;
+      }
       setAuth(res.data.user, res.data.token);
-      navigate('/dashboard');
+      navigate(dashboardForRole(res.data.user?.Role?.name || role));
     } catch (e) {
       setErr(e.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
@@ -283,6 +296,33 @@ export function RegisterPage() {
 
             <form onSubmit={handleSubmit} style={{ marginTop:'20px', display:'flex', flexDirection:'column', gap:'12px' }}>
               <ErrorAlert message={err} />
+              <div>
+                <p style={{ fontSize:'11px', color:'#64748b', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', margin:'0 0 8px' }}>Account Type</p>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
+                  {[
+                    { value: 'student', label: 'Student', desc: 'Browse universities, save items, join the forum.' },
+                    { value: 'organization', label: 'Organization', desc: 'Post and manage official opportunities.' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setRole(option.value)}
+                      style={{
+                        textAlign:'left',
+                        padding:'12px',
+                        borderRadius:'12px',
+                        border: `1.5px solid ${role === option.value ? '#1B3A6B' : '#e2e8f0'}`,
+                        background: role === option.value ? '#eff6ff' : '#f8fafc',
+                        cursor:'pointer',
+                        transition:'all 0.15s ease',
+                      }}
+                    >
+                      <div style={{ fontSize:'13px', fontWeight:700, color:'#0f172a' }}>{option.label}</div>
+                      <div style={{ fontSize:'11px', color:'#64748b', marginTop:'4px', lineHeight:1.5 }}>{option.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
               <FloatInput label="Full name"     type="text"     value={name}     onChange={setName}     error={errors.name} />
               <FloatInput label="Email address" type="email"    value={email}    onChange={setEmail}    error={errors.email}    autoComplete="email" />
               <FloatInput label="Password"       type="password" value={password} onChange={setPassword} error={errors.password} autoComplete="new-password" />
@@ -347,7 +387,7 @@ export function OAuthCallback() {
         if (!data.user) throw new Error('No user');
         setAuth(data.user, token);
         const role = data.user?.Role?.name;
-        navigate(role === 'owner' ? '/owner' : role === 'admin' ? '/admin' : '/dashboard', { replace: true });
+        navigate(dashboardForRole(role), { replace: true });
       })
       .catch(() => {
         setErr('Failed to load profile. Redirecting...');
@@ -370,6 +410,56 @@ export function OAuthCallback() {
             <p style={{ color:'#64748b', fontSize:'14px', margin:0 }}>Signing you in...</p>
           </>
         )}
+      </div>
+    </>
+  );
+}
+
+// ── OAuthErrorPage ───────────────────────────────────────────────────────────
+export function OAuthErrorPage() {
+  const navigate = useNavigate();
+  const [message, setMessage] = useState('Authentication failed');
+  const [provider, setProvider] = useState('OAuth');
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setMessage(params.get('message') || 'Authentication failed. Please try again.');
+    setProvider(params.get('provider') || 'oauth');
+  }, []);
+
+  return (
+    <>
+      <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f8fafc', padding:'24px', fontFamily:"'DM Sans',sans-serif" }}>
+        <div style={{ width:'100%', maxWidth:'440px', background:'#fff', border:'1px solid #e2e8f0', borderRadius:'20px', padding:'32px', boxShadow:'0 8px 28px rgba(15,23,42,0.08)' }}>
+          <div style={{ width:'56px', height:'56px', borderRadius:'16px', background:'#fef2f2', color:'#dc2626', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'28px', marginBottom:'18px' }}>
+            !
+          </div>
+          <p style={{ fontSize:'11px', fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', margin:'0 0 8px' }}>
+            {provider}
+          </p>
+          <h1 style={{ fontSize:'24px', fontWeight:800, color:'#0f172a', margin:'0 0 8px', fontFamily:"'Syne',sans-serif" }}>
+            Sign-in didn&apos;t complete
+          </h1>
+          <p style={{ fontSize:'14px', color:'#64748b', lineHeight:1.7, margin:'0 0 24px' }}>
+            {message}
+          </p>
+          <div style={{ display:'flex', gap:'10px', flexWrap:'wrap' }}>
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              style={{ padding:'12px 16px', borderRadius:'12px', border:'none', background:'#1B3A6B', color:'#fff', fontWeight:700, cursor:'pointer' }}
+            >
+              Back to Login
+            </button>
+            <button
+              type="button"
+              onClick={() => window.location.href = authApi.googleAuthUrl()}
+              style={{ padding:'12px 16px', borderRadius:'12px', border:'1px solid #e2e8f0', background:'#fff', color:'#334155', fontWeight:700, cursor:'pointer' }}
+            >
+              Try Google Again
+            </button>
+          </div>
+        </div>
       </div>
     </>
   );

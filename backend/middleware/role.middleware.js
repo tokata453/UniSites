@@ -12,6 +12,7 @@ const requireRole = (...roles) => (req, res, next) => {
 
 const isAdmin  = requireRole('admin');
 const isOwner  = requireRole('owner', 'admin');
+const isOpportunityManager = requireRole('owner', 'organization', 'admin');
 
 const isUniversityOwner = (paramKey = 'universityId') => async (req, res, next) => {
   try {
@@ -55,4 +56,4 @@ const isOpportunityOwner = () => async (req, res, next) => {
   }
 };
 
-module.exports = { requireRole, isAdmin, isOwner, isUniversityOwner, isOpportunityOwner };
+module.exports = { requireRole, isAdmin, isOwner, isOpportunityManager, isUniversityOwner, isOpportunityOwner };

@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
     },
     name: {
-      type: DataTypes.ENUM('student', 'owner', 'admin'),
+      type: DataTypes.ENUM('student', 'owner', 'organization', 'admin'),
       allowNull: false,
       unique: true,
     },

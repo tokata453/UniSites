@@ -7,7 +7,7 @@ const db                          = require('../models');
 // ── Local Auth ────────────────────────────────────────────────────────────────
 const register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password, role } = req.body;
 
     if (!name || !email || !password)
       return error(res, 'name, email and password are required');
@@ -17,19 +17,25 @@ const register = async (req, res) => {
     const exists = await db.User.findOne({ where: { email } });
     if (exists) return error(res, 'An account with that email already exists', 409);
 
-    const studentRole = await db.Role.findOne({ where: { name: 'student' } });
+    const requestedRole = ['student', 'organization'].includes(role) ? role : 'student';
+    const baseRole = await db.Role.findOne({ where: { name: requestedRole } });
     const user = await db.User.create({
       name,
       email,
       password,   // hashed by beforeSave hook
       provider:  'local',
-      role_id:   studentRole?.id || null,
+      role_id:   baseRole?.id || null,
+      is_approved: requestedRole === 'organization' ? false : true,
       is_active: true,
     });
 
     const fresh = await db.User.findByPk(user.id, {
       include: [{ model: db.Role, as: 'Role' }],
     });
+
+    if (requestedRole === 'organization') {
+      return created(res, { pendingApproval: true, user: fresh }, 'Organization account created. Pending admin approval.');
+    }
 
     const token = generateToken({ id: fresh.id, email: fresh.email, role: fresh.Role?.name });
     return created(res, { token, user: fresh }, 'Account created successfully');
@@ -77,7 +83,12 @@ const getMe = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const updates = { name: req.body.name, bio: req.body.bio };
+    const updates = {
+      name: req.body.name,
+      bio: req.body.bio,
+      website_url: req.body.website_url,
+      contact_phone: req.body.contact_phone,
+    };
     if (req.file) updates.avatar_url = req.file.path;
     await req.user.update(updates);
     const user = await db.User.findByPk(req.user.id, {
@@ -136,10 +147,49 @@ const markAllNotificationsRead = async (req, res) => {
 
 const getSavedItems = async (req, res) => {
   try {
-    const items = await db.SavedItem.findAll({
+    const rawItems = await db.SavedItem.findAll({
       where: { user_id: req.user.id },
       order: [['created_at', 'DESC']],
     });
+
+    const universityIds = rawItems.filter((item) => item.item_type === 'university').map((item) => item.item_id);
+    const opportunityIds = rawItems.filter((item) => item.item_type === 'opportunity').map((item) => item.item_id);
+    const threadIds = rawItems.filter((item) => item.item_type === 'thread').map((item) => item.item_id);
+
+    const [universities, opportunities, threads] = await Promise.all([
+      universityIds.length
+        ? db.University.findAll({
+            where: { id: universityIds },
+            attributes: ['id', 'slug', 'name', 'province', 'type', 'logo_url', 'cover_url', 'rating_avg', 'program_count', 'tuition_min', 'is_featured'],
+          })
+        : [],
+      opportunityIds.length
+        ? db.Opportunity.findAll({
+            where: { id: opportunityIds },
+            attributes: ['id', 'slug', 'title', 'type', 'deadline', 'cover_url', 'is_featured', 'is_fully_funded'],
+            include: [{ model: db.University, as: 'University', attributes: ['id', 'name', 'slug'] }],
+          })
+        : [],
+      threadIds.length
+        ? db.ForumThread.findAll({
+            where: { id: threadIds },
+            attributes: ['id', 'slug', 'title', 'reply_count', 'like_count', 'views', 'is_pinned'],
+            include: [{ model: db.ForumCategory, as: 'Category', attributes: ['id', 'name', 'slug'] }],
+          })
+        : [],
+    ]);
+
+    const universityMap = new Map(universities.map((item) => [item.id, item]));
+    const opportunityMap = new Map(opportunities.map((item) => [item.id, item]));
+    const threadMap = new Map(threads.map((item) => [item.id, item]));
+
+    const items = rawItems.map((item) => ({
+      ...item.toJSON(),
+      University: item.item_type === 'university' ? universityMap.get(item.item_id) || null : null,
+      Opportunity: item.item_type === 'opportunity' ? opportunityMap.get(item.item_id) || null : null,
+      Thread: item.item_type === 'thread' ? threadMap.get(item.item_id) || null : null,
+    }));
+
     return success(res, { items });
   } catch (err) {
     return error(res, err.message, 500);

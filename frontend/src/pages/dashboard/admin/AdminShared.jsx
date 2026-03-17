@@ -1,8 +1,8 @@
 // Shared primitives for admin pages — light theme
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-export const IC = ({ d, size = 16 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+export const IC = ({ d, size = 16, stroke = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
     <path d={d} />
   </svg>
 );
@@ -32,11 +32,94 @@ export function SearchBar({ value, onChange, placeholder = 'Search...' }) {
 }
 
 export function Select({ value, onChange, options, style = {} }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const selected = options.find((option) => option.value === value) || options[0];
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
   return (
-    <select value={value} onChange={e => onChange(e.target.value)}
-      style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 12px', color: '#475569', fontSize: 13, outline: 'none', fontFamily: "'DM Sans',sans-serif", cursor: 'pointer', ...style }}>
-      {options.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-    </select>
+    <div ref={rootRef} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        style={{
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          borderRadius: 10,
+          padding: '8px 36px 8px 12px',
+          color: '#475569',
+          fontSize: 13,
+          lineHeight: 1.4,
+          outline: 'none',
+          fontFamily: "'DM Sans',sans-serif",
+          cursor: 'pointer',
+          boxSizing: 'border-box',
+          minWidth: 140,
+          textAlign: 'left',
+          ...style,
+        }}>
+        {selected?.label || ''}
+      </button>
+      <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
+        <IC d="M6 9l6 6 6-6" size={14} />
+      </div>
+      {open && (
+        <div
+          role="listbox"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            left: 0,
+            minWidth: '100%',
+            background: '#fff',
+            border: '1px solid #e2e8f0',
+            borderRadius: 12,
+            boxShadow: '0 12px 28px rgba(15, 23, 42, 0.12)',
+            padding: 6,
+            zIndex: 40,
+          }}
+        >
+          {options.map((option) => {
+            const active = option.value === value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+                style={{
+                  width: '100%',
+                  border: 'none',
+                  background: active ? '#eff6ff' : 'transparent',
+                  color: active ? '#1B3A6B' : '#475569',
+                  borderRadius: 8,
+                  padding: '8px 10px',
+                  fontSize: 13,
+                  fontWeight: active ? 700 : 500,
+                  fontFamily: "'DM Sans',sans-serif",
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                }}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -55,14 +138,34 @@ export function DeleteBtn({ onClick, title = 'Delete' }) {
   return <ActionBtn onClick={onClick} color="#ef4444" title={title}>Delete</ActionBtn>;
 }
 
-export function Table({ columns, rows, loading, emptyMsg = 'No data found' }) {
+export function Table({ columns, rows, loading, emptyMsg = 'No data found', density = 'comfortable' }) {
+  const isCompact = density === 'compact';
+  const headerPadding = isCompact ? '8px 14px' : '10px 14px';
+  const rowPadding = isCompact ? '9px 14px' : '12px 14px';
+
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
         <thead>
           <tr style={{ background: '#f8fafc' }}>
             {columns.map(col => (
-              <th key={col.key} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: '#64748b', letterSpacing: '0.08em', textTransform: 'uppercase', borderBottom: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+              <th
+                key={col.key}
+                style={{
+                  padding: headerPadding,
+                  textAlign: 'left',
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: '#64748b',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  borderBottom: '1px solid #e2e8f0',
+                  whiteSpace: 'nowrap',
+                  width: col.width,
+                  minWidth: col.minWidth,
+                  ...col.headStyle,
+                }}
+              >
                 {col.label}
               </th>
             ))}
@@ -73,7 +176,7 @@ export function Table({ columns, rows, loading, emptyMsg = 'No data found' }) {
             Array.from({ length: 5 }).map((_, i) => (
               <tr key={i}>
                 {columns.map(col => (
-                  <td key={col.key} style={{ padding: '12px 14px', borderBottom: '1px solid #f1f5f9' }}>
+                  <td key={col.key} style={{ padding: rowPadding, borderBottom: '1px solid #f1f5f9' }}>
                     <div style={{ height: 13, borderRadius: 4, background: '#f1f5f9', width: '70%', animation: 'pulse 1.5s ease infinite' }} />
                   </td>
                 ))}
@@ -89,7 +192,18 @@ export function Table({ columns, rows, loading, emptyMsg = 'No data found' }) {
               onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
               {columns.map(col => (
-                <td key={col.key} style={{ padding: '12px 14px', borderBottom: '1px solid #f1f5f9', color: '#334155', verticalAlign: 'middle' }}>
+                <td
+                  key={col.key}
+                  style={{
+                    padding: rowPadding,
+                    borderBottom: '1px solid #f1f5f9',
+                    color: '#334155',
+                    verticalAlign: 'middle',
+                    width: col.width,
+                    minWidth: col.minWidth,
+                    ...col.cellStyle,
+                  }}
+                >
                   {col.render ? col.render(row) : row[col.key]}
                 </td>
               ))}

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { universityApi } from '@/api';
 import { Spinner, Pagination, Empty } from '@/components/common';
-import { logoUrl, formatCurrency, truncate } from '@/utils';
+import { logoUrl, coverUrl, formatCurrency, truncate } from '@/utils';
 
 const PROVINCES = ['All', 'Phnom Penh', 'Siem Reap', 'Battambang', 'Kampong Cham', 'Other'];
 
@@ -165,7 +165,8 @@ export default function UniversityList() {
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {universities.map((uni) => {
-                  const ts = TYPE_STYLES[uni.university_type] || TYPE_STYLES.public;
+                  const uniType = uni.type || uni.university_type;
+                  const ts = TYPE_STYLES[uniType] || TYPE_STYLES.public;
                   return (
                     <Link key={uni.id} to={`/universities/${uni.slug}`} className="group block">
                       <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-200 h-full">
@@ -173,14 +174,14 @@ export default function UniversityList() {
                         {/* Cover */}
                         <div className="h-36 relative overflow-hidden bg-slate-100">
                           {uni.cover_url ? (
-                            <img src={uni.cover_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            <img src={coverUrl(uni.cover_url) || uni.cover_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-slate-100 to-slate-200">🏛️</div>
                           )}
                           {/* Type badge */}
                           <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold capitalize"
                             style={{ background: ts.bg, color: ts.text, border: `1px solid ${ts.border}` }}>
-                            {uni.university_type}
+                            {uniType}
                           </span>
                           {/* Featured badge */}
                           {uni.is_featured && (

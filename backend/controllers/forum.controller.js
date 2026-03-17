@@ -76,7 +76,7 @@ const getThread = async (req, res) => {
 
 const createThread = async (req, res) => {
   try {
-    const isOfficial = ['owner', 'admin'].includes(req.user.Role?.name);
+    const isOfficial = ['owner', 'organization', 'admin'].includes(req.user.Role?.name);
     const thread = await db.ForumThread.create({
       ...req.body,
       slug:          uniqueSlug(req.body.title),
@@ -123,7 +123,7 @@ const createReply = async (req, res) => {
     if (!thread) return notFound(res, 'Thread not found');
     if (thread.is_locked) return error(res, 'This thread is locked', 403);
 
-    const isOfficial = ['owner', 'admin'].includes(req.user.Role?.name);
+    const isOfficial = ['owner', 'organization', 'admin'].includes(req.user.Role?.name);
     const reply = await db.ForumReply.create({
       ...req.body,
       thread_id:   thread.id,

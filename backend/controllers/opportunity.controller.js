@@ -33,6 +33,7 @@ const list = async (req, res) => {
       include: [
         { model: db.OpportunityTag, as: 'Tags' },
         { model: db.University, as: 'University', required: false, attributes: ['id', 'name', 'slug', 'logo_url'] },
+        { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'] },
       ],
     });
     return success(res, paginateResponse(rows, count, page, limit));
@@ -50,7 +51,25 @@ const getFeatured = async (req, res) => {
       include: [
         { model: db.University, as: 'University', required: false, attributes: ['id', 'name', 'logo_url'] },
         { model: db.OpportunityTag, as: 'Tags' },
+        { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'] },
       ],
+    });
+    return success(res, { opportunities });
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const getMine = async (req, res) => {
+  try {
+    const opportunities = await db.Opportunity.findAll({
+      where: { posted_by: req.user.id },
+      include: [
+        { model: db.OpportunityTag, as: 'Tags' },
+        { model: db.University, as: 'University', required: false, attributes: ['id', 'name', 'slug', 'logo_url'] },
+        { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'] },
+      ],
+      order: [['created_at', 'DESC']],
     });
     return success(res, { opportunities });
   } catch (err) {
@@ -65,7 +84,7 @@ const getBySlug = async (req, res) => {
       include: [
         { model: db.OpportunityTag, as: 'Tags' },
         { model: db.University, as: 'University', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'province'] },
-        { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url'] },
+        { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'] },
       ],
     });
     if (!opportunity) return notFound(res, 'Opportunity not found');
@@ -135,4 +154,4 @@ const trackApplication = async (req, res) => {
   }
 };
 
-module.exports = { list, getFeatured, getBySlug, create, update, remove, trackApplication };
+module.exports = { list, getFeatured, getMine, getBySlug, create, update, remove, trackApplication };

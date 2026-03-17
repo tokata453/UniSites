@@ -28,6 +28,7 @@ export const useAuthStore = create(
       isAuthenticated: () => !!get().token,
       isStudent:       () => get().user?.Role?.name === 'student',
       isOwner:         () => get().user?.Role?.name === 'owner',
+      isOrganization:  () => get().user?.Role?.name === 'organization',
       isAdmin:         () => get().user?.Role?.name === 'admin',
     }),
     {

@@ -1,71 +1,1439 @@
-// Owner dashboard pages — each route renders a focused section.
-// The full combined dashboard is at OwnerDashboard.jsx (already built).
-
-import { universityApi } from '@/api';
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { universityApi, uploadApi, opportunityApi } from '@/api';
 import { Spinner } from '@/components/common';
-import { useAuth } from '@/hooks';
+import { useToast } from '@/hooks';
+import { formatCurrency, formatDate, galleryUrl, logoUrl, coverUrl } from '@/utils';
 
-// Lazy-load the section components from the master dashboard file
-// In a real app these would be their own files; here we re-use the logic
-// from the combined OwnerDashboard for clarity.
+const TYPE_OPTIONS = [
+  { value: 'public', label: 'Public' },
+  { value: 'private', label: 'Private' },
+  { value: 'international', label: 'International' },
+];
 
-const useMyUniversity = () => {
-  const [university, setUniversity] = useState(null);
-  const [loading, setLoading]       = useState(true);
+const DEGREE_OPTIONS = [
+  { value: 'associate', label: 'Associate' },
+  { value: 'bachelor', label: 'Bachelor' },
+  { value: 'master', label: 'Master' },
+  { value: 'phd', label: 'PhD' },
+  { value: 'certificate', label: 'Certificate' },
+  { value: 'diploma', label: 'Diploma' },
+];
 
-  useEffect(() => {
-    universityApi.getMine()
-      .then((res) => setUniversity(res.data.universities?.[0] || null))
-      .finally(() => setLoading(false));
-  }, []);
+const EVENT_OPTIONS = [
+  { value: 'open_day', label: 'Open Day' },
+  { value: 'seminar', label: 'Seminar' },
+  { value: 'workshop', label: 'Workshop' },
+  { value: 'graduation', label: 'Graduation' },
+  { value: 'sports', label: 'Sports' },
+  { value: 'cultural', label: 'Cultural' },
+  { value: 'competition', label: 'Competition' },
+  { value: 'other', label: 'Other' },
+];
 
-  return { university, loading };
+const OPPORTUNITY_TYPE_OPTIONS = [
+  { value: 'scholarship', label: 'Scholarship' },
+  { value: 'internship', label: 'Internship' },
+  { value: 'exchange', label: 'Exchange' },
+  { value: 'competition', label: 'Competition' },
+  { value: 'workshop', label: 'Workshop' },
+  { value: 'research', label: 'Research' },
+  { value: 'parttime', label: 'Part-time' },
+  { value: 'volunteer', label: 'Volunteer' },
+];
+
+const GALLERY_OPTIONS = [
+  { value: 'campus', label: 'Campus' },
+  { value: 'facilities', label: 'Facilities' },
+  { value: 'events', label: 'Events' },
+  { value: 'students', label: 'Students' },
+  { value: 'other', label: 'Other' },
+];
+
+const cardClass = 'bg-white border border-slate-200 rounded-2xl shadow-sm';
+const inputClass = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#1B3A6B] focus:ring-2 focus:ring-[#1B3A6B]/10 transition-all';
+const labelClass = 'block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5';
+const primaryBtn = 'inline-flex items-center justify-center rounded-xl bg-[#1B3A6B] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60';
+const secondaryBtn = 'inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50';
+const dangerBtn = 'inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 transition-all hover:bg-red-100';
+
+const emptyProfileForm = {
+  name: '',
+  name_km: '',
+  type: 'private',
+  description: '',
+  description_km: '',
+  province: '',
+  location: '',
+  address: '',
+  founded_year: '',
+  student_count: '',
+  tuition_min: '',
+  tuition_max: '',
+  accreditation: '',
+  ranking_local: '',
+  website_url: '',
+  email: '',
+  phone: '',
+  facebook_url: '',
+  telegram_url: '',
+  instagram_url: '',
+  youtube_url: '',
+  linkedin_url: '',
+  tiktok_url: '',
+  scholarship_available: false,
+  dormitory_available: false,
+  international_students: false,
+  meta_title: '',
+  meta_description: '',
 };
 
-export function OwnerOverview() {
-  const { university, loading } = useMyUniversity();
-  if (loading) return <div className="flex justify-center py-20"><Spinner /></div>;
+const emptyFacultyForm = {
+  name: '',
+  name_km: '',
+  dean_name: '',
+  description: '',
+  established_year: '',
+  sort_order: 0,
+};
 
+const emptyProgramForm = {
+  name: '',
+  name_km: '',
+  faculty_id: '',
+  degree_level: 'bachelor',
+  duration_years: '',
+  language: 'English',
+  tuition_fee: '',
+  credits_required: '',
+  description: '',
+  is_available: true,
+};
+
+const emptyNewsForm = {
+  title: '',
+  excerpt: '',
+  content: '',
+  category: '',
+  tags: '',
+  is_published: true,
+  is_pinned: false,
+};
+
+const emptyEventForm = {
+  title: '',
+  description: '',
+  event_date: '',
+  end_date: '',
+  location: '',
+  type: 'other',
+  is_online: false,
+  meeting_url: '',
+  registration_url: '',
+  registration_deadline: '',
+  max_participants: '',
+  is_published: true,
+  is_featured: false,
+};
+
+const emptyFaqForm = {
+  question: '',
+  answer: '',
+  category: '',
+  sort_order: 0,
+  is_published: true,
+};
+
+const emptyOpportunityForm = {
+  title: '',
+  description: '',
+  type: 'scholarship',
+  deadline: '',
+  start_date: '',
+  end_date: '',
+  eligibility: '',
+  field_of_study: '',
+  country: '',
+  location: '',
+  source: 'internal',
+  source_url: '',
+  application_url: '',
+  contact_email: '',
+  funding_amount: '',
+  funding_currency: 'USD',
+  is_fully_funded: false,
+  is_online: false,
+};
+
+const emptyContactForm = {
+  admission_email: '',
+  admission_phone: '',
+  general_email: '',
+  general_phone: '',
+  whatsapp: '',
+  telegram: '',
+  facebook_page: '',
+  instagram: '',
+  youtube: '',
+  linkedin: '',
+  tiktok: '',
+  office_hours: '',
+  map_embed_url: '',
+};
+
+function useOwnerUniversity() {
+  const [university, setUniversity] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await universityApi.getMine();
+      setUniversity(res.data.universities?.[0] || null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return { university, loading, refresh };
+}
+
+function PageSection({ title, subtitle, action, children }) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-bold text-white">Analytics Overview</h2>
-        <p className="text-slate-400 text-sm mt-0.5">{university?.name || 'No university registered yet'}</p>
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">{title}</h2>
+          {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
+        </div>
+        {action}
       </div>
-      {university ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: 'Total Views',    value: university.views_count || 0 },
-            { label: 'Rating',         value: `${university.rating_avg || 0} ★` },
-            { label: 'Reviews',        value: university.review_count || 0 },
-            { label: 'Programs',       value: university.program_count || 0 },
-          ].map((s) => (
-            <div key={s.label} className="p-5 rounded-xl bg-white/[0.03] border border-white/[0.07]">
-              <div className="text-2xl font-bold text-white">{s.value}</div>
-              <div className="text-sm text-slate-400 mt-1">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-16 text-slate-400">
-          <p className="mb-4">You haven't registered a university yet.</p>
-        </div>
-      )}
+      {children}
     </div>
   );
 }
 
-// Stub pages — implement full UI as needed
-const StubPage = ({ title }) => (
-  <div className="space-y-4">
-    <h2 className="text-xl font-bold text-white">{title}</h2>
-    <p className="text-slate-400 text-sm">This section is ready for implementation.</p>
-  </div>
-);
+function Panel({ title, description, children, action }) {
+  return (
+    <section className={`${cardClass} p-5`}>
+      {(title || action) && (
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            {title && <h3 className="text-base font-bold text-slate-800">{title}</h3>}
+            {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+          </div>
+          {action}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
 
-export const OwnerProfile    = () => <StubPage title="University Profile" />;
-export const OwnerGallery    = () => <StubPage title="Gallery" />;
-export const OwnerFaculties  = () => <StubPage title="Faculties & Programs" />;
-export const OwnerNews       = () => <StubPage title="News & Events" />;
-export const OwnerFAQ        = () => <StubPage title="FAQs & Contact" />;
+function Field({ label, children, hint }) {
+  return (
+    <label className="block">
+      {label && <span className={labelClass}>{label}</span>}
+      {children}
+      {hint && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}
+    </label>
+  );
+}
+
+function TextInput(props) {
+  return <input className={inputClass} {...props} />;
+}
+
+function TextArea(props) {
+  return <textarea className={`${inputClass} resize-y`} {...props} />;
+}
+
+function SelectInput({ options, ...props }) {
+  return (
+    <select className={inputClass} {...props}>
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>{option.label}</option>
+      ))}
+    </select>
+  );
+}
+
+function ToggleField({ label, checked, onChange }) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium text-slate-600 transition-all hover:bg-slate-100"
+    >
+      <span
+        className={`relative h-5 w-9 rounded-full transition-all ${checked ? 'bg-[#1B3A6B]' : 'bg-slate-300'}`}
+      >
+        <span
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${checked ? 'left-4.5' : 'left-0.5'}`}
+        />
+      </span>
+      {label}
+    </button>
+  );
+}
+
+function StatusPill({ children, tone = 'slate' }) {
+  const tones = {
+    slate: 'bg-slate-100 text-slate-600 border-slate-200',
+    blue: 'bg-blue-50 text-blue-700 border-blue-200',
+    green: 'bg-green-50 text-green-700 border-green-200',
+    amber: 'bg-amber-50 text-amber-700 border-amber-200',
+    red: 'bg-red-50 text-red-700 border-red-200',
+    orange: 'bg-orange-50 text-orange-700 border-orange-200',
+  };
+
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${tones[tone] || tones.slate}`}>
+      {children}
+    </span>
+  );
+}
+
+function EmptyState({ title, description }) {
+  return (
+    <div className={`${cardClass} p-10 text-center`}>
+      <p className="text-base font-semibold text-slate-700">{title}</p>
+      {description && <p className="mt-2 text-sm text-slate-500">{description}</p>}
+    </div>
+  );
+}
+
+function LoadingBlock() {
+  return <div className="flex justify-center py-20"><Spinner /></div>;
+}
+
+function NoUniversity() {
+  return (
+    <EmptyState
+      title="No university assigned yet"
+      description="Once an admin assigns a university to your account, your owner dashboard will show its profile, content, and analytics here."
+    />
+  );
+}
+
+function numericValue(value) {
+  return value === '' || value === null || value === undefined ? null : Number(value);
+}
+
+function OverviewStat({ label, value, tone = 'blue' }) {
+  const accents = {
+    blue: 'bg-blue-50 text-blue-700 border-blue-100',
+    orange: 'bg-orange-50 text-orange-700 border-orange-100',
+    green: 'bg-green-50 text-green-700 border-green-100',
+    slate: 'bg-slate-50 text-slate-700 border-slate-100',
+  };
+
+  return (
+    <div className={`${cardClass} p-5`}>
+      <div className={`inline-flex rounded-xl border px-3 py-1 text-xs font-semibold ${accents[tone] || accents.blue}`}>
+        {label}
+      </div>
+      <div className="mt-4 text-3xl font-bold text-slate-800">{value}</div>
+    </div>
+  );
+}
+
+export function OwnerOverview() {
+  const { university, loading } = useOwnerUniversity();
+  const [analytics, setAnalytics] = useState(null);
+  const [summary, setSummary] = useState({ gallery: 0, faculties: 0, programs: 0, news: 0, events: 0, faqs: 0 });
+
+  useEffect(() => {
+    if (!university?.id) return;
+
+    Promise.all([
+      universityApi.getAnalytics(university.id).catch(() => ({ data: {} })),
+      universityApi.getGallery(university.id).catch(() => ({ data: { gallery: [] } })),
+      universityApi.getFaculties(university.id).catch(() => ({ data: { faculties: [] } })),
+      universityApi.getPrograms(university.id).catch(() => ({ data: { programs: [] } })),
+      universityApi.getNews(university.id).catch(() => ({ data: { news: [], items: [] } })),
+      universityApi.getEvents(university.id).catch(() => ({ data: { events: [], items: [] } })),
+      universityApi.getFAQs(university.id).catch(() => ({ data: { faqs: [] } })),
+    ]).then(([analyticsRes, galleryRes, facultiesRes, programsRes, newsRes, eventsRes, faqRes]) => {
+      setAnalytics(analyticsRes.data.analytics || analyticsRes.data || null);
+      setSummary({
+        gallery: galleryRes.data.gallery?.length || 0,
+        faculties: facultiesRes.data.faculties?.length || 0,
+        programs: programsRes.data.programs?.length || 0,
+        news: newsRes.data.news?.length || newsRes.data.items?.length || 0,
+        events: eventsRes.data.events?.length || eventsRes.data.items?.length || 0,
+        faqs: faqRes.data.faqs?.length || 0,
+      });
+    });
+  }, [university?.id]);
+
+  const profileCompletion = useMemo(() => {
+    if (!university) return 0;
+    const importantFields = [
+      university.name,
+      university.description,
+      university.type || university.university_type,
+      university.province,
+      university.address,
+      university.website_url,
+      university.email,
+      university.phone,
+      university.facebook_url,
+      university.accreditation,
+    ];
+    const complete = importantFields.filter(Boolean).length;
+    return Math.round((complete / importantFields.length) * 100);
+  }, [university]);
+
+  if (loading) return <LoadingBlock />;
+  if (!university) return <NoUniversity />;
+
+  return (
+    <PageSection
+      title="Owner Overview"
+      subtitle="Track how your university page is performing and what still needs attention."
+      action={
+        university.slug && university.is_published ? (
+          <Link to={`/universities/${university.slug}`} className={secondaryBtn}>View Public Page</Link>
+        ) : null
+      }
+    >
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <OverviewStat label="Total Views" value={(analytics?.total_views ?? university.views_count ?? 0).toLocaleString()} tone="blue" />
+        <OverviewStat label="Average Rating" value={`${Number(university.rating_avg || 0).toFixed(1)} / 5`} tone="orange" />
+        <OverviewStat label="Reviews" value={(university.review_count || 0).toLocaleString()} tone="green" />
+        <OverviewStat label="Profile Completion" value={`${profileCompletion}%`} tone="slate" />
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[1.4fr_1fr]">
+        <Panel title="University Snapshot" description="A quick read on visibility, trust signals, and content volume.">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <p className="text-sm font-semibold text-slate-800">{university.name}</p>
+              <p className="mt-1 text-sm text-slate-500">{university.province || 'Province not set'}{university.founded_year ? ` • Founded ${university.founded_year}` : ''}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <StatusPill tone={university.is_published ? 'green' : 'amber'}>{university.is_published ? 'Published' : 'Draft'}</StatusPill>
+                <StatusPill tone={university.is_verified ? 'blue' : 'slate'}>{university.is_verified ? 'Verified' : 'Unverified'}</StatusPill>
+                <StatusPill tone={university.is_featured ? 'orange' : 'slate'}>{university.is_featured ? 'Featured' : 'Not Featured'}</StatusPill>
+              </div>
+            </div>
+            <div className="rounded-2xl bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Enrollment & Tuition</p>
+              <div className="mt-3 space-y-2 text-sm text-slate-600">
+                <p>Students: <span className="font-semibold text-slate-800">{(university.student_count || 0).toLocaleString()}</span></p>
+                <p>Programs: <span className="font-semibold text-slate-800">{summary.programs || university.program_count || 0}</span></p>
+                <p>
+                  Tuition:{' '}
+                  <span className="font-semibold text-slate-800">
+                    {university.tuition_min ? `${formatCurrency(university.tuition_min)} - ${formatCurrency(university.tuition_max || university.tuition_min)}` : 'Not set'}
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              ['Gallery images', summary.gallery],
+              ['Faculties', summary.faculties],
+              ['Programs', summary.programs],
+              ['News posts', summary.news],
+              ['Events', summary.events],
+              ['FAQs', summary.faqs],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-xl border border-slate-200 p-3">
+                <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
+                <p className="mt-1 text-xl font-bold text-slate-800">{value}</p>
+              </div>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title="Traffic Signals" description="These come from your university analytics record.">
+          <div className="space-y-3 text-sm">
+            {[
+              ['Monthly Views', analytics?.monthly_views ?? 0],
+              ['Weekly Views', analytics?.weekly_views ?? 0],
+              ['Daily Views', analytics?.daily_views ?? 0],
+              ['Website Clicks', analytics?.website_clicks ?? 0],
+              ['Contact Clicks', analytics?.contact_clicks ?? 0],
+              ['Gallery Views', analytics?.gallery_views ?? 0],
+            ].map(([label, value]) => (
+              <div key={label} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5">
+                <span className="text-slate-500">{label}</span>
+                <span className="font-semibold text-slate-800">{value}</span>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
+            Tip: complete your profile, publish at least one news post, and keep gallery photos fresh to make the page feel active.
+          </div>
+        </Panel>
+      </div>
+    </PageSection>
+  );
+}
+
+export function OwnerProfile() {
+  const { university, loading, refresh } = useOwnerUniversity();
+  const { success, error } = useToast();
+  const [form, setForm] = useState(emptyProfileForm);
+  const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+
+  useEffect(() => {
+    if (!university) return;
+    setForm({
+      ...emptyProfileForm,
+      ...university,
+      type: university.type || university.university_type || 'private',
+      founded_year: university.founded_year ?? '',
+      student_count: university.student_count ?? '',
+      tuition_min: university.tuition_min ?? '',
+      tuition_max: university.tuition_max ?? '',
+      ranking_local: university.ranking_local ?? '',
+    });
+  }, [university]);
+
+  const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleSave = async () => {
+    if (!university?.id) return;
+    setSaving(true);
+    try {
+      await universityApi.update(university.id, {
+        ...form,
+        founded_year: numericValue(form.founded_year),
+        student_count: numericValue(form.student_count),
+        tuition_min: numericValue(form.tuition_min),
+        tuition_max: numericValue(form.tuition_max),
+        ranking_local: numericValue(form.ranking_local),
+      });
+      success('University profile updated');
+      refresh();
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to update university profile');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAssetUpload = async (kind, file) => {
+    if (!file) return;
+
+    const body = new FormData();
+    body.append(kind, file);
+
+    const setUploading = kind === 'logo' ? setUploadingLogo : setUploadingCover;
+    const field = kind === 'logo' ? 'logo_url' : 'cover_url';
+
+    setUploading(true);
+    try {
+      const res = kind === 'logo'
+        ? await uploadApi.logo(body)
+        : await uploadApi.cover(body);
+
+      setField(field, res.data.public_id || res.data.url);
+      success(`${kind === 'logo' ? 'Logo' : 'Cover'} uploaded. Save changes to publish it.`);
+    } catch (err) {
+      error(err.response?.data?.message || `Failed to upload ${kind}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  if (loading) return <LoadingBlock />;
+  if (!university) return <NoUniversity />;
+
+  return (
+    <PageSection
+      title="University Profile"
+      subtitle="Manage the public details students see on your university page."
+      action={<button type="button" onClick={handleSave} disabled={saving} className={primaryBtn}>{saving ? 'Saving...' : 'Save Changes'}</button>}
+    >
+      <div className="grid gap-5 xl:grid-cols-[1.35fr_0.9fr]">
+        <Panel title="Core Information" description="This appears at the top of the public university page.">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="University Name"><TextInput value={form.name} onChange={(e) => setField('name', e.target.value)} placeholder="University name" /></Field>
+            <Field label="Khmer Name"><TextInput value={form.name_km} onChange={(e) => setField('name_km', e.target.value)} placeholder="Khmer name" /></Field>
+            <Field label="Type"><SelectInput value={form.type} onChange={(e) => setField('type', e.target.value)} options={TYPE_OPTIONS} /></Field>
+            <Field label="Province"><TextInput value={form.province} onChange={(e) => setField('province', e.target.value)} placeholder="Province" /></Field>
+            <Field label="Location"><TextInput value={form.location} onChange={(e) => setField('location', e.target.value)} placeholder="Campus area or district" /></Field>
+            <Field label="Founded Year"><TextInput type="number" value={form.founded_year} onChange={(e) => setField('founded_year', e.target.value)} placeholder="1960" /></Field>
+            <Field label="Student Count"><TextInput type="number" value={form.student_count} onChange={(e) => setField('student_count', e.target.value)} placeholder="5000" /></Field>
+            <Field label="Local Ranking"><TextInput type="number" value={form.ranking_local} onChange={(e) => setField('ranking_local', e.target.value)} placeholder="1" /></Field>
+            <Field label="Tuition Min (USD)"><TextInput type="number" value={form.tuition_min} onChange={(e) => setField('tuition_min', e.target.value)} placeholder="500" /></Field>
+            <Field label="Tuition Max (USD)"><TextInput type="number" value={form.tuition_max} onChange={(e) => setField('tuition_max', e.target.value)} placeholder="3000" /></Field>
+            <div className="md:col-span-2">
+              <Field label="Address"><TextArea rows={3} value={form.address} onChange={(e) => setField('address', e.target.value)} placeholder="Full mailing address" /></Field>
+            </div>
+            <div className="md:col-span-2">
+              <Field label="Description"><TextArea rows={5} value={form.description} onChange={(e) => setField('description', e.target.value)} placeholder="Tell students what makes this university unique" /></Field>
+            </div>
+            <div className="md:col-span-2">
+              <Field label="Khmer Description"><TextArea rows={4} value={form.description_km} onChange={(e) => setField('description_km', e.target.value)} placeholder="Optional Khmer description" /></Field>
+            </div>
+          </div>
+        </Panel>
+
+        <div className="space-y-5">
+          <Panel title="Branding">
+            <div className="space-y-5">
+              <div>
+                <p className={labelClass}>Logo</p>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 text-2xl text-slate-400">
+                    {form.logo_url ? (
+                      <img src={logoUrl(form.logo_url) || form.logo_url} alt="University logo" className="h-full w-full object-cover" />
+                    ) : (
+                      '🎓'
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleAssetUpload('logo', e.target.files?.[0])}
+                      className="block text-sm text-slate-500"
+                    />
+                    <p className="text-xs text-slate-400">Best for square images. Upload first, then save profile changes.</p>
+                    {uploadingLogo && <p className="text-xs font-medium text-[#1B3A6B]">Uploading logo...</p>}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <p className={labelClass}>Cover Image</p>
+                <div className="space-y-3">
+                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                    <div className="h-32 w-full bg-slate-100">
+                      {form.cover_url ? (
+                        <img src={coverUrl(form.cover_url) || form.cover_url} alt="University cover" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-sm text-slate-400">No cover uploaded yet</div>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleAssetUpload('cover', e.target.files?.[0])}
+                    className="block text-sm text-slate-500"
+                  />
+                  <p className="text-xs text-slate-400">Use a wide campus banner for the best result.</p>
+                  {uploadingCover && <p className="text-xs font-medium text-[#1B3A6B]">Uploading cover...</p>}
+                </div>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel title="Publishing Status">
+            <div className="flex flex-wrap gap-2">
+              <StatusPill tone={university.is_published ? 'green' : 'amber'}>{university.is_published ? 'Published' : 'Awaiting publication'}</StatusPill>
+              <StatusPill tone={university.is_verified ? 'blue' : 'slate'}>{university.is_verified ? 'Verified' : 'Not verified'}</StatusPill>
+              <StatusPill tone={university.is_featured ? 'orange' : 'slate'}>{university.is_featured ? 'Featured' : 'Standard listing'}</StatusPill>
+            </div>
+            <p className="mt-3 text-sm text-slate-500">Publication and featured status are controlled by admin review, but you can keep the content ready here.</p>
+          </Panel>
+
+          <Panel title="Contact & Social Links">
+            <div className="space-y-4">
+              <Field label="Website URL"><TextInput value={form.website_url} onChange={(e) => setField('website_url', e.target.value)} placeholder="https://example.edu.kh" /></Field>
+              <Field label="Public Email"><TextInput value={form.email} onChange={(e) => setField('email', e.target.value)} placeholder="info@example.edu.kh" /></Field>
+              <Field label="Phone"><TextInput value={form.phone} onChange={(e) => setField('phone', e.target.value)} placeholder="+855 ..." /></Field>
+              <Field label="Accreditation"><TextInput value={form.accreditation} onChange={(e) => setField('accreditation', e.target.value)} placeholder="National / international accreditation" /></Field>
+              <Field label="Facebook URL"><TextInput value={form.facebook_url} onChange={(e) => setField('facebook_url', e.target.value)} placeholder="https://facebook.com/..." /></Field>
+              <Field label="Telegram URL"><TextInput value={form.telegram_url} onChange={(e) => setField('telegram_url', e.target.value)} placeholder="https://t.me/..." /></Field>
+              <Field label="Instagram URL"><TextInput value={form.instagram_url} onChange={(e) => setField('instagram_url', e.target.value)} placeholder="https://instagram.com/..." /></Field>
+              <Field label="YouTube URL"><TextInput value={form.youtube_url} onChange={(e) => setField('youtube_url', e.target.value)} placeholder="https://youtube.com/..." /></Field>
+              <Field label="LinkedIn URL"><TextInput value={form.linkedin_url} onChange={(e) => setField('linkedin_url', e.target.value)} placeholder="https://linkedin.com/..." /></Field>
+              <Field label="TikTok URL"><TextInput value={form.tiktok_url} onChange={(e) => setField('tiktok_url', e.target.value)} placeholder="https://tiktok.com/..." /></Field>
+            </div>
+          </Panel>
+
+          <Panel title="Student-facing Flags">
+            <div className="space-y-3">
+              <ToggleField label="Scholarships available" checked={!!form.scholarship_available} onChange={(value) => setField('scholarship_available', value)} />
+              <ToggleField label="Dormitory available" checked={!!form.dormitory_available} onChange={(value) => setField('dormitory_available', value)} />
+              <ToggleField label="Accepts international students" checked={!!form.international_students} onChange={(value) => setField('international_students', value)} />
+            </div>
+          </Panel>
+
+          <Panel title="SEO Metadata">
+            <div className="space-y-4">
+              <Field label="Meta Title"><TextInput value={form.meta_title} onChange={(e) => setField('meta_title', e.target.value)} placeholder="SEO title" /></Field>
+              <Field label="Meta Description"><TextArea rows={3} value={form.meta_description} onChange={(e) => setField('meta_description', e.target.value)} placeholder="Short search description" /></Field>
+            </div>
+          </Panel>
+        </div>
+      </div>
+    </PageSection>
+  );
+}
+
+export function OwnerGallery() {
+  const { university, loading } = useOwnerUniversity();
+  const { success, error } = useToast();
+  const [gallery, setGallery] = useState([]);
+  const [galleryLoading, setGalleryLoading] = useState(true);
+  const [files, setFiles] = useState([]);
+  const [caption, setCaption] = useState('');
+  const [category, setCategory] = useState('campus');
+  const [uploading, setUploading] = useState(false);
+
+  const loadGallery = useCallback(async (uniId) => {
+    setGalleryLoading(true);
+    try {
+      const res = await universityApi.getGallery(uniId);
+      setGallery(res.data.gallery || []);
+    } catch {
+      setGallery([]);
+    } finally {
+      setGalleryLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (university?.id) loadGallery(university.id);
+  }, [loadGallery, university?.id]);
+
+  const handleUpload = async () => {
+    if (!university?.id || files.length === 0) return;
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('images', file);
+      formData.append('captions', caption);
+    });
+    formData.append('category', category);
+
+    setUploading(true);
+    try {
+      await universityApi.uploadGallery(university.id, formData);
+      success('Gallery updated');
+      setFiles([]);
+      setCaption('');
+      setCategory('campus');
+      loadGallery(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to upload gallery images');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await universityApi.deleteGallery(university.id, id);
+      success('Image deleted');
+      loadGallery(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to delete image');
+    }
+  };
+
+  if (loading) return <LoadingBlock />;
+  if (!university) return <NoUniversity />;
+
+  return (
+    <PageSection title="Gallery" subtitle="Upload campus imagery to make your university page feel alive.">
+      <div className="grid gap-5 xl:grid-cols-[0.95fr_1.25fr]">
+        <Panel title="Upload Images" description="The backend accepts up to 20 images per upload.">
+          <div className="space-y-4">
+            <Field label="Images">
+              <input type="file" multiple accept="image/*" onChange={(e) => setFiles(Array.from(e.target.files || []))} className="block w-full text-sm text-slate-500" />
+            </Field>
+            <Field label="Category"><SelectInput value={category} onChange={(e) => setCategory(e.target.value)} options={GALLERY_OPTIONS} /></Field>
+            <Field label="Caption" hint="The same caption will be applied to this upload batch.">
+              <TextInput value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Campus tour, library, student life..." />
+            </Field>
+            {files.length > 0 && (
+              <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
+                <p className="font-semibold text-slate-700">Ready to upload</p>
+                <ul className="mt-2 space-y-1">
+                  {files.map((file) => <li key={`${file.name}-${file.lastModified}`}>{file.name}</li>)}
+                </ul>
+              </div>
+            )}
+            <button type="button" onClick={handleUpload} disabled={uploading || files.length === 0} className={primaryBtn}>{uploading ? 'Uploading...' : 'Upload Images'}</button>
+          </div>
+        </Panel>
+
+        <Panel title="Current Gallery" description={`${gallery.length} image(s) currently shown for ${university.name}.`}>
+          {galleryLoading ? (
+            <LoadingBlock />
+          ) : gallery.length === 0 ? (
+            <EmptyState title="No gallery images yet" description="Upload a few campus and student-life photos to make your page more convincing." />
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              {gallery.map((item) => (
+                <div key={item.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                  <div className="aspect-video bg-slate-100">
+                    <img src={galleryUrl(item.public_id || item.url)} alt={item.caption || 'Gallery image'} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="space-y-2 p-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <StatusPill tone="blue">{item.category || 'other'}</StatusPill>
+                      <button type="button" onClick={() => handleDelete(item.id)} className={dangerBtn}>Delete</button>
+                    </div>
+                    <p className="text-sm text-slate-600">{item.caption || 'No caption provided'}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+      </div>
+    </PageSection>
+  );
+}
+
+export function OwnerFaculties() {
+  const { university, loading } = useOwnerUniversity();
+  const { success, error } = useToast();
+  const [faculties, setFaculties] = useState([]);
+  const [programs, setPrograms] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [facultyForm, setFacultyForm] = useState(emptyFacultyForm);
+  const [programForm, setProgramForm] = useState(emptyProgramForm);
+
+  const loadData = useCallback(async (uniId) => {
+    const [facRes, progRes] = await Promise.all([
+      universityApi.getFaculties(uniId).catch(() => ({ data: { faculties: [] } })),
+      universityApi.getPrograms(uniId).catch(() => ({ data: { programs: [] } })),
+    ]);
+    setFaculties(facRes.data.faculties || []);
+    setPrograms(progRes.data.programs || []);
+  }, []);
+
+  useEffect(() => {
+    if (university?.id) loadData(university.id);
+  }, [loadData, university?.id]);
+
+  const submitFaculty = async () => {
+    setBusy(true);
+    try {
+      await universityApi.createFaculty(university.id, {
+        ...facultyForm,
+        established_year: numericValue(facultyForm.established_year),
+        sort_order: numericValue(facultyForm.sort_order) || 0,
+      });
+      success('Faculty added');
+      setFacultyForm(emptyFacultyForm);
+      loadData(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to add faculty');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const submitProgram = async () => {
+    setBusy(true);
+    try {
+      await universityApi.createProgram(university.id, {
+        ...programForm,
+        duration_years: numericValue(programForm.duration_years),
+        tuition_fee: numericValue(programForm.tuition_fee),
+        credits_required: numericValue(programForm.credits_required),
+      });
+      success('Program added');
+      setProgramForm(emptyProgramForm);
+      loadData(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to add program');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const deleteFaculty = async (id) => {
+    try {
+      await universityApi.deleteFaculty(university.id, id);
+      success('Faculty deleted');
+      loadData(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to delete faculty');
+    }
+  };
+
+  const deleteProgram = async (id) => {
+    try {
+      await universityApi.deleteProgram(university.id, id);
+      success('Program deleted');
+      loadData(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to delete program');
+    }
+  };
+
+  if (loading) return <LoadingBlock />;
+  if (!university) return <NoUniversity />;
+
+  return (
+    <PageSection title="Faculties & Programs" subtitle="Organize academic structure so students can browse what you offer.">
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Add Faculty">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Faculty Name"><TextInput value={facultyForm.name} onChange={(e) => setFacultyForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Faculty of Engineering" /></Field>
+            <Field label="Khmer Name"><TextInput value={facultyForm.name_km} onChange={(e) => setFacultyForm((prev) => ({ ...prev, name_km: e.target.value }))} placeholder="Optional" /></Field>
+            <Field label="Dean Name"><TextInput value={facultyForm.dean_name} onChange={(e) => setFacultyForm((prev) => ({ ...prev, dean_name: e.target.value }))} placeholder="Dean or head" /></Field>
+            <Field label="Established Year"><TextInput type="number" value={facultyForm.established_year} onChange={(e) => setFacultyForm((prev) => ({ ...prev, established_year: e.target.value }))} placeholder="2001" /></Field>
+            <div className="md:col-span-2">
+              <Field label="Description"><TextArea rows={4} value={facultyForm.description} onChange={(e) => setFacultyForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="Short faculty overview" /></Field>
+            </div>
+          </div>
+          <div className="mt-4"><button type="button" onClick={submitFaculty} disabled={busy || !facultyForm.name.trim()} className={primaryBtn}>{busy ? 'Saving...' : 'Add Faculty'}</button></div>
+        </Panel>
+
+        <Panel title="Add Program">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Program Name"><TextInput value={programForm.name} onChange={(e) => setProgramForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Bachelor of Computer Science" /></Field>
+            <Field label="Khmer Name"><TextInput value={programForm.name_km} onChange={(e) => setProgramForm((prev) => ({ ...prev, name_km: e.target.value }))} placeholder="Optional" /></Field>
+            <Field label="Faculty">
+              <select className={inputClass} value={programForm.faculty_id} onChange={(e) => setProgramForm((prev) => ({ ...prev, faculty_id: e.target.value }))}>
+                <option value="">No faculty assigned</option>
+                {faculties.map((faculty) => <option key={faculty.id} value={faculty.id}>{faculty.name}</option>)}
+              </select>
+            </Field>
+            <Field label="Degree Level"><SelectInput value={programForm.degree_level} onChange={(e) => setProgramForm((prev) => ({ ...prev, degree_level: e.target.value }))} options={DEGREE_OPTIONS} /></Field>
+            <Field label="Duration (years)"><TextInput type="number" step="0.5" value={programForm.duration_years} onChange={(e) => setProgramForm((prev) => ({ ...prev, duration_years: e.target.value }))} placeholder="4" /></Field>
+            <Field label="Language"><TextInput value={programForm.language} onChange={(e) => setProgramForm((prev) => ({ ...prev, language: e.target.value }))} placeholder="English" /></Field>
+            <Field label="Tuition Fee (USD)"><TextInput type="number" value={programForm.tuition_fee} onChange={(e) => setProgramForm((prev) => ({ ...prev, tuition_fee: e.target.value }))} placeholder="1200" /></Field>
+            <Field label="Credits Required"><TextInput type="number" value={programForm.credits_required} onChange={(e) => setProgramForm((prev) => ({ ...prev, credits_required: e.target.value }))} placeholder="128" /></Field>
+            <div className="md:col-span-2">
+              <Field label="Description"><TextArea rows={4} value={programForm.description} onChange={(e) => setProgramForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="Program overview" /></Field>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <ToggleField label="Currently available" checked={programForm.is_available} onChange={(value) => setProgramForm((prev) => ({ ...prev, is_available: value }))} />
+            <button type="button" onClick={submitProgram} disabled={busy || !programForm.name.trim()} className={primaryBtn}>{busy ? 'Saving...' : 'Add Program'}</button>
+          </div>
+        </Panel>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Current Faculties" description={`${faculties.length} faculty record(s).`}>
+          {faculties.length === 0 ? <EmptyState title="No faculties yet" description="Start by adding your main faculties or schools." /> : (
+            <div className="space-y-3">
+              {faculties.map((faculty) => (
+                <div key={faculty.id} className="rounded-xl border border-slate-200 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-slate-800">{faculty.name}</p>
+                      <p className="mt-1 text-sm text-slate-500">{faculty.dean_name || 'No dean listed'}{faculty.established_year ? ` • Est. ${faculty.established_year}` : ''}</p>
+                    </div>
+                    <button type="button" onClick={() => deleteFaculty(faculty.id)} className={dangerBtn}>Delete</button>
+                  </div>
+                  {faculty.description && <p className="mt-3 text-sm text-slate-600">{faculty.description}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Current Programs" description={`${programs.length} program record(s).`}>
+          {programs.length === 0 ? <EmptyState title="No programs yet" description="Add your most important academic programs so students can compare options." /> : (
+            <div className="space-y-3">
+              {programs.map((program) => (
+                <div key={program.id} className="rounded-xl border border-slate-200 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-slate-800">{program.name}</p>
+                        <StatusPill tone={program.is_available ? 'green' : 'amber'}>{program.is_available ? 'Available' : 'Unavailable'}</StatusPill>
+                      </div>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {program.Faculty?.name || 'No faculty'} • {program.degree_level || 'degree'} • {program.duration_years || 'N/A'} years
+                      </p>
+                    </div>
+                    <button type="button" onClick={() => deleteProgram(program.id)} className={dangerBtn}>Delete</button>
+                  </div>
+                  {program.description && <p className="mt-3 text-sm text-slate-600">{program.description}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+      </div>
+    </PageSection>
+  );
+}
+
+export function OwnerNews() {
+  const { university, loading } = useOwnerUniversity();
+  const { success, error } = useToast();
+  const [news, setNews] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [newsForm, setNewsForm] = useState(emptyNewsForm);
+  const [eventForm, setEventForm] = useState(emptyEventForm);
+  const [saving, setSaving] = useState(false);
+
+  const loadData = useCallback(async (uniId) => {
+    const [newsRes, eventRes] = await Promise.all([
+      universityApi.getNews(uniId).catch(() => ({ data: { news: [] } })),
+      universityApi.getEvents(uniId).catch(() => ({ data: { events: [] } })),
+    ]);
+    setNews(newsRes.data.news || newsRes.data.items || []);
+    setEvents(eventRes.data.events || eventRes.data.items || []);
+  }, []);
+
+  useEffect(() => {
+    if (university?.id) loadData(university.id);
+  }, [loadData, university?.id]);
+
+  const submitNews = async () => {
+    setSaving(true);
+    try {
+      await universityApi.createNews(university.id, {
+        ...newsForm,
+        tags: newsForm.tags.split(',').map((tag) => tag.trim()).filter(Boolean),
+      });
+      success('News post created');
+      setNewsForm(emptyNewsForm);
+      loadData(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to create news post');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const submitEvent = async () => {
+    setSaving(true);
+    try {
+      await universityApi.createEvent(university.id, {
+        ...eventForm,
+        max_participants: numericValue(eventForm.max_participants),
+      });
+      success('Event created');
+      setEventForm(emptyEventForm);
+      loadData(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to create event');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const deleteNews = async (id) => {
+    try {
+      await universityApi.deleteNews(university.id, id);
+      success('News deleted');
+      loadData(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to delete news');
+    }
+  };
+
+  const deleteEvent = async (id) => {
+    try {
+      await universityApi.deleteEvent(university.id, id);
+      success('Event deleted');
+      loadData(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to delete event');
+    }
+  };
+
+  if (loading) return <LoadingBlock />;
+  if (!university) return <NoUniversity />;
+
+  return (
+    <PageSection title="News & Events" subtitle="Keep your university page active with announcements and upcoming activities.">
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Create News Post" description="Only published posts appear in the current public news feed.">
+          <div className="space-y-4">
+            <Field label="Title"><TextInput value={newsForm.title} onChange={(e) => setNewsForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Admissions open for 2026 intake" /></Field>
+            <Field label="Category"><TextInput value={newsForm.category} onChange={(e) => setNewsForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="Admissions, Scholarships, Campus Life" /></Field>
+            <Field label="Excerpt"><TextArea rows={3} value={newsForm.excerpt} onChange={(e) => setNewsForm((prev) => ({ ...prev, excerpt: e.target.value }))} placeholder="Short preview shown in listings" /></Field>
+            <Field label="Content"><TextArea rows={6} value={newsForm.content} onChange={(e) => setNewsForm((prev) => ({ ...prev, content: e.target.value }))} placeholder="Full article content" /></Field>
+            <Field label="Tags"><TextInput value={newsForm.tags} onChange={(e) => setNewsForm((prev) => ({ ...prev, tags: e.target.value }))} placeholder="admissions, scholarship, 2026" /></Field>
+            <div className="flex flex-wrap gap-3">
+              <ToggleField label="Publish immediately" checked={newsForm.is_published} onChange={(value) => setNewsForm((prev) => ({ ...prev, is_published: value }))} />
+              <ToggleField label="Pin this post" checked={newsForm.is_pinned} onChange={(value) => setNewsForm((prev) => ({ ...prev, is_pinned: value }))} />
+            </div>
+            <button type="button" onClick={submitNews} disabled={saving || !newsForm.title.trim() || !newsForm.content.trim()} className={primaryBtn}>{saving ? 'Saving...' : 'Publish News'}</button>
+          </div>
+        </Panel>
+
+        <Panel title="Create Event" description="Events help prospective students see that your campus is active.">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Title"><TextInput value={eventForm.title} onChange={(e) => setEventForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Open Day 2026" /></Field>
+            <Field label="Event Type"><SelectInput value={eventForm.type} onChange={(e) => setEventForm((prev) => ({ ...prev, type: e.target.value }))} options={EVENT_OPTIONS} /></Field>
+            <Field label="Start Date"><TextInput type="datetime-local" value={eventForm.event_date} onChange={(e) => setEventForm((prev) => ({ ...prev, event_date: e.target.value }))} /></Field>
+            <Field label="End Date"><TextInput type="datetime-local" value={eventForm.end_date} onChange={(e) => setEventForm((prev) => ({ ...prev, end_date: e.target.value }))} /></Field>
+            <Field label="Location"><TextInput value={eventForm.location} onChange={(e) => setEventForm((prev) => ({ ...prev, location: e.target.value }))} placeholder="Main campus auditorium" /></Field>
+            <Field label="Max Participants"><TextInput type="number" value={eventForm.max_participants} onChange={(e) => setEventForm((prev) => ({ ...prev, max_participants: e.target.value }))} placeholder="300" /></Field>
+            <Field label="Meeting URL"><TextInput value={eventForm.meeting_url} onChange={(e) => setEventForm((prev) => ({ ...prev, meeting_url: e.target.value }))} placeholder="For online events" /></Field>
+            <Field label="Registration URL"><TextInput value={eventForm.registration_url} onChange={(e) => setEventForm((prev) => ({ ...prev, registration_url: e.target.value }))} placeholder="External signup form" /></Field>
+            <div className="md:col-span-2">
+              <Field label="Description"><TextArea rows={5} value={eventForm.description} onChange={(e) => setEventForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="What attendees can expect" /></Field>
+            </div>
+            <div className="md:col-span-2 flex flex-wrap gap-3">
+              <ToggleField label="Online event" checked={eventForm.is_online} onChange={(value) => setEventForm((prev) => ({ ...prev, is_online: value }))} />
+              <ToggleField label="Publish immediately" checked={eventForm.is_published} onChange={(value) => setEventForm((prev) => ({ ...prev, is_published: value }))} />
+              <ToggleField label="Feature this event" checked={eventForm.is_featured} onChange={(value) => setEventForm((prev) => ({ ...prev, is_featured: value }))} />
+            </div>
+          </div>
+          <div className="mt-4"><button type="button" onClick={submitEvent} disabled={saving || !eventForm.title.trim() || !eventForm.event_date} className={primaryBtn}>{saving ? 'Saving...' : 'Create Event'}</button></div>
+        </Panel>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-2">
+        <Panel title="Published News">
+          {news.length === 0 ? <EmptyState title="No published news yet" description="Your published news posts will show here after creation." /> : (
+            <div className="space-y-3">
+              {news.map((item) => (
+                <div key={item.id} className="rounded-xl border border-slate-200 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-slate-800">{item.title}</p>
+                        {item.is_pinned && <StatusPill tone="orange">Pinned</StatusPill>}
+                      </div>
+                      <p className="mt-1 text-sm text-slate-500">{item.category || 'General'}{item.published_at ? ` • ${formatDate(item.published_at)}` : ''}</p>
+                    </div>
+                    <button type="button" onClick={() => deleteNews(item.id)} className={dangerBtn}>Delete</button>
+                  </div>
+                  {item.excerpt && <p className="mt-3 text-sm text-slate-600">{item.excerpt}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+
+        <Panel title="Published Events">
+          {events.length === 0 ? <EmptyState title="No published events yet" description="Add an event to start building activity on your page." /> : (
+            <div className="space-y-3">
+              {events.map((item) => (
+                <div key={item.id} className="rounded-xl border border-slate-200 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-slate-800">{item.title}</p>
+                        {item.is_featured && <StatusPill tone="orange">Featured</StatusPill>}
+                      </div>
+                      <p className="mt-1 text-sm text-slate-500">{formatDate(item.event_date)}{item.location ? ` • ${item.location}` : ''}</p>
+                    </div>
+                    <button type="button" onClick={() => deleteEvent(item.id)} className={dangerBtn}>Delete</button>
+                  </div>
+                  {item.description && <p className="mt-3 text-sm text-slate-600">{item.description}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+      </div>
+    </PageSection>
+  );
+}
+
+export function OwnerOpportunities() {
+  const { university, loading } = useOwnerUniversity();
+  const { success, error } = useToast();
+  const [items, setItems] = useState([]);
+  const [itemsLoading, setItemsLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(emptyOpportunityForm);
+
+  const loadOpportunities = useCallback(async () => {
+    setItemsLoading(true);
+    try {
+      const res = await opportunityApi.getMine();
+      setItems(res.data.opportunities || []);
+    } catch {
+      setItems([]);
+    } finally {
+      setItemsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadOpportunities();
+  }, [loadOpportunities]);
+
+  const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const resetForm = () => {
+    setForm(emptyOpportunityForm);
+    setEditingId(null);
+  };
+
+  const startEdit = (item) => {
+    setEditingId(item.id);
+    setForm({
+      ...emptyOpportunityForm,
+      ...item,
+      field_of_study: Array.isArray(item.field_of_study) ? item.field_of_study.join(', ') : '',
+      deadline: item.deadline || '',
+      start_date: item.start_date || '',
+      end_date: item.end_date || '',
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSave = async () => {
+    if (!university?.id) return;
+    setSaving(true);
+    try {
+      const payload = {
+        ...form,
+        university_id: university.id,
+        field_of_study: form.field_of_study
+          ? form.field_of_study.split(',').map((item) => item.trim()).filter(Boolean)
+          : [],
+        deadline: form.deadline || null,
+        start_date: form.start_date || null,
+        end_date: form.end_date || null,
+      };
+
+      if (editingId) {
+        await opportunityApi.update(editingId, payload);
+        success('Opportunity updated');
+      } else {
+        await opportunityApi.create(payload);
+        success('Opportunity submitted for review');
+      }
+
+      resetForm();
+      loadOpportunities();
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to save opportunity');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await opportunityApi.remove(id);
+      success('Opportunity deleted');
+      if (editingId === id) resetForm();
+      loadOpportunities();
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to delete opportunity');
+    }
+  };
+
+  if (loading) return <LoadingBlock />;
+  if (!university) return <NoUniversity />;
+
+  return (
+    <PageSection
+      title="Opportunities"
+      subtitle="Create scholarships, internships, and other opportunities connected to your university."
+      action={
+        editingId ? (
+          <button type="button" onClick={resetForm} className={secondaryBtn}>Cancel Editing</button>
+        ) : null
+      }
+    >
+      <div className="grid gap-5 xl:grid-cols-[1.05fr_1.2fr]">
+        <Panel
+          title={editingId ? 'Edit Opportunity' : 'Create Opportunity'}
+          description="Owner-created opportunities are submitted for review before they appear publicly."
+          action={<button type="button" onClick={handleSave} disabled={saving} className={primaryBtn}>{saving ? 'Saving...' : editingId ? 'Update Opportunity' : 'Create Opportunity'}</button>}
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="md:col-span-2">
+              <Field label="Title"><TextInput value={form.title} onChange={(e) => setField('title', e.target.value)} placeholder="Scholarship or program title" /></Field>
+            </div>
+            <Field label="Type"><SelectInput value={form.type} onChange={(e) => setField('type', e.target.value)} options={OPPORTUNITY_TYPE_OPTIONS} /></Field>
+            <Field label="Country"><TextInput value={form.country} onChange={(e) => setField('country', e.target.value)} placeholder="Cambodia" /></Field>
+            <Field label="Location"><TextInput value={form.location} onChange={(e) => setField('location', e.target.value)} placeholder="Phnom Penh or Online" /></Field>
+            <Field label="Application Email"><TextInput value={form.contact_email} onChange={(e) => setField('contact_email', e.target.value)} placeholder="apply@example.edu.kh" /></Field>
+            <Field label="Deadline"><TextInput type="date" value={form.deadline} onChange={(e) => setField('deadline', e.target.value)} /></Field>
+            <Field label="Start Date"><TextInput type="date" value={form.start_date} onChange={(e) => setField('start_date', e.target.value)} /></Field>
+            <Field label="End Date"><TextInput type="date" value={form.end_date} onChange={(e) => setField('end_date', e.target.value)} /></Field>
+            <Field label="Funding Amount"><TextInput value={form.funding_amount} onChange={(e) => setField('funding_amount', e.target.value)} placeholder="Up to 5,000" /></Field>
+            <Field label="Funding Currency"><TextInput value={form.funding_currency} onChange={(e) => setField('funding_currency', e.target.value)} placeholder="USD" /></Field>
+            <div className="md:col-span-2">
+              <Field label="Field of Study" hint="Separate multiple fields with commas.">
+                <TextInput value={form.field_of_study} onChange={(e) => setField('field_of_study', e.target.value)} placeholder="Computer Science, Business, Engineering" />
+              </Field>
+            </div>
+            <div className="md:col-span-2">
+              <Field label="Eligibility"><TextArea rows={4} value={form.eligibility} onChange={(e) => setField('eligibility', e.target.value)} placeholder="Who can apply and what they need to qualify" /></Field>
+            </div>
+            <div className="md:col-span-2">
+              <Field label="Description"><TextArea rows={6} value={form.description} onChange={(e) => setField('description', e.target.value)} placeholder="Describe the opportunity, benefits, and how students should approach it" /></Field>
+            </div>
+            <Field label="Application URL"><TextInput value={form.application_url} onChange={(e) => setField('application_url', e.target.value)} placeholder="https://..." /></Field>
+            <Field label="Source URL"><TextInput value={form.source_url} onChange={(e) => setField('source_url', e.target.value)} placeholder="Optional external link" /></Field>
+            <div className="md:col-span-2 flex flex-wrap gap-3">
+              <ToggleField label="Fully funded" checked={!!form.is_fully_funded} onChange={(value) => setField('is_fully_funded', value)} />
+              <ToggleField label="Online opportunity" checked={!!form.is_online} onChange={(value) => setField('is_online', value)} />
+            </div>
+          </div>
+        </Panel>
+
+        <Panel title="Your Opportunities" description={`${items.length} opportunity listing(s) created by your account.`}>
+          {itemsLoading ? (
+            <LoadingBlock />
+          ) : items.length === 0 ? (
+            <EmptyState title="No opportunities yet" description="Create your first scholarship or internship opportunity from the form on the left." />
+          ) : (
+            <div className="space-y-4">
+              {items.map((item) => (
+                <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-sm font-bold text-slate-800">{item.title}</p>
+                        <StatusPill tone={item.is_published ? 'green' : 'amber'}>{item.is_published ? 'Published' : 'Pending review'}</StatusPill>
+                        <StatusPill tone="blue">{item.type}</StatusPill>
+                        {item.is_fully_funded && <StatusPill tone="green">Fully funded</StatusPill>}
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
+                        {item.deadline && <span>Deadline: {formatDate(item.deadline)}</span>}
+                        {item.country && <span>Country: {item.country}</span>}
+                        <span>Applicants: {item.applicant_count || 0}</span>
+                        <span>Views: {item.views_count || 0}</span>
+                      </div>
+                      {item.description && <p className="mt-3 text-sm text-slate-600">{item.description}</p>}
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => startEdit(item)} className={secondaryBtn}>Edit</button>
+                      <button type="button" onClick={() => handleDelete(item.id)} className={dangerBtn}>Delete</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Panel>
+      </div>
+    </PageSection>
+  );
+}
+
+export function OwnerFAQ() {
+  const { university, loading } = useOwnerUniversity();
+  const { success, error } = useToast();
+  const [faqs, setFaqs] = useState([]);
+  const [contact, setContact] = useState(emptyContactForm);
+  const [faqForm, setFaqForm] = useState(emptyFaqForm);
+  const [savingFaq, setSavingFaq] = useState(false);
+  const [savingContact, setSavingContact] = useState(false);
+
+  const loadData = useCallback(async (uniId) => {
+    const [faqRes, contactRes] = await Promise.all([
+      universityApi.getFAQs(uniId).catch(() => ({ data: { faqs: [] } })),
+      universityApi.getContact(uniId).catch(() => ({ data: { contact: null } })),
+    ]);
+    setFaqs(faqRes.data.faqs || []);
+    setContact({ ...emptyContactForm, ...(contactRes.data.contact || {}) });
+  }, []);
+
+  useEffect(() => {
+    if (university?.id) loadData(university.id);
+  }, [loadData, university?.id]);
+
+  const submitFaq = async () => {
+    setSavingFaq(true);
+    try {
+      await universityApi.createFAQ(university.id, {
+        ...faqForm,
+        sort_order: numericValue(faqForm.sort_order) || 0,
+      });
+      success('FAQ added');
+      setFaqForm(emptyFaqForm);
+      loadData(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to create FAQ');
+    } finally {
+      setSavingFaq(false);
+    }
+  };
+
+  const saveContact = async () => {
+    setSavingContact(true);
+    try {
+      await universityApi.upsertContact(university.id, contact);
+      success('Contact details updated');
+      loadData(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to update contact');
+    } finally {
+      setSavingContact(false);
+    }
+  };
+
+  const deleteFaq = async (id) => {
+    try {
+      await universityApi.deleteFAQ(university.id, id);
+      success('FAQ deleted');
+      loadData(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to delete FAQ');
+    }
+  };
+
+  if (loading) return <LoadingBlock />;
+  if (!university) return <NoUniversity />;
+
+  return (
+    <PageSection title="FAQs & Contact" subtitle="Answer common questions and make it easy for students to reach out.">
+      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+        <Panel title="Create FAQ">
+          <div className="space-y-4">
+            <Field label="Question"><TextInput value={faqForm.question} onChange={(e) => setFaqForm((prev) => ({ ...prev, question: e.target.value }))} placeholder="Do you offer scholarships?" /></Field>
+            <Field label="Answer"><TextArea rows={5} value={faqForm.answer} onChange={(e) => setFaqForm((prev) => ({ ...prev, answer: e.target.value }))} placeholder="Write a clear, helpful answer" /></Field>
+            <Field label="Category"><TextInput value={faqForm.category} onChange={(e) => setFaqForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="Admissions, Tuition, Housing" /></Field>
+            <div className="flex flex-wrap gap-3">
+              <ToggleField label="Publish immediately" checked={faqForm.is_published} onChange={(value) => setFaqForm((prev) => ({ ...prev, is_published: value }))} />
+              <button type="button" onClick={submitFaq} disabled={savingFaq || !faqForm.question.trim() || !faqForm.answer.trim()} className={primaryBtn}>{savingFaq ? 'Saving...' : 'Add FAQ'}</button>
+            </div>
+          </div>
+        </Panel>
+
+        <Panel title="Contact Details" action={<button type="button" onClick={saveContact} disabled={savingContact} className={primaryBtn}>{savingContact ? 'Saving...' : 'Save Contact'}</button>}>
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="Admission Email"><TextInput value={contact.admission_email} onChange={(e) => setContact((prev) => ({ ...prev, admission_email: e.target.value }))} placeholder="admissions@example.edu.kh" /></Field>
+            <Field label="Admission Phone"><TextInput value={contact.admission_phone} onChange={(e) => setContact((prev) => ({ ...prev, admission_phone: e.target.value }))} placeholder="+855 ..." /></Field>
+            <Field label="General Email"><TextInput value={contact.general_email} onChange={(e) => setContact((prev) => ({ ...prev, general_email: e.target.value }))} placeholder="info@example.edu.kh" /></Field>
+            <Field label="General Phone"><TextInput value={contact.general_phone} onChange={(e) => setContact((prev) => ({ ...prev, general_phone: e.target.value }))} placeholder="+855 ..." /></Field>
+            <Field label="WhatsApp"><TextInput value={contact.whatsapp} onChange={(e) => setContact((prev) => ({ ...prev, whatsapp: e.target.value }))} placeholder="WhatsApp number" /></Field>
+            <Field label="Telegram"><TextInput value={contact.telegram} onChange={(e) => setContact((prev) => ({ ...prev, telegram: e.target.value }))} placeholder="Telegram username or URL" /></Field>
+            <Field label="Facebook Page"><TextInput value={contact.facebook_page} onChange={(e) => setContact((prev) => ({ ...prev, facebook_page: e.target.value }))} placeholder="https://facebook.com/..." /></Field>
+            <Field label="Instagram"><TextInput value={contact.instagram} onChange={(e) => setContact((prev) => ({ ...prev, instagram: e.target.value }))} placeholder="https://instagram.com/..." /></Field>
+            <Field label="YouTube"><TextInput value={contact.youtube} onChange={(e) => setContact((prev) => ({ ...prev, youtube: e.target.value }))} placeholder="https://youtube.com/..." /></Field>
+            <Field label="LinkedIn"><TextInput value={contact.linkedin} onChange={(e) => setContact((prev) => ({ ...prev, linkedin: e.target.value }))} placeholder="https://linkedin.com/..." /></Field>
+            <Field label="TikTok"><TextInput value={contact.tiktok} onChange={(e) => setContact((prev) => ({ ...prev, tiktok: e.target.value }))} placeholder="https://tiktok.com/..." /></Field>
+            <Field label="Office Hours"><TextInput value={contact.office_hours} onChange={(e) => setContact((prev) => ({ ...prev, office_hours: e.target.value }))} placeholder="Mon-Fri, 8:00 AM - 5:00 PM" /></Field>
+            <div className="md:col-span-2">
+              <Field label="Map Embed URL"><TextArea rows={3} value={contact.map_embed_url} onChange={(e) => setContact((prev) => ({ ...prev, map_embed_url: e.target.value }))} placeholder="Paste a Google Maps embed URL" /></Field>
+            </div>
+          </div>
+        </Panel>
+      </div>
+
+      <Panel title="Published FAQs" description={`${faqs.length} FAQ item(s) currently public.`}>
+        {faqs.length === 0 ? <EmptyState title="No FAQs yet" description="Use this section to answer the top questions students ask before applying." /> : (
+          <div className="space-y-3">
+            {faqs.map((faq, index) => (
+              <div key={faq.id} className="rounded-xl border border-slate-200 p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-slate-800">Q{index + 1}. {faq.question}</p>
+                      {faq.category && <StatusPill tone="blue">{faq.category}</StatusPill>}
+                    </div>
+                    <p className="mt-2 text-sm text-slate-600">{faq.answer}</p>
+                  </div>
+                  <button type="button" onClick={() => deleteFaq(faq.id)} className={dangerBtn}>Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Panel>
+    </PageSection>
+  );
+}

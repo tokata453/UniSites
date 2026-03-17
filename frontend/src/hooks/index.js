@@ -12,6 +12,7 @@ export const useAuth = () => {
     isAuthenticated: store.isAuthenticated(),
     isStudent:       store.isStudent(),
     isOwner:         store.isOwner(),
+    isOrganization:  store.isOrganization(),
     isAdmin:         store.isAdmin(),
     setAuth:         store.setAuth,
     setUser:         store.setUser,

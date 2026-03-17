@@ -18,6 +18,13 @@ export const authApi = {
   facebookAuthUrl:  () => `${import.meta.env.VITE_API_URL || '/api'}/auth/facebook`,
 };
 
+// ── Uploads ───────────────────────────────────────────────────────────────────
+export const uploadApi = {
+  image: (data) => api.post('/upload/image', data),
+  cover: (data) => api.post('/upload/cover', data),
+  logo:  (data) => api.post('/upload/logo', data),
+};
+
 // ── Universities ──────────────────────────────────────────────────────────────
 export const universityApi = {
   list:           (params)       => api.get('/universities', { params }),
@@ -66,7 +73,7 @@ export const universityApi = {
 
   // Contact
   getContact:     (uniId)        => api.get(`/universities/${uniId}/contact`),
-  upsertContact:  (uniId, data)  => api.post(`/universities/${uniId}/contact`, data),
+  upsertContact:  (uniId, data)  => api.put(`/universities/${uniId}/contact`, data),
 
   // Reviews
   getReviews:     (uniId)        => api.get(`/universities/${uniId}/reviews`),
@@ -105,6 +112,7 @@ export const forumApi = {
 export const opportunityApi = {
   list:           (params)   => api.get('/opportunities', { params }),
   getFeatured:    ()         => api.get('/opportunities/featured'),
+  getMine:        ()         => api.get('/opportunities/mine'),
   getBySlug:      (slug)     => api.get(`/opportunities/${slug}`),
   create:         (data)     => api.post('/opportunities', data),
   update:         (id, data) => api.put(`/opportunities/${id}`, data),
@@ -117,10 +125,12 @@ export const adminApi = {
   getStats:           ()             => api.get('/admin/stats'),
   // Users
   getUsers:           (params)       => api.get('/admin/users', { params }),
+  getUser:            (id)           => api.get(`/admin/users/${id}`),
   updateUser:         (id, data)     => api.put(`/admin/users/${id}`, data),
   deleteUser:         (id)           => api.delete(`/admin/users/${id}`),
   // Universities
   getUniversities:    (params)       => api.get('/admin/universities', { params }),
+  createUniversity:   (data)         => api.post('/admin/universities', data),
   updateUniversity:   (id, data)     => api.put(`/admin/universities/${id}`, data),
   deleteUniversity:   (id)           => api.delete(`/admin/universities/${id}`),
   // Opportunities

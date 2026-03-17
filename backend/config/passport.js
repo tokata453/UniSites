@@ -20,6 +20,7 @@ module.exports = (db) => {
 
           if (!user)           return done(null, false, { message: 'No account found with that email' });
           if (!user.is_active) return done(null, false, { message: 'Account is deactivated' });
+          if (!user.is_approved) return done(null, false, { message: 'Your account is pending admin approval' });
           const valid = await user.verifyPassword(password);
           if (!valid)          return done(null, false, { message: 'Incorrect password' });
 

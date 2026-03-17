@@ -23,14 +23,11 @@ api.interceptors.response.use(
       window.location.href = '/login';
     }
     const message =
-      error.response?.data?.message ||
-      error.message ||
-      "Something went wrong";
+      err.response?.data?.message ||
+      err.message ||
+      'Something went wrong';
 
-    useUIStore.getState().toast({
-      message,
-      type: "error",
-    });
+    useUIStore.getState().toast(message, 'error');
     return Promise.reject(err);
   }
 );

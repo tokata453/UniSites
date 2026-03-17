@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { opportunityApi } from '@/api';
 import { Spinner, Pagination, Empty } from '@/components/common';
-import { formatDate, truncate } from '@/utils';
+import { avatarUrl, formatDate, truncate } from '@/utils';
 
 const TYPES = ['', 'scholarship', 'internship', 'exchange', 'competition', 'workshop', 'research', 'parttime', 'volunteer'];
 
@@ -154,6 +154,21 @@ export function OpportunitiesPage() {
                           🎓 {opp.University.name}
                         </p>
                       )}
+                      {!opp.University && opp.PostedBy && (
+                        <div className="mb-3 flex items-center gap-2">
+                          <div className="h-7 w-7 overflow-hidden rounded-full bg-teal-700 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+                            {opp.PostedBy.avatar_url ? (
+                              <img src={avatarUrl(opp.PostedBy.avatar_url) || opp.PostedBy.avatar_url} alt={opp.PostedBy.name} className="h-full w-full object-cover" />
+                            ) : (
+                              opp.PostedBy.name?.[0]?.toUpperCase() || 'O'
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-slate-700 truncate">{opp.PostedBy.name}</p>
+                            <p className="text-[11px] text-slate-400">Official organization</p>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Description */}
                       <p className="text-xs text-slate-500 mb-4 leading-relaxed line-clamp-2">
@@ -246,6 +261,21 @@ export function OpportunityDetail() {
                   style={{ color: '#1B3A6B' }}>
                   🎓 {opp.University.name}
                 </Link>
+              )}
+              {!opp.University && opp.PostedBy && (
+                <div className="mb-4 flex items-center gap-3 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3">
+                  <div className="h-11 w-11 overflow-hidden rounded-full bg-teal-700 text-white flex items-center justify-center text-sm font-bold shrink-0">
+                    {opp.PostedBy.avatar_url ? (
+                      <img src={avatarUrl(opp.PostedBy.avatar_url) || opp.PostedBy.avatar_url} alt={opp.PostedBy.name} className="h-full w-full object-cover" />
+                    ) : (
+                      opp.PostedBy.name?.[0]?.toUpperCase() || 'O'
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{opp.PostedBy.name}</p>
+                    <p className="text-xs text-teal-700">Official organization</p>
+                  </div>
+                </div>
               )}
 
               <p className="text-sm text-slate-600 leading-relaxed mt-3">{opp.description}</p>
@@ -383,14 +413,30 @@ export function OpportunityDetail() {
             </div>
 
             {/* Contact */}
-            {opp.contact_email && (
+            {(opp.contact_email || opp.PostedBy?.contact_phone || opp.PostedBy?.website_url) && (
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Contact</h3>
-                <a href={`mailto:${opp.contact_email}`}
-                  className="text-sm font-medium hover:underline transition-colors flex items-center gap-1"
-                  style={{ color: '#1B3A6B' }}>
-                  ✉️ {opp.contact_email}
-                </a>
+                {opp.contact_email && (
+                  <a href={`mailto:${opp.contact_email}`}
+                    className="text-sm font-medium hover:underline transition-colors flex items-center gap-1"
+                    style={{ color: '#1B3A6B' }}>
+                    ✉️ {opp.contact_email}
+                  </a>
+                )}
+                {opp.PostedBy?.contact_phone && (
+                  <p className="mt-3 text-sm font-medium text-slate-600">📞 {opp.PostedBy.contact_phone}</p>
+                )}
+                {opp.PostedBy?.website_url && (
+                  <a
+                    href={opp.PostedBy.website_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-flex items-center gap-1 text-sm font-medium hover:underline"
+                    style={{ color: '#1B3A6B' }}
+                  >
+                    🌐 Visit organization website
+                  </a>
+                )}
               </div>
             )}
           </div>

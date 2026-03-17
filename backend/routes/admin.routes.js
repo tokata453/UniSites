@@ -9,11 +9,13 @@ router.get('/stats',                    ctrl.getStats);
 
 // Users
 router.get('/users',                    ctrl.getUsers);
+router.get('/users/:id',                ctrl.getUser);
 router.put('/users/:id',                ctrl.updateUser);
 router.delete('/users/:id',             ctrl.deleteUser);
 
 // Universities
 router.get('/universities',             ctrl.getUniversities);
+router.post('/universities',            ctrl.createUniversity);
 router.put('/universities/:id',         ctrl.updateUniversity);
 router.delete('/universities/:id',      ctrl.deleteUniversity);
 

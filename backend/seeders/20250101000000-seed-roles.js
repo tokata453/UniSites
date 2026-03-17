@@ -5,6 +5,7 @@ module.exports = {
     await queryInterface.bulkInsert('roles', [
       { name: 'student', description: 'Regular student user',              created_at: new Date(), updated_at: new Date() },
       { name: 'owner',   description: 'University or opportunity manager', created_at: new Date(), updated_at: new Date() },
+      { name: 'organization', description: 'Official organization opportunity manager', created_at: new Date(), updated_at: new Date() },
       { name: 'admin',   description: 'Platform administrator',            created_at: new Date(), updated_at: new Date() },
     ], { ignoreDuplicates: true });
   },

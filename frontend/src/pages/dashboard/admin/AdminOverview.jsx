@@ -18,6 +18,7 @@ const STAT_CARDS = [
 const PENDING_CARDS = [
   { key: 'pendingUnis',    label: 'Pending Universities', link: '/admin/universities?published=false', color: '#d97706', bg: '#fefce8', border: '#fef08a' },
   { key: 'pendingReviews', label: 'Pending Reviews',      link: '/admin/reviews?approved=false',       color: '#dc2626', bg: '#fef2f2', border: '#fecaca' },
+  { key: 'pendingOrganizations', label: 'Pending Organizations', link: '/admin/users?role=organization', color: '#0f766e', bg: '#f0fdfa', border: '#99f6e4' },
 ];
 
 const QUICK_LINKS = [
@@ -76,6 +77,7 @@ export default function AdminOverview() {
           {[
             { label: 'Students',          key: 'students', color: '#1B3A6B' },
             { label: 'University Owners', key: 'owners',   color: '#15803d' },
+            { label: 'Organizations',     key: 'organizations', color: '#0f766e' },
             { label: 'Admins',            key: 'admins',   color: '#F47B20' },
           ].map(row => {
             const val   = stats?.[row.key] ?? 0;
