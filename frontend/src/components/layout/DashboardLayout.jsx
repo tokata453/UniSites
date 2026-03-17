@@ -54,6 +54,11 @@ const ROLE_ACCENT = {
   student: { color: '#1B3A6B', bg: 'bg-blue-50',   text: 'text-[#1B3A6B]', border: 'border-blue-200',   activeBg: 'bg-blue-50',   activeText: 'text-[#1B3A6B]',  activeBorder: 'border-blue-300'   },
 };
 
+const formatRoleLabel = (value) => {
+  if (!value) return '';
+  return value.charAt(0).toUpperCase() + value.slice(1);
+};
+
 export default function DashboardLayout({ role }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -93,7 +98,7 @@ export default function DashboardLayout({ role }) {
               className="text-sm font-semibold px-2 py-0.5 capitalize"
               style={{ color: accent.color, textTransform: 'capitalize' }}
             >
-              {role === 'student' ? 'Profile' : role} Dashboard
+              {role === 'student' ? 'Profile' : formatRoleLabel(role)} Dashboard
             </div>
           )}
         </div>
