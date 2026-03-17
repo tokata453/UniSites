@@ -12,12 +12,44 @@ const participantFor = (conversation, userId) => (
   conversation.user_one_id === userId ? conversation.UserTwo : conversation.UserOne
 );
 
+const conversationInclude = [
+  { model: db.User, as: 'UserOne', attributes: ['id', 'name', 'email', 'avatar_url', 'role_id'] },
+  { model: db.User, as: 'UserTwo', attributes: ['id', 'name', 'email', 'avatar_url', 'role_id'] },
+];
+
+const loadConversationSummary = async (conversationId, userId) => {
+  const conversation = await db.Conversation.findByPk(conversationId, {
+    include: conversationInclude,
+  });
+
+  if (!conversation) return null;
+
+  const [latestMessage, unreadCount] = await Promise.all([
+    db.Message.findOne({
+      where: { conversation_id: conversation.id },
+      order: [['created_at', 'DESC']],
+      include: [{ model: db.User, as: 'Sender', attributes: ['id', 'name', 'avatar_url'] }],
+    }),
+    db.Message.count({
+      where: {
+        conversation_id: conversation.id,
+        sender_id: { [Op.ne]: userId },
+        is_read: false,
+      },
+    }),
+  ]);
+
+  return {
+    ...conversation.toJSON(),
+    participant: participantFor(conversation, userId),
+    latestMessage,
+    unreadCount,
+  };
+};
+
 const ensureParticipant = async (conversationId, userId) => {
   const conversation = await db.Conversation.findByPk(conversationId, {
-    include: [
-      { model: db.User, as: 'UserOne', attributes: ['id', 'name', 'email', 'avatar_url', 'role_id'] },
-      { model: db.User, as: 'UserTwo', attributes: ['id', 'name', 'email', 'avatar_url', 'role_id'] },
-    ],
+    include: conversationInclude,
   });
 
   if (!conversation) return null;
@@ -101,7 +133,7 @@ exports.searchUsers = async (req, res) => {
 
 exports.createConversation = async (req, res) => {
   try {
-    const { recipient_id, recipient_email, message } = req.body;
+    const { recipient_id, recipient_email, message, client_temp_id } = req.body;
     if (!recipient_id && !recipient_email) return error(res, 'Recipient is required');
 
     const recipient = await db.User.findOne({
@@ -131,14 +163,12 @@ exports.createConversation = async (req, res) => {
         last_message_at: message?.trim() ? new Date() : null,
       });
       conversation = await db.Conversation.findByPk(conversation.id, {
-        include: [
-          { model: db.User, as: 'UserOne', attributes: ['id', 'name', 'email', 'avatar_url'] },
-          { model: db.User, as: 'UserTwo', attributes: ['id', 'name', 'email', 'avatar_url'] },
-        ],
+        include: conversationInclude,
       });
     }
 
     let createdMessage = null;
+    let createdMessageWithSender = null;
     if (message?.trim()) {
       createdMessage = await db.Message.create({
         conversation_id: conversation.id,
@@ -155,19 +185,33 @@ exports.createConversation = async (req, res) => {
         link: '/inbox',
         data: { conversation_id: conversation.id, sender_id: req.user.id },
       });
+      createdMessageWithSender = await db.Message.findByPk(createdMessage.id, {
+        include: [{ model: db.User, as: 'Sender', attributes: ['id', 'name', 'avatar_url'] }],
+      });
 
+      const [senderConversation, recipientConversation] = await Promise.all([
+        loadConversationSummary(conversation.id, req.user.id),
+        loadConversationSummary(conversation.id, recipient.id),
+      ]);
+
+      emitSafe(`user_${req.user.id}`, 'message:new', {
+        conversationId: conversation.id,
+        conversation: senderConversation,
+        message: createdMessageWithSender,
+        clientTempId: client_temp_id || null,
+      });
       emitSafe(`user_${recipient.id}`, 'message:new', {
         conversationId: conversation.id,
-        senderId: req.user.id,
+        conversation: recipientConversation,
+        message: createdMessageWithSender,
+        clientTempId: client_temp_id || null,
       });
     }
 
     return created(res, {
-      conversation: {
-        ...conversation.toJSON(),
-        participant: participantFor(conversation, req.user.id),
-      },
-      message: createdMessage,
+      conversation: await loadConversationSummary(conversation.id, req.user.id),
+      message: createdMessageWithSender || createdMessage,
+      clientTempId: client_temp_id || null,
     }, 'Conversation ready');
   } catch (err) {
     return error(res, err.message, 500);
@@ -204,6 +248,7 @@ exports.sendMessage = async (req, res) => {
     if (conversation === null) return notFound(res, 'Conversation not found');
     if (conversation === false) return forbidden(res, 'You do not have access to this conversation');
     if (!req.body.body?.trim()) return error(res, 'Message body is required');
+    const clientTempId = req.body.client_temp_id || null;
 
     const message = await db.Message.create({
       conversation_id: conversation.id,
@@ -222,16 +267,29 @@ exports.sendMessage = async (req, res) => {
       data: { conversation_id: conversation.id, sender_id: req.user.id },
     });
 
-    emitSafe(`user_${recipient.id}`, 'message:new', {
-      conversationId: conversation.id,
-      senderId: req.user.id,
-    });
-
     const withSender = await db.Message.findByPk(message.id, {
       include: [{ model: db.User, as: 'Sender', attributes: ['id', 'name', 'avatar_url'] }],
     });
 
-    return created(res, { message: withSender }, 'Message sent');
+    const [senderConversation, recipientConversation] = await Promise.all([
+      loadConversationSummary(conversation.id, req.user.id),
+      loadConversationSummary(conversation.id, recipient.id),
+    ]);
+
+    emitSafe(`user_${req.user.id}`, 'message:new', {
+      conversationId: conversation.id,
+      conversation: senderConversation,
+      message: withSender,
+      clientTempId,
+    });
+    emitSafe(`user_${recipient.id}`, 'message:new', {
+      conversationId: conversation.id,
+      conversation: recipientConversation,
+      message: withSender,
+      clientTempId,
+    });
+
+    return created(res, { message: withSender, clientTempId }, 'Message sent');
   } catch (err) {
     return error(res, err.message, 500);
   }
@@ -243,8 +301,9 @@ exports.markConversationRead = async (req, res) => {
     if (conversation === null) return notFound(res, 'Conversation not found');
     if (conversation === false) return forbidden(res, 'You do not have access to this conversation');
 
-    await db.Message.update(
-      { is_read: true, read_at: new Date() },
+    const readAt = new Date();
+    const [updatedCount] = await db.Message.update(
+      { is_read: true, read_at: readAt },
       {
         where: {
           conversation_id: conversation.id,
@@ -253,6 +312,20 @@ exports.markConversationRead = async (req, res) => {
         },
       }
     );
+
+    if (updatedCount > 0) {
+      const otherParticipant = participantFor(conversation, req.user.id);
+      emitSafe(`user_${otherParticipant.id}`, 'conversation:read', {
+        conversationId: conversation.id,
+        readerId: req.user.id,
+        readAt,
+      });
+      emitSafe(`user_${req.user.id}`, 'conversation:read', {
+        conversationId: conversation.id,
+        readerId: req.user.id,
+        readAt,
+      });
+    }
 
     return success(res, {}, 'Conversation marked as read');
   } catch (err) {

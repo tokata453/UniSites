@@ -72,6 +72,33 @@ function Avatar({ user, size = 'md' }) {
   );
 }
 
+function dedupeMessages(items) {
+  const seen = new Set();
+  return items.filter((item) => {
+    if (!item?.id || seen.has(item.id)) return false;
+    seen.add(item.id);
+    return true;
+  });
+}
+
+function makeTempMessage({ body, conversationId, sender }) {
+  const id = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return {
+    id,
+    conversation_id: conversationId,
+    sender_id: sender?.id,
+    body,
+    is_read: false,
+    createdAt: new Date().toISOString(),
+    Sender: sender ? {
+      id: sender.id,
+      name: sender.name,
+      avatar_url: sender.avatar_url,
+    } : null,
+    _status: 'sending',
+  };
+}
+
 const SearchIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="11" cy="11" r="8" />
@@ -123,24 +150,37 @@ export default function InboxPage() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [creating, setCreating] = useState(false);
   const [sending, setSending] = useState(false);
+  const [onlineUserIds, setOnlineUserIds] = useState(new Set());
+  const [typingByConversation, setTypingByConversation] = useState({});
   const selectedIdRef = useRef(null);
+  const userIdRef = useRef(user?.id || null);
   const messagesEndRef = useRef(null);
+  const socketRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
+  const typingConversationRef = useRef(null);
 
   const selectedConversation = useMemo(
     () => conversations.find((item) => item.id === selectedId) || null,
     [conversations, selectedId]
   );
+  const selectedParticipantId = selectedConversation?.participant?.id ? String(selectedConversation.participant.id) : null;
+  const selectedParticipantOnline = selectedParticipantId ? onlineUserIds.has(selectedParticipantId) : false;
+  const selectedConversationTyping = selectedId && selectedParticipantId && typingByConversation[selectedId] === selectedParticipantId;
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
   }, [selectedId]);
 
   useEffect(() => {
+    userIdRef.current = user?.id || null;
+  }, [user?.id]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const loadNotifications = async () => {
-    setLoadingNotifications(true);
+  const loadNotifications = async ({ silent = false } = {}) => {
+    if (!silent) setLoadingNotifications(true);
     try {
       const res = await authApi.getNotifications();
       const nextUnreadCount = res.data.unreadCount || 0;
@@ -148,14 +188,14 @@ export default function InboxPage() {
       setUnreadCount(nextUnreadCount);
       setUnreadNotifications(nextUnreadCount);
     } catch (err) {
-      error(err.response?.data?.message || 'Failed to load notifications');
+      if (!silent) error(err.response?.data?.message || 'Failed to load notifications');
     } finally {
-      setLoadingNotifications(false);
+      if (!silent) setLoadingNotifications(false);
     }
   };
 
-  const loadConversations = async (nextSelectedId = null) => {
-    setLoadingChats(true);
+  const loadConversations = async (nextSelectedId = null, { silent = false } = {}) => {
+    if (!silent) setLoadingChats(true);
     try {
       const res = await inboxApi.getConversations();
       const items = res.data.conversations || [];
@@ -165,31 +205,181 @@ export default function InboxPage() {
       setSelectedId(fallbackId);
       setUnreadMessages(nextUnreadMessages);
     } catch (err) {
-      setConversations([]);
-      setUnreadMessages(0);
-      error(err.response?.data?.message || 'Failed to load conversations');
+      if (!silent) {
+        setConversations([]);
+        setUnreadMessages(0);
+        error(err.response?.data?.message || 'Failed to load conversations');
+      }
     } finally {
-      setLoadingChats(false);
+      if (!silent) setLoadingChats(false);
     }
   };
 
-  const loadMessages = async (conversationId) => {
+  const upsertConversation = (nextConversation) => {
+    if (!nextConversation?.id) return;
+    setConversations((current) => {
+      const nextItems = [nextConversation, ...current.filter((item) => item.id !== nextConversation.id)];
+      nextItems.sort((a, b) => {
+        const aTime = new Date(a.latestMessage?.createdAt || a.latestMessage?.created_at || a.last_message_at || 0).getTime();
+        const bTime = new Date(b.latestMessage?.createdAt || b.latestMessage?.created_at || b.last_message_at || 0).getTime();
+        return bTime - aTime;
+      });
+      const nextUnreadMessages = nextItems.reduce((sum, item) => sum + Number(item.unreadCount || 0), 0);
+      setUnreadMessages(nextUnreadMessages);
+      return nextItems;
+    });
+  };
+
+  const mergeMessageIntoThread = (nextMessage, clientTempId = null) => {
+    if (!nextMessage?.id) return;
+    setMessages((current) => {
+      let replaced = false;
+      let nextItems = current.map((item) => {
+        if (clientTempId && item.id === clientTempId) {
+          replaced = true;
+          return { ...nextMessage, _status: 'sent' };
+        }
+        if (item.id === nextMessage.id) {
+          replaced = true;
+          return { ...item, ...nextMessage, _status: 'sent' };
+        }
+        return item;
+      });
+
+      if (!replaced) nextItems = [...nextItems, { ...nextMessage, _status: 'sent' }];
+      return dedupeMessages(nextItems);
+    });
+  };
+
+  const setConversationLatestMessage = (conversationId, nextMessage, unreadCount) => {
+    setConversations((current) => {
+      const nextItems = current.map((item) => (
+        item.id === conversationId
+          ? {
+              ...item,
+              latestMessage: nextMessage,
+              last_message_at: nextMessage?.createdAt || nextMessage?.created_at || item.last_message_at,
+              ...(typeof unreadCount === 'number' ? { unreadCount } : {}),
+            }
+          : item
+      ));
+      nextItems.sort((a, b) => {
+        const aTime = new Date(a.latestMessage?.createdAt || a.latestMessage?.created_at || a.last_message_at || 0).getTime();
+        const bTime = new Date(b.latestMessage?.createdAt || b.latestMessage?.created_at || b.last_message_at || 0).getTime();
+        return bTime - aTime;
+      });
+      const nextUnreadMessages = nextItems.reduce((sum, item) => sum + Number(item.unreadCount || 0), 0);
+      setUnreadMessages(nextUnreadMessages);
+      return nextItems;
+    });
+  };
+
+  const appendTemporaryMessage = (tempMessage) => {
+    setMessages((current) => [...current, tempMessage]);
+    setConversationLatestMessage(tempMessage.conversation_id, tempMessage, 0);
+  };
+
+  const failTemporaryMessage = (tempId) => {
+    setMessages((current) => current.map((item) => (
+      item.id === tempId ? { ...item, _status: 'failed' } : item
+    )));
+  };
+
+  const clearTypingState = (conversationId) => {
+    if (!conversationId) return;
+    setTypingByConversation((current) => {
+      if (!current[conversationId]) return current;
+      const next = { ...current };
+      delete next[conversationId];
+      return next;
+    });
+  };
+
+  const markOwnMessagesRead = (conversationId, readAt) => {
+    setMessages((current) => current.map((message) => (
+      message.conversation_id === conversationId && message.sender_id === userIdRef.current
+        ? { ...message, is_read: true, read_at: readAt || message.read_at }
+        : message
+    )));
+
+    setConversations((current) => current.map((item) => (
+      item.id === conversationId && item.latestMessage?.sender_id === userIdRef.current
+        ? {
+            ...item,
+            latestMessage: {
+              ...item.latestMessage,
+              is_read: true,
+              read_at: readAt || item.latestMessage.read_at,
+            },
+          }
+        : item
+    )));
+  };
+
+  const openConversation = async (conversationId) => {
+    if (!conversationId) return;
+
+    setSelectedRecipient(null);
+    setComposeMessage('');
+    setSelectedId(conversationId);
+    clearTypingState(conversationId);
+
+    setConversations((current) => {
+      const nextItems = current.map((item) => (
+        item.id === conversationId ? { ...item, unreadCount: 0 } : item
+      ));
+      const nextUnreadMessages = nextItems.reduce((sum, item) => sum + Number(item.unreadCount || 0), 0);
+      setUnreadMessages(nextUnreadMessages);
+      return nextItems;
+    });
+
+    setNotifications((current) => {
+      const nextItems = current.map((item) => (
+        item.type === 'message' && String(item.data?.conversation_id || '') === String(conversationId)
+          ? { ...item, is_read: true }
+          : item
+      ));
+      const nextUnreadNotifications = nextItems.filter((item) => !item.is_read).length;
+      setUnreadCount(nextUnreadNotifications);
+      setUnreadNotifications(nextUnreadNotifications);
+      return nextItems;
+    });
+
+    try {
+      await Promise.all([
+        inboxApi.markConversationRead(conversationId),
+        authApi.markConversationNotificationsRead(conversationId),
+      ]);
+    } catch (_) {
+      // The message loader will retry and resync if this lightweight request misses.
+    }
+  };
+
+  const loadMessages = async (conversationId, { silent = false } = {}) => {
     if (!conversationId) {
       setMessages([]);
       return;
     }
-    setLoadingMessages(true);
+    if (!silent) setLoadingMessages(true);
     try {
       const res = await inboxApi.getMessages(conversationId);
       setMessages(res.data.messages || []);
       await inboxApi.markConversationRead(conversationId);
-      loadConversations(conversationId);
-      loadNotifications();
+      setConversations((current) => {
+        const nextItems = current.map((item) => (
+          item.id === conversationId ? { ...item, unreadCount: 0 } : item
+        ));
+        const nextUnreadMessages = nextItems.reduce((sum, item) => sum + Number(item.unreadCount || 0), 0);
+        setUnreadMessages(nextUnreadMessages);
+        return nextItems;
+      });
     } catch (err) {
-      setMessages([]);
-      error(err.response?.data?.message || 'Failed to load messages');
+      if (!silent) {
+        setMessages([]);
+        error(err.response?.data?.message || 'Failed to load messages');
+      }
     } finally {
-      setLoadingMessages(false);
+      if (!silent) setLoadingMessages(false);
     }
   };
 
@@ -236,14 +426,59 @@ export default function InboxPage() {
         const ioFactory = await ensureScript();
         if (!active || !ioFactory) return;
         socket = ioFactory(socketBase, { withCredentials: true });
-        socket.on('connect', () => socket.emit('join_user', user.id));
-        socket.on('message:new', ({ conversationId }) => {
+        socketRef.current = socket;
+        socket.on('connect', () => {
+          socket.emit('join_user', user.id);
+          if (selectedIdRef.current) socket.emit('join_thread', selectedIdRef.current);
+        });
+        socket.on('presence:snapshot', ({ userIds = [] }) => {
+          setOnlineUserIds(new Set(userIds.map((id) => String(id))));
+        });
+        socket.on('presence:update', ({ userId, isOnline }) => {
+          if (!userId) return;
+          setOnlineUserIds((current) => {
+            const next = new Set(current);
+            if (isOnline) next.add(String(userId));
+            else next.delete(String(userId));
+            return next;
+          });
+        });
+        socket.on('typing:update', ({ conversationId, userId, isTyping }) => {
+          if (!conversationId || !userId || userId === String(userIdRef.current)) return;
+          setTypingByConversation((current) => {
+            const next = { ...current };
+            if (isTyping) next[conversationId] = String(userId);
+            else delete next[conversationId];
+            return next;
+          });
+        });
+        socket.on('message:new', ({ conversationId, conversation, message, clientTempId }) => {
           const currentSelectedId = selectedIdRef.current;
-          loadConversations(conversationId || currentSelectedId);
-          loadNotifications();
-          if (conversationId && conversationId === currentSelectedId) loadMessages(conversationId);
+          if (conversation) upsertConversation(conversation);
+          if (message && conversationId && conversationId === currentSelectedId) {
+            mergeMessageIntoThread(message, clientTempId);
+            clearTypingState(conversationId);
+            if (message.sender_id !== userIdRef.current) {
+              inboxApi.markConversationRead(conversationId).catch(() => {});
+              setConversations((current) => {
+                const nextItems = current.map((item) => (
+                  item.id === conversationId ? { ...item, unreadCount: 0 } : item
+                ));
+                const nextUnreadMessages = nextItems.reduce((sum, item) => sum + Number(item.unreadCount || 0), 0);
+                setUnreadMessages(nextUnreadMessages);
+                return nextItems;
+              });
+            }
+          } else if (conversationId && !conversation) {
+            loadConversations(conversationId || currentSelectedId);
+          }
+        });
+        socket.on('conversation:read', ({ conversationId, readerId, readAt }) => {
+          if (!conversationId || readerId === userIdRef.current) return;
+          markOwnMessagesRead(conversationId, readAt);
         });
         cleanup = () => {
+          socketRef.current = null;
           socket.emit('leave_user', user.id);
           socket.disconnect();
         };
@@ -288,14 +523,75 @@ export default function InboxPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return undefined;
+
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      loadConversations(selectedIdRef.current, { silent: true });
+      loadNotifications({ silent: true });
+    }, 8000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !selectedId) return undefined;
+
+    const interval = setInterval(() => {
+      if (document.hidden) return;
+      loadMessages(selectedId, { silent: true });
+    }, 4000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, selectedId]);
+
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || !selectedId) return undefined;
+    socket.emit('join_thread', selectedId);
+    return () => {
+      socket.emit('leave_thread', selectedId);
+      clearTypingState(selectedId);
+    };
+  }, [selectedId]);
+
+  useEffect(() => {
+    const socket = socketRef.current;
+    if (!socket || !selectedId) return undefined;
+
+    const trimmed = draftMessage.trim();
+    if (trimmed) {
+      socket.emit('typing:start', { conversationId: selectedId, userId: user?.id });
+      typingConversationRef.current = selectedId;
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('typing:stop', { conversationId: selectedId, userId: user?.id });
+        typingConversationRef.current = null;
+      }, 1200);
+    } else if (typingConversationRef.current === selectedId) {
+      socket.emit('typing:stop', { conversationId: selectedId, userId: user?.id });
+      typingConversationRef.current = null;
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    }
+
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    };
+  }, [draftMessage, selectedId, user?.id]);
+
+  useEffect(() => () => {
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+  }, []);
+
   const selectRecipient = (item) => {
     const existingConversation = conversations.find((conversation) => conversation.participant?.id === item.id);
     if (existingConversation) {
-      setSelectedRecipient(null);
       setComposeQuery('');
       setUserResults([]);
-      setComposeMessage('');
-      setSelectedId(existingConversation.id);
+      openConversation(existingConversation.id);
       return;
     }
 
@@ -315,13 +611,17 @@ export default function InboxPage() {
         recipient_id: selectedRecipient?.id,
         message: composeMessage.trim(),
       });
-      const conversationId = res.data.conversation?.id;
+      const nextConversation = res.data.conversation;
+      const createdMessage = res.data.message;
+      const conversationId = nextConversation?.id;
       setComposeQuery('');
       setSelectedRecipient(null);
       setUserResults([]);
       setComposeMessage('');
+      if (nextConversation) upsertConversation(nextConversation);
+      if (createdMessage) setMessages([createdMessage]);
+      setSelectedId(conversationId);
       success('Conversation started');
-      await loadConversations(conversationId);
     } catch (err) {
       error(err.response?.data?.message || 'Failed to start conversation');
     } finally {
@@ -331,12 +631,24 @@ export default function InboxPage() {
 
   const sendMessage = async () => {
     if (!selectedId || !draftMessage.trim()) return;
+    const body = draftMessage.trim();
+    const tempMessage = makeTempMessage({ body, conversationId: selectedId, sender: user });
     setSending(true);
+    appendTemporaryMessage(tempMessage);
+    setDraftMessage('');
+    if (socketRef.current) {
+      socketRef.current.emit('typing:stop', { conversationId: selectedId, userId: user?.id });
+      typingConversationRef.current = null;
+    }
     try {
-      await inboxApi.sendMessage(selectedId, { body: draftMessage.trim() });
-      setDraftMessage('');
-      await loadMessages(selectedId);
+      const res = await inboxApi.sendMessage(selectedId, { body, client_temp_id: tempMessage.id });
+      const nextMessage = res.data.message;
+      if (nextMessage) {
+        mergeMessageIntoThread(nextMessage, res.data.clientTempId || tempMessage.id);
+        setConversationLatestMessage(selectedId, { ...nextMessage, _status: 'sent' }, 0);
+      }
     } catch (err) {
+      failTemporaryMessage(tempMessage.id);
       error(err.response?.data?.message || 'Failed to send message');
     } finally {
       setSending(false);
@@ -539,11 +851,7 @@ export default function InboxPage() {
                     <button
                       key={conversation.id}
                       type="button"
-                      onClick={() => {
-                        setSelectedRecipient(null);
-                        setComposeMessage('');
-                        setSelectedId(conversation.id);
-                      }}
+                      onClick={() => openConversation(conversation.id)}
                       className={`w-full rounded-3xl border p-3 text-left transition-all ${
                         selectedId === conversation.id
                           ? 'border-[#1B3A6B] bg-blue-50 shadow-sm'
@@ -557,10 +865,14 @@ export default function InboxPage() {
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
                                 <p className="truncate text-sm font-semibold text-slate-800">{conversation.participant?.name || 'Unknown user'}</p>
-                                <span className={`inline-flex h-2.5 w-2.5 rounded-full ${conversation.unreadCount > 0 ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+                                <span className={`inline-flex h-2.5 w-2.5 rounded-full ${onlineUserIds.has(String(conversation.participant?.id)) ? 'bg-emerald-400' : 'bg-slate-300'}`} />
                               </div>
                               <p className="truncate text-xs text-slate-400">
-                                {conversation.unreadCount > 0 ? 'New activity' : 'Quiet now'} • {conversation.participant?.email}
+                                {typingByConversation[conversation.id] === String(conversation.participant?.id)
+                                  ? 'Typing...'
+                                  : onlineUserIds.has(String(conversation.participant?.id))
+                                    ? 'Online'
+                                    : 'Offline'} • {conversation.participant?.email}
                               </p>
                             </div>
                             <div className="shrink-0 text-right">
@@ -575,7 +887,9 @@ export default function InboxPage() {
                             </div>
                           </div>
                           <p className="mt-2 truncate text-sm text-slate-500">
-                            {conversation.latestMessage?.body || 'No messages yet'}
+                            {typingByConversation[conversation.id] === String(conversation.participant?.id)
+                              ? 'Typing...'
+                              : conversation.latestMessage?.body || 'No messages yet'}
                           </p>
                         </div>
                       </div>
@@ -597,7 +911,11 @@ export default function InboxPage() {
                     <div className="min-w-0">
                       <p className="truncate text-lg font-bold text-slate-900">{selectedConversation.participant?.name}</p>
                       <p className="truncate text-sm text-slate-500">
-                        {selectedConversation.unreadCount > 0 ? 'Unread messages waiting' : 'Usually replies quickly'} • {selectedConversation.participant?.email}
+                        {selectedConversationTyping
+                          ? 'Typing...'
+                          : selectedParticipantOnline
+                            ? 'Online now'
+                            : 'Offline'} • {selectedConversation.participant?.email}
                       </p>
                     </div>
                   </div>
@@ -637,11 +955,11 @@ export default function InboxPage() {
                                   ? 'rounded-br-md bg-[#1B3A6B] text-white'
                                   : 'rounded-bl-md border border-slate-200 bg-white text-slate-700'
                               }`}>
-                                <p>{message.body}</p>
-                              </div>
+                              <p>{message.body}</p>
+                            </div>
                               <p className="mt-1 px-1 text-[11px] text-slate-400">
                                 {timeLabel(message.createdAt || message.created_at)}
-                                {mine ? ` • ${message.is_read ? 'Read' : 'Delivered'}` : ''}
+                                {mine ? ` • ${message._status === 'sending' ? 'Sending...' : message._status === 'failed' ? 'Failed to send' : message.is_read ? 'Read' : 'Delivered'}` : ''}
                               </p>
                             </div>
                             {mine && <Avatar user={user} />}

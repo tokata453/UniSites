@@ -150,6 +150,37 @@ const markAllNotificationsRead = async (req, res) => {
   }
 };
 
+const markConversationNotificationsRead = async (req, res) => {
+  try {
+    const conversationId = req.params.conversationId;
+    if (!conversationId) return error(res, 'Conversation id is required');
+
+    const notifications = await db.Notification.findAll({
+      where: {
+        user_id: req.user.id,
+        type: 'message',
+        is_read: false,
+      },
+      attributes: ['id', 'data'],
+    });
+
+    const matchingIds = notifications
+      .filter((item) => String(item.data?.conversation_id || '') === String(conversationId))
+      .map((item) => item.id);
+
+    if (matchingIds.length) {
+      await db.Notification.update(
+        { is_read: true },
+        { where: { id: matchingIds } }
+      );
+    }
+
+    return success(res, { updated: matchingIds.length }, 'Conversation notifications marked as read');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
 const getSavedItems = async (req, res) => {
   try {
     const rawItems = await db.SavedItem.findAll({
@@ -221,6 +252,6 @@ const logout = (req, res) => success(res, {}, 'Logged out successfully');
 module.exports = {
   register, login, oauthCallback,
   getMe, updateProfile, changePassword,
-  getNotifications, markAllNotificationsRead,
+  getNotifications, markAllNotificationsRead, markConversationNotificationsRead,
   getSavedItems, toggleSavedItem, logout,
 };

@@ -50,6 +50,7 @@ router.put('/profile',           authenticate, uploadAvatar.single('avatar'), c.
 router.post('/logout',           authenticate, c.logout);
 router.get('/notifications',     authenticate, c.getNotifications);
 router.put('/notifications/read',authenticate, c.markAllNotificationsRead);
+router.put('/notifications/read/conversation/:conversationId', authenticate, c.markConversationNotificationsRead);
 router.get('/saved',             authenticate, c.getSavedItems);
 router.post('/saved',            authenticate, c.toggleSavedItem);
 

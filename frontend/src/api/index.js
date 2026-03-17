@@ -9,6 +9,7 @@ export const authApi = {
   changePassword:         (data)         => api.put('/auth/change-password', data),
   getNotifications:       ()             => api.get('/auth/notifications'),
   markNotificationsRead:  ()             => api.put('/auth/notifications/read'),
+  markConversationNotificationsRead: (conversationId) => api.put(`/auth/notifications/read/conversation/${conversationId}`),
   getSavedItems:          ()             => api.get('/auth/saved'),
   toggleSavedItem:        (data)         => api.post('/auth/saved', data),
   logout:                 ()             => api.post('/auth/logout'),
