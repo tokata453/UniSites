@@ -901,7 +901,7 @@ export default function InboxPage() {
           </div>
         </aside>
 
-        <section className={`${shell} flex min-h-[720px] flex-col overflow-hidden`}>
+        <section className={`${shell} flex h-[calc(100vh-13rem)] min-h-[620px] max-h-[760px] flex-col overflow-hidden`}>
           {selectedConversation ? (
             <>
               <div className="border-b border-slate-200 bg-white px-5 py-4">
