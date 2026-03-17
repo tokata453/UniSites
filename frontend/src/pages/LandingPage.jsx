@@ -154,9 +154,34 @@ export default function LandingPage() {
       {/* ══════════════ HERO ══════════════ */}
       <section className="relative px-6 pt-24 pb-24 text-center overflow-hidden min-h-[520px] flex items-center">
         {BG_SLIDES.map((s, i) => (
-          <div key={i} style={{ position: 'absolute', inset: 0, backgroundImage: `url(${s.url})`, backgroundSize: 'cover', backgroundPosition: 'center', opacity: i === slide ? 1 : 0, transition: 'opacity 0.8s ease', zIndex: 0 }} />
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: `url(${s.url})`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              opacity: i === slide ? 1 : 0,
+              transform: i === slide ? 'scale(1.04)' : 'scale(1)',
+              filter: 'saturate(1.08) contrast(1.02) brightness(0.92)',
+              transition: 'opacity 0.8s ease, transform 5s ease',
+              zIndex: 0,
+            }}
+          />
         ))}
-        <div className="absolute inset-0 z-[1]" style={{ background: 'linear-gradient(to bottom, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.88) 60%, rgba(255,255,255,0.97) 100%)' }} />
+        <div
+          className="absolute inset-0 z-[1]"
+          style={{
+            background: 'linear-gradient(to bottom, rgba(255,255,255,0.56) 0%, rgba(255,255,255,0.66) 45%, rgba(255,255,255,0.84) 100%)',
+          }}
+        />
+        <div
+          className="absolute inset-0 z-[1]"
+          style={{
+            background: 'radial-gradient(circle at center, rgba(27,58,107,0.06) 0%, rgba(27,58,107,0.14) 100%)',
+          }}
+        />
         <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-10 flex gap-2">
           {BG_SLIDES.map((s, i) => (
             <button key={i} onClick={() => goSlide(i)} title={s.label}
