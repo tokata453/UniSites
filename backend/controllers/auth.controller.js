@@ -33,11 +33,16 @@ const register = async (req, res) => {
       include: [{ model: db.Role, as: 'Role' }],
     });
 
+    const token = generateToken({ id: fresh.id, email: fresh.email, role: fresh.Role?.name });
+
     if (requestedRole === 'organization') {
-      return created(res, { pendingApproval: true, user: fresh }, 'Organization account created. Pending admin approval.');
+      return created(
+        res,
+        { pendingApproval: true, token, user: fresh },
+        'Organization account created. Pending admin approval.'
+      );
     }
 
-    const token = generateToken({ id: fresh.id, email: fresh.email, role: fresh.Role?.name });
     return created(res, { token, user: fresh }, 'Account created successfully');
   } catch (err) {
     return error(res, err.message, 500);
