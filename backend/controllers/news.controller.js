@@ -20,13 +20,22 @@ const normalizeImages = (payload = {}) => {
 const list = async (req, res) => {
   try {
     const { page = 1, limit = 10, search } = req.query;
-    const where = { university_id: req.params.universityId, is_published: true };
+    const university = await db.University.findByPk(req.params.universityId, { attributes: ['id', 'owner_id'] });
+    if (!university) return notFound(res, 'University not found');
+
+    const canViewAll = req.user && (
+      req.user.Role?.name === 'admin' ||
+      university.owner_id === req.user.id
+    );
+
+    const where = { university_id: req.params.universityId };
+    if (!canViewAll) where.is_published = true;
     if (search) where.title = { [Op.iLike]: `%${search}%` };
 
     const { count, rows } = await db.UniversityNews.findAndCountAll({
       where,
       ...getPagination({ page, limit }),
-      order: [['is_pinned', 'DESC'], ['published_at', 'DESC']],
+      order: [['is_pinned', 'DESC'], ['published_at', 'DESC'], ['created_at', 'DESC']],
       include: [{ model: db.User, as: 'Author', attributes: ['id', 'name', 'avatar_url'] }],
     });
     return success(res, paginateResponse(rows, count, page, limit));

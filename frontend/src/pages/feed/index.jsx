@@ -95,16 +95,20 @@ const FeedImageCarousel = ({ item, imageIndex, onPrev, onNext }) => {
   const currentImage = images[currentIndex];
 
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-slate-100">
-      <div className="flex max-h-[540px] min-h-[280px] items-center justify-center bg-slate-950">
-        <img src={coverUrl(currentImage) || currentImage} alt="" className="max-h-[540px] w-full object-contain" />
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+      <div className="flex min-h-[280px] items-center justify-center bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)] md:min-h-[360px]">
+        <img
+          src={coverUrl(currentImage) || currentImage}
+          alt=""
+          className="max-h-[560px] w-full object-contain"
+        />
       </div>
       {images.length > 1 && (
         <>
           <button
             type="button"
             onClick={onPrev}
-            className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-slate-950/55 text-sm font-bold text-white backdrop-blur transition-all hover:bg-slate-950/70"
+            className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-slate-700 shadow-sm backdrop-blur transition-all hover:bg-white"
             aria-label="Previous image"
           >
             ‹
@@ -112,16 +116,16 @@ const FeedImageCarousel = ({ item, imageIndex, onPrev, onNext }) => {
           <button
             type="button"
             onClick={onNext}
-            className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-slate-950/55 text-sm font-bold text-white backdrop-blur transition-all hover:bg-slate-950/70"
+            className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-slate-700 shadow-sm backdrop-blur transition-all hover:bg-white"
             aria-label="Next image"
           >
             ›
           </button>
-          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-slate-950/45 px-3 py-1.5 backdrop-blur">
+          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 shadow-sm backdrop-blur">
             {images.map((_, index) => (
               <span
                 key={index}
-                className={`h-1.5 w-1.5 rounded-full ${index === currentIndex ? 'bg-white' : 'bg-white/45'}`}
+                className={`h-1.5 w-1.5 rounded-full ${index === currentIndex ? 'bg-[#1B3A6B]' : 'bg-slate-300'}`}
               />
             ))}
           </div>
@@ -388,11 +392,11 @@ export default function FeedPage() {
                         </div>
 
                         <div className="mt-4 flex flex-wrap gap-2">
-                          {item.kind === 'news' && item.News?.category && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">#{item.News.category}</span>}
-                          {item.kind === 'news' && item.News?.is_pinned && <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">#pinned</span>}
-                          {item.kind === 'opportunity' && item.Opportunity?.is_featured && <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">#featured</span>}
-                          {item.kind === 'opportunity' && item.Opportunity?.is_fully_funded && <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">#fullyfunded</span>}
-                          {item.kind === 'opportunity' && item.Opportunity?.country && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">#{item.Opportunity.country.replace(/\s+/g, '').toLowerCase()}</span>}
+                          {item.kind === 'news' && item.News?.category && <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">#{item.News.category}</span>}
+                          {item.kind === 'news' && item.News?.is_pinned && <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">#pinned</span>}
+                          {item.kind === 'opportunity' && item.Opportunity?.is_featured && <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">#featured</span>}
+                          {item.kind === 'opportunity' && item.Opportunity?.is_fully_funded && <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">#fullyfunded</span>}
+                          {item.kind === 'opportunity' && item.Opportunity?.country && <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">#{item.Opportunity.country.replace(/\s+/g, '').toLowerCase()}</span>}
                         </div>
 
                         <div className="mt-4">
@@ -422,7 +426,11 @@ export default function FeedPage() {
                           </div>
                           <Link
                             to={item.kind === 'news' ? `/universities/${item.News?.University?.slug || ''}` : `/opportunities/${item.Opportunity?.slug || ''}`}
-                            className="text-sm font-medium text-[#1B3A6B] hover:underline"
+                            className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                              item.kind === 'news'
+                                ? 'border border-slate-200 bg-white text-[#1B3A6B] hover:bg-slate-50'
+                                : 'bg-[#1B3A6B] text-white shadow-sm hover:opacity-90'
+                            }`}
                           >
                             {item.kind === 'news' ? 'View university' : 'Open opportunity'}
                           </Link>

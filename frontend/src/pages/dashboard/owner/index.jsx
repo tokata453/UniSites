@@ -190,6 +190,14 @@ const emptyContactForm = {
   map_embed_url: '',
 };
 
+const toDateTimeLocalValue = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (num) => String(num).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
 function useOwnerUniversity() {
   const [university, setUniversity] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -306,7 +314,7 @@ function ImageUploadField({ values = [], onUpload, uploading, onRemove, hint = '
   );
 }
 
-function OpportunityImageCarousel({ item, imageIndex, onPrev, onNext }) {
+function MediaImageCarousel({ item, imageIndex, onPrev, onNext }) {
   const images = Array.isArray(item.image_urls) && item.image_urls.length
     ? item.image_urls
     : item.cover_url
@@ -319,22 +327,37 @@ function OpportunityImageCarousel({ item, imageIndex, onPrev, onNext }) {
   const currentImage = images[currentIndex];
 
   return (
-    <div className="mb-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
-      <div className="flex h-56 items-center justify-center bg-slate-50 p-2 md:h-72">
-        <img src={coverUrl(currentImage) || currentImage} alt={item.title} className="h-full w-full object-contain" />
+    <div className="relative mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+      <div className="flex min-h-[280px] items-center justify-center bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)]">
+        <img src={coverUrl(currentImage) || currentImage} alt={item.title} className="max-h-[560px] w-full object-contain" />
       </div>
       {images.length > 1 && (
-        <div className="flex items-center justify-between border-t border-slate-200 px-3 py-2">
-          <button type="button" onClick={onPrev} className={secondaryBtn}>
-            Prev
+        <>
+          <button
+            type="button"
+            onClick={onPrev}
+            className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-slate-700 shadow-sm backdrop-blur transition-all hover:bg-white"
+            aria-label="Previous image"
+          >
+            ‹
           </button>
-          <span className="text-xs font-medium text-slate-500">
-            {currentIndex + 1} / {images.length}
-          </span>
-          <button type="button" onClick={onNext} className={secondaryBtn}>
-            Next
+          <button
+            type="button"
+            onClick={onNext}
+            className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-slate-700 shadow-sm backdrop-blur transition-all hover:bg-white"
+            aria-label="Next image"
+          >
+            ›
           </button>
-        </div>
+          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 shadow-sm backdrop-blur">
+            {images.map((_, index) => (
+              <span
+                key={index}
+                className={`h-1.5 w-1.5 rounded-full ${index === currentIndex ? 'bg-[#1B3A6B]' : 'bg-slate-300'}`}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
@@ -546,8 +569,8 @@ export function OwnerOverview() {
       universityApi.getGallery(university.id).catch(() => ({ data: { gallery: [] } })),
       universityApi.getFaculties(university.id).catch(() => ({ data: { faculties: [] } })),
       universityApi.getPrograms(university.id).catch(() => ({ data: { programs: [] } })),
-      universityApi.getNews(university.id).catch(() => ({ data: { news: [], items: [] } })),
-      universityApi.getEvents(university.id).catch(() => ({ data: { events: [], items: [] } })),
+      universityApi.getNews(university.id).catch(() => ({ data: { data: [] } })),
+      universityApi.getEvents(university.id).catch(() => ({ data: { data: [] } })),
       universityApi.getFAQs(university.id).catch(() => ({ data: { faqs: [] } })),
       opportunityApi.getMine().catch(() => ({ data: { opportunities: [] } })),
       universityApi.getOwnerReviews(university.id).catch(() => ({ data: { reviews: [] } })),
@@ -559,8 +582,8 @@ export function OwnerOverview() {
         gallery: galleryRes.data.gallery?.length || 0,
         faculties: facultiesRes.data.faculties?.length || 0,
         programs: programsRes.data.programs?.length || 0,
-        news: newsRes.data.news?.length || newsRes.data.items?.length || 0,
-        events: eventsRes.data.events?.length || eventsRes.data.items?.length || 0,
+        news: newsRes.data.data?.length || 0,
+        events: eventsRes.data.data?.length || 0,
         faqs: faqRes.data.faqs?.length || 0,
         opportunities: ownerOpportunities.length,
         pendingReviews: ownerReviews.filter((review) => !review.is_approved).length,
@@ -1367,19 +1390,98 @@ export function OwnerNews() {
   const [eventForm, setEventForm] = useState(emptyEventForm);
   const [saving, setSaving] = useState(false);
   const [uploadingTarget, setUploadingTarget] = useState('');
+  const [editingNewsId, setEditingNewsId] = useState(null);
+  const [editingEventId, setEditingEventId] = useState(null);
+  const [newsImageIndexes, setNewsImageIndexes] = useState({});
+  const [eventImageIndexes, setEventImageIndexes] = useState({});
 
   const loadData = useCallback(async (uniId) => {
     const [newsRes, eventRes] = await Promise.all([
-      universityApi.getNews(uniId).catch(() => ({ data: { news: [] } })),
-      universityApi.getEvents(uniId).catch(() => ({ data: { events: [] } })),
+      universityApi.getNews(uniId).catch(() => ({ data: { data: [] } })),
+      universityApi.getEvents(uniId).catch(() => ({ data: { data: [] } })),
     ]);
-    setNews(newsRes.data.news || newsRes.data.items || []);
-    setEvents(eventRes.data.events || eventRes.data.items || []);
+    setNews(newsRes.data.data || []);
+    setEvents(eventRes.data.data || []);
   }, []);
 
   useEffect(() => {
     if (university?.id) loadData(university.id);
   }, [loadData, university?.id]);
+
+  const cycleNewsImage = (item, direction) => {
+    const images = Array.isArray(item.image_urls) && item.image_urls.length
+      ? item.image_urls
+      : item.cover_url
+      ? [item.cover_url]
+      : [];
+    if (images.length <= 1) return;
+
+    setNewsImageIndexes((prev) => {
+      const current = prev[item.id] ?? 0;
+      const next = (current + direction + images.length) % images.length;
+      return { ...prev, [item.id]: next };
+    });
+  };
+
+  const cycleEventImage = (item, direction) => {
+    const images = Array.isArray(item.image_urls) && item.image_urls.length
+      ? item.image_urls
+      : item.cover_url
+      ? [item.cover_url]
+      : [];
+    if (images.length <= 1) return;
+
+    setEventImageIndexes((prev) => {
+      const current = prev[item.id] ?? 0;
+      const next = (current + direction + images.length) % images.length;
+      return { ...prev, [item.id]: next };
+    });
+  };
+
+  const resetNewsForm = () => {
+    setNewsForm(emptyNewsForm);
+    setEditingNewsId(null);
+  };
+
+  const resetEventForm = () => {
+    setEventForm(emptyEventForm);
+    setEditingEventId(null);
+  };
+
+  const startEditNews = (item) => {
+    setEditingNewsId(item.id);
+    setNewsForm({
+      ...emptyNewsForm,
+      ...item,
+      tags: Array.isArray(item.tags) ? item.tags.join(', ') : item.tags || '',
+      image_urls: Array.isArray(item.image_urls) && item.image_urls.length
+        ? item.image_urls
+        : item.cover_url
+        ? [item.cover_url]
+        : [],
+      cover_url: item.cover_url || '',
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const startEditEvent = (item) => {
+    setEditingEventId(item.id);
+    setEventForm({
+      ...emptyEventForm,
+      ...item,
+      image_urls: Array.isArray(item.image_urls) && item.image_urls.length
+        ? item.image_urls
+        : item.cover_url
+        ? [item.cover_url]
+        : [],
+      cover_url: item.cover_url || '',
+      event_date: toDateTimeLocalValue(item.event_date),
+      end_date: toDateTimeLocalValue(item.end_date),
+      registration_deadline: toDateTimeLocalValue(item.registration_deadline),
+      max_participants: item.max_participants ?? '',
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const uploadImages = async (kind, files) => {
     if (!files?.length) return;
@@ -1430,15 +1532,21 @@ export function OwnerNews() {
   const submitNews = async () => {
     setSaving(true);
     try {
-      await universityApi.createNews(university.id, {
+      const payload = {
         ...newsForm,
         tags: newsForm.tags.split(',').map((tag) => tag.trim()).filter(Boolean),
-      });
-      success('News post created');
-      setNewsForm(emptyNewsForm);
+      };
+      if (editingNewsId) {
+        await universityApi.updateNews(university.id, editingNewsId, payload);
+        success('News post updated');
+      } else {
+        await universityApi.createNews(university.id, payload);
+        success('News post created');
+      }
+      resetNewsForm();
       loadData(university.id);
     } catch (err) {
-      error(err.response?.data?.message || 'Failed to create news post');
+      error(err.response?.data?.message || 'Failed to save news post');
     } finally {
       setSaving(false);
     }
@@ -1447,15 +1555,22 @@ export function OwnerNews() {
   const submitEvent = async () => {
     setSaving(true);
     try {
-      await universityApi.createEvent(university.id, {
+      const payload = {
         ...eventForm,
+        registration_deadline: eventForm.registration_deadline || null,
         max_participants: numericValue(eventForm.max_participants),
-      });
-      success('Event created');
-      setEventForm(emptyEventForm);
+      };
+      if (editingEventId) {
+        await universityApi.updateEvent(university.id, editingEventId, payload);
+        success('Event updated');
+      } else {
+        await universityApi.createEvent(university.id, payload);
+        success('Event created');
+      }
+      resetEventForm();
       loadData(university.id);
     } catch (err) {
-      error(err.response?.data?.message || 'Failed to create event');
+      error(err.response?.data?.message || 'Failed to save event');
     } finally {
       setSaving(false);
     }
@@ -1465,6 +1580,7 @@ export function OwnerNews() {
     try {
       await universityApi.deleteNews(university.id, id);
       success('News deleted');
+      if (editingNewsId === id) resetNewsForm();
       loadData(university.id);
     } catch (err) {
       error(err.response?.data?.message || 'Failed to delete news');
@@ -1475,6 +1591,7 @@ export function OwnerNews() {
     try {
       await universityApi.deleteEvent(university.id, id);
       success('Event deleted');
+      if (editingEventId === id) resetEventForm();
       loadData(university.id);
     } catch (err) {
       error(err.response?.data?.message || 'Failed to delete event');
@@ -1487,7 +1604,11 @@ export function OwnerNews() {
   return (
     <PageSection title="News & Events" subtitle="Keep your university page active with announcements and upcoming activities.">
       <div className="grid gap-5 xl:grid-cols-2">
-        <Panel title="Create News Post" description="Only published posts appear in the current public news feed.">
+        <Panel
+          title={editingNewsId ? 'Edit News Post' : 'Create News Post'}
+          description="Only published posts appear in the current public news feed."
+          action={editingNewsId ? <button type="button" onClick={resetNewsForm} className={secondaryBtn}>Cancel Editing</button> : null}
+        >
           <div className="space-y-4">
             <Field label="Title"><TextInput value={newsForm.title} onChange={(e) => setNewsForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Admissions open for 2026 intake" /></Field>
             <Field label="Category"><TextInput value={newsForm.category} onChange={(e) => setNewsForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="Admissions, Scholarships, Campus Life" /></Field>
@@ -1510,11 +1631,15 @@ export function OwnerNews() {
               <ToggleField label="Publish immediately" checked={newsForm.is_published} onChange={(value) => setNewsForm((prev) => ({ ...prev, is_published: value }))} />
               <ToggleField label="Pin this post" checked={newsForm.is_pinned} onChange={(value) => setNewsForm((prev) => ({ ...prev, is_pinned: value }))} />
             </div>
-            <button type="button" onClick={submitNews} disabled={saving || !newsForm.title.trim() || !newsForm.content.trim()} className={primaryBtn}>{saving ? 'Saving...' : 'Publish News'}</button>
+            <button type="button" onClick={submitNews} disabled={saving || !newsForm.title.trim() || !newsForm.content.trim()} className={primaryBtn}>{saving ? 'Saving...' : editingNewsId ? 'Update News' : 'Publish News'}</button>
           </div>
         </Panel>
 
-        <Panel title="Create Event" description="Events help prospective students see that your campus is active.">
+        <Panel
+          title={editingEventId ? 'Edit Event' : 'Create Event'}
+          description="Events help prospective students see that your campus is active."
+          action={editingEventId ? <button type="button" onClick={resetEventForm} className={secondaryBtn}>Cancel Editing</button> : null}
+        >
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Title"><TextInput value={eventForm.title} onChange={(e) => setEventForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Open Day 2026" /></Field>
             <Field label="Event Type"><SelectInput value={eventForm.type} onChange={(e) => setEventForm((prev) => ({ ...prev, type: e.target.value }))} options={EVENT_OPTIONS} /></Field>
@@ -1524,6 +1649,7 @@ export function OwnerNews() {
             <Field label="Max Participants"><TextInput type="number" value={eventForm.max_participants} onChange={(e) => setEventForm((prev) => ({ ...prev, max_participants: e.target.value }))} placeholder="300" /></Field>
             <Field label="Meeting URL"><TextInput value={eventForm.meeting_url} onChange={(e) => setEventForm((prev) => ({ ...prev, meeting_url: e.target.value }))} placeholder="For online events" /></Field>
             <Field label="Registration URL"><TextInput value={eventForm.registration_url} onChange={(e) => setEventForm((prev) => ({ ...prev, registration_url: e.target.value }))} placeholder="External signup form" /></Field>
+            <Field label="Registration Deadline"><TextInput type="datetime-local" value={eventForm.registration_deadline} onChange={(e) => setEventForm((prev) => ({ ...prev, registration_deadline: e.target.value }))} /></Field>
             <div className="md:col-span-2">
               <Field label="Description"><TextArea rows={5} value={eventForm.description} onChange={(e) => setEventForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="What attendees can expect" /></Field>
             </div>
@@ -1547,7 +1673,7 @@ export function OwnerNews() {
               <ToggleField label="Feature this event" checked={eventForm.is_featured} onChange={(value) => setEventForm((prev) => ({ ...prev, is_featured: value }))} />
             </div>
           </div>
-          <div className="mt-4"><button type="button" onClick={submitEvent} disabled={saving || !eventForm.title.trim() || !eventForm.event_date} className={primaryBtn}>{saving ? 'Saving...' : 'Create Event'}</button></div>
+          <div className="mt-4"><button type="button" onClick={submitEvent} disabled={saving || !eventForm.title.trim() || !eventForm.event_date} className={primaryBtn}>{saving ? 'Saving...' : editingEventId ? 'Update Event' : 'Create Event'}</button></div>
         </Panel>
       </div>
 
@@ -1556,23 +1682,26 @@ export function OwnerNews() {
           {news.length === 0 ? <EmptyState title="No published news yet" description="Your published news posts will show here after creation." /> : (
             <div className="space-y-3">
               {news.map((item) => (
-                <div key={item.id} className="rounded-xl border border-slate-200 p-4">
-                  {item.cover_url ? (
-                    <div className="mb-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
-                      <img src={coverUrl(item.cover_url) || item.cover_url} alt={item.title} className="h-36 w-full object-cover" />
-                    </div>
-                  ) : null}
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-slate-800">{item.title}</p>
-                        {item.is_pinned && <StatusPill tone="orange">Pinned</StatusPill>}
-                      </div>
-                      <p className="mt-1 text-sm text-slate-500">{item.category || 'General'}{item.published_at ? ` • ${formatDate(item.published_at)}` : ''}</p>
-                    </div>
+                <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <MediaImageCarousel
+                    item={item}
+                    imageIndex={newsImageIndexes[item.id] ?? 0}
+                    onPrev={() => cycleNewsImage(item, -1)}
+                    onNext={() => cycleNewsImage(item, 1)}
+                  />
+                  <p className="text-2xl font-bold leading-tight text-slate-800">{item.title}</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <StatusPill tone="blue">{item.category || 'General'}</StatusPill>
+                    {item.is_pinned && <StatusPill tone="orange">Pinned</StatusPill>}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500">
+                    {item.published_at && <span>Published: {formatDate(item.published_at)}</span>}
+                  </div>
+                  {item.excerpt && <p className="mt-3 max-w-4xl text-base leading-8 text-slate-600 line-clamp-3">{item.excerpt}</p>}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button type="button" onClick={() => startEditNews(item)} className={secondaryBtn}>Edit</button>
                     <button type="button" onClick={() => deleteNews(item.id)} className={dangerBtn}>Delete</button>
                   </div>
-                  {item.excerpt && <p className="mt-3 text-sm text-slate-600">{item.excerpt}</p>}
                 </div>
               ))}
             </div>
@@ -1583,23 +1712,28 @@ export function OwnerNews() {
           {events.length === 0 ? <EmptyState title="No published events yet" description="Add an event to start building activity on your page." /> : (
             <div className="space-y-3">
               {events.map((item) => (
-                <div key={item.id} className="rounded-xl border border-slate-200 p-4">
-                  {item.cover_url ? (
-                    <div className="mb-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
-                      <img src={coverUrl(item.cover_url) || item.cover_url} alt={item.title} className="h-36 w-full object-cover" />
-                    </div>
-                  ) : null}
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-slate-800">{item.title}</p>
-                        {item.is_featured && <StatusPill tone="orange">Featured</StatusPill>}
-                      </div>
-                      <p className="mt-1 text-sm text-slate-500">{formatDate(item.event_date)}{item.location ? ` • ${item.location}` : ''}</p>
-                    </div>
+                <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <MediaImageCarousel
+                    item={item}
+                    imageIndex={eventImageIndexes[item.id] ?? 0}
+                    onPrev={() => cycleEventImage(item, -1)}
+                    onNext={() => cycleEventImage(item, 1)}
+                  />
+                  <p className="text-2xl font-bold leading-tight text-slate-800">{item.title}</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <StatusPill tone="blue">{item.type || 'Event'}</StatusPill>
+                    {item.is_featured && <StatusPill tone="orange">Featured</StatusPill>}
+                    {item.is_online && <StatusPill tone="green">Online</StatusPill>}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500">
+                    {item.event_date && <span>Date: {formatDate(item.event_date)}</span>}
+                    {item.location && <span>Location: {item.location}</span>}
+                  </div>
+                  {item.description && <p className="mt-3 max-w-4xl text-base leading-8 text-slate-600 line-clamp-3">{item.description}</p>}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button type="button" onClick={() => startEditEvent(item)} className={secondaryBtn}>Edit</button>
                     <button type="button" onClick={() => deleteEvent(item.id)} className={dangerBtn}>Delete</button>
                   </div>
-                  {item.description && <p className="mt-3 text-sm text-slate-600">{item.description}</p>}
                 </div>
               ))}
             </div>
@@ -1836,7 +1970,7 @@ export function OwnerOpportunities() {
             <div className="space-y-4">
               {items.map((item) => (
                 <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <OpportunityImageCarousel
+                  <MediaImageCarousel
                     item={item}
                     imageIndex={imageIndexes[item.id] ?? 0}
                     onPrev={() => cycleItemImage(item, -1)}

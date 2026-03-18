@@ -19,7 +19,16 @@ const normalizeImages = (payload = {}) => {
 const list = async (req, res) => {
   try {
     const { page = 1, limit = 10, upcoming } = req.query;
-    const where = { university_id: req.params.universityId, is_published: true };
+    const university = await db.University.findByPk(req.params.universityId, { attributes: ['id', 'owner_id'] });
+    if (!university) return notFound(res, 'University not found');
+
+    const canViewAll = req.user && (
+      req.user.Role?.name === 'admin' ||
+      university.owner_id === req.user.id
+    );
+
+    const where = { university_id: req.params.universityId };
+    if (!canViewAll) where.is_published = true;
     if (upcoming === 'true') where.event_date = { [Op.gte]: new Date() };
 
     const { count, rows } = await db.UniversityEvent.findAndCountAll({

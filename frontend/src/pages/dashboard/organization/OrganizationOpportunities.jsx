@@ -143,22 +143,37 @@ function OpportunityImageCarousel({ item, imageIndex, onPrev, onNext }) {
   const currentImage = images[currentIndex];
 
   return (
-    <div className="mb-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
-      <div className="flex h-56 items-center justify-center bg-slate-50 p-2 md:h-72">
-        <img src={coverUrl(currentImage) || currentImage} alt={item.title} className="h-full w-full object-contain" />
+    <div className="relative mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+      <div className="flex min-h-[280px] items-center justify-center bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)]">
+        <img src={coverUrl(currentImage) || currentImage} alt={item.title} className="max-h-[560px] w-full object-contain" />
       </div>
       {images.length > 1 && (
-        <div className="flex items-center justify-between border-t border-slate-200 px-3 py-2">
-          <button type="button" onClick={onPrev} className={secondaryBtn}>
-            Prev
+        <>
+          <button
+            type="button"
+            onClick={onPrev}
+            className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-slate-700 shadow-sm backdrop-blur transition-all hover:bg-white"
+            aria-label="Previous image"
+          >
+            ‹
           </button>
-          <span className="text-xs font-medium text-slate-500">
-            {currentIndex + 1} / {images.length}
-          </span>
-          <button type="button" onClick={onNext} className={secondaryBtn}>
-            Next
+          <button
+            type="button"
+            onClick={onNext}
+            className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-slate-700 shadow-sm backdrop-blur transition-all hover:bg-white"
+            aria-label="Next image"
+          >
+            ›
           </button>
-        </div>
+          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 shadow-sm backdrop-blur">
+            {images.map((_, index) => (
+              <span
+                key={index}
+                className={`h-1.5 w-1.5 rounded-full ${index === currentIndex ? 'bg-[#1B3A6B]' : 'bg-slate-300'}`}
+              />
+            ))}
+          </div>
+        </>
       )}
     </div>
   );
