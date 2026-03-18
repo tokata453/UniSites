@@ -78,10 +78,12 @@ export default function DashboardLayout({ role }) {
   const accent = ROLE_ACCENT[role] || ROLE_ACCENT.student;
   const unreadInbox = unreadNotifications + unreadMessages;
   const inboxPath = role === 'admin' ? '/admin/inbox' : role === 'owner' ? '/owner/inbox' : role === 'organization' ? '/organization/inbox' : '/dashboard/inbox';
+  const isInboxRoute = location.pathname === inboxPath;
 
   useEffect(() => {
+    if (isInboxRoute) return;
     refreshSummary();
-  }, [refreshSummary]);
+  }, [isInboxRoute, refreshSummary]);
 
   const handleLogout = () => { logout(); clearSummary(); navigate('/'); };
 

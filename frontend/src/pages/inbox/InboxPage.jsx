@@ -8,6 +8,8 @@ const input = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5
 const primaryBtn = 'inline-flex items-center justify-center rounded-xl bg-[#1B3A6B] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60';
 const secondaryBtn = 'inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50';
 const iconBtn = 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700';
+const SUMMARY_POLL_MS = 30_000;
+const MESSAGE_POLL_MS = 30_000;
 
 function EmptyBlock({ title, description }) {
   return (
@@ -355,7 +357,7 @@ export default function InboxPage() {
     }
   };
 
-  const loadMessages = async (conversationId, { silent = false } = {}) => {
+  const loadMessages = async (conversationId, { silent = false, markRead = true } = {}) => {
     if (!conversationId) {
       setMessages([]);
       return;
@@ -364,15 +366,17 @@ export default function InboxPage() {
     try {
       const res = await inboxApi.getMessages(conversationId);
       setMessages(res.data.messages || []);
-      await inboxApi.markConversationRead(conversationId);
-      setConversations((current) => {
-        const nextItems = current.map((item) => (
-          item.id === conversationId ? { ...item, unreadCount: 0 } : item
-        ));
-        const nextUnreadMessages = nextItems.reduce((sum, item) => sum + Number(item.unreadCount || 0), 0);
-        setUnreadMessages(nextUnreadMessages);
-        return nextItems;
-      });
+      if (markRead) {
+        await inboxApi.markConversationRead(conversationId);
+        setConversations((current) => {
+          const nextItems = current.map((item) => (
+            item.id === conversationId ? { ...item, unreadCount: 0 } : item
+          ));
+          const nextUnreadMessages = nextItems.reduce((sum, item) => sum + Number(item.unreadCount || 0), 0);
+          setUnreadMessages(nextUnreadMessages);
+          return nextItems;
+        });
+      }
     } catch (err) {
       if (!silent) {
         setMessages([]);
@@ -530,7 +534,7 @@ export default function InboxPage() {
       if (document.hidden) return;
       loadConversations(selectedIdRef.current, { silent: true });
       loadNotifications({ silent: true });
-    }, 8000);
+    }, SUMMARY_POLL_MS);
 
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -541,8 +545,8 @@ export default function InboxPage() {
 
     const interval = setInterval(() => {
       if (document.hidden) return;
-      loadMessages(selectedId, { silent: true });
-    }, 4000);
+      loadMessages(selectedId, { silent: true, markRead: false });
+    }, MESSAGE_POLL_MS);
 
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
