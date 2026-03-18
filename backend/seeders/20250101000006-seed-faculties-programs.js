@@ -228,6 +228,22 @@ module.exports = {
     const fMap = {};
     insertedFaculties.forEach(f => { fMap[`${f.university_id}_${f.name}`] = f.id; });
 
+    const labelize = (value) =>
+      value
+        ? value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase())
+        : '';
+
+    const buildProgramDescription = (program, uni) => {
+      const degree = labelize(program.degree_level) || 'Program';
+      const duration = program.duration_years ? `${program.duration_years}-year` : 'multi-year';
+      const language = program.language || (uni?.type === 'public' ? 'Khmer' : 'English');
+      const creditText = program.credits_required ? ` The curriculum typically spans ${program.credits_required} credits.` : '';
+      const tuitionText = program.tuition_fee ? ` Estimated annual tuition is around ${program.tuition_fee} USD.` : '';
+      const universityName = uni?.name || 'the university';
+
+      return `${program.name} is a ${duration.toLowerCase()} ${degree.toLowerCase()} offered at ${universityName}, delivered primarily in ${language}.${creditText}${tuitionText} Students can expect academic foundations, practical coursework, and preparation for related careers or further study.`;
+    };
+
     // ── Programs ──────────────────────────────────────────────────────────────
     const programs = [
       // RUPP — Science
@@ -280,6 +296,14 @@ module.exports = {
         degree_level: degreeLevel,
         duration_years: durationYears,
         language,
+        description: buildProgramDescription({
+          name,
+          degree_level: degreeLevel,
+          duration_years: durationYears,
+          language,
+          tuition_fee: tuitionFee,
+          credits_required: creditsRequired,
+        }, uni),
         tuition_fee: tuitionFee,
         tuition_currency: 'USD',
         credits_required: creditsRequired,
@@ -424,7 +448,13 @@ module.exports = {
     });
 
     // Only insert programs whose faculty and major IDs were resolved
-    const validPrograms = [...programs, ...genericPrograms, ...sharedExtensionPrograms].filter((p) => p?.faculty_id);
+    const uniById = Object.fromEntries(unis.map((uni) => [uni.id, uni]));
+    const validPrograms = [...programs, ...genericPrograms, ...sharedExtensionPrograms]
+      .filter((p) => p?.faculty_id)
+      .map((program) => ({
+        ...program,
+        description: program.description || buildProgramDescription(program, uniById[program.university_id]),
+      }));
     await queryInterface.bulkInsert('programs', validPrograms);
   },
 

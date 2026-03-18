@@ -62,6 +62,7 @@ export default function UniversityDetail() {
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [liveReviews, setLiveReviews] = useState([]);
   const [reviewError, setReviewError] = useState('');
+  const [openFaculties, setOpenFaculties] = useState({});
   const [reviewForm, setReviewForm] = useState({
     rating: 0,
     content: '',
@@ -118,6 +119,19 @@ export default function UniversityDetail() {
     })();
   }, [tab, uni?.id]);
 
+  useEffect(() => {
+    const facultyItems = uni?.Faculties || [];
+    if (!facultyItems.length) return;
+
+    setOpenFaculties((prev) => {
+      if (Object.keys(prev).length) return prev;
+      return facultyItems.reduce((acc, faculty, index) => {
+        acc[faculty.id] = index === 0;
+        return acc;
+      }, {});
+    });
+  }, [uni?.Faculties]);
+
   const handleSave = async () => {
     if (!isAuthenticated) return;
     setSavingLoading(true);
@@ -131,6 +145,8 @@ export default function UniversityDetail() {
   };
 
   const setReviewField = (key, value) => setReviewForm((prev) => ({ ...prev, [key]: value }));
+  const toggleFaculty = (facultyId) =>
+    setOpenFaculties((prev) => ({ ...prev, [facultyId]: !prev[facultyId] }));
 
   const handleReviewSubmit = async (event) => {
     event?.preventDefault();
@@ -438,21 +454,45 @@ export default function UniversityDetail() {
 
                   {faculties.map((faculty) => (
                     <Card key={faculty.id} className="p-6">
-                      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between mb-5">
+                      <button
+                        type="button"
+                        onClick={() => toggleFaculty(faculty.id)}
+                        className="mb-5 flex w-full flex-col gap-4 text-left md:flex-row md:items-start md:justify-between"
+                      >
                         <div className="flex items-start gap-3">
                           <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-base shrink-0">🏛️</div>
                           <div>
-                            <h3 className="font-bold text-slate-800 text-base">{faculty.name}</h3>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <h3 className="font-bold text-slate-800 text-base">{faculty.name}</h3>
+                              <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                                {(faculty.Programs || []).length} program{(faculty.Programs || []).length === 1 ? '' : 's'}
+                              </span>
+                            </div>
                             <div className="mt-1 flex flex-wrap gap-2 text-xs text-slate-500">
                               {faculty.dean_name && <span>Dean: {faculty.dean_name}</span>}
                               {faculty.established_year && <span>Est. {faculty.established_year}</span>}
-                              <span>{(faculty.Programs || []).length} program(s)</span>
                             </div>
                             {faculty.description && <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-600">{faculty.description}</p>}
                           </div>
                         </div>
-                      </div>
-                      {(faculty.Programs || []).length > 0 ? (
+                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500 shrink-0">
+                          <svg
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className={`transition-transform ${openFaculties[faculty.id] ? 'rotate-180' : ''}`}
+                          >
+                            <path d="M6 9l6 6 6-6" />
+                          </svg>
+                        </span>
+                      </button>
+                      {openFaculties[faculty.id] ? (
+                        (faculty.Programs || []).length > 0 ? (
                         <div className="space-y-3">
                           {(faculty.Programs || []).map((prog) => (
                             <div key={prog.id} className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
@@ -492,11 +532,12 @@ export default function UniversityDetail() {
                             </div>
                           ))}
                         </div>
-                      ) : (
+                        ) : (
                         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-sm text-slate-500">
                           No programs listed under this faculty yet.
                         </div>
-                      )}
+                        )
+                      ) : null}
                     </Card>
                   ))}
                 </>
