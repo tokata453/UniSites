@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { universityApi, authApi } from '@/api';
 import { Spinner, Empty } from '@/components/common';
-import { coverUrl, logoUrl, galleryUrl, formatCurrency } from '@/utils';
+import { coverUrl, logoUrl, galleryUrl, formatCurrency, formatDate } from '@/utils';
 import { useAuth, useToast } from '@/hooks';
 
 const TABS = ['Overview', 'Programs', 'Gallery', 'News', 'Events', 'FAQs', 'Reviews'];
@@ -61,12 +61,10 @@ export default function UniversityDetail() {
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [liveReviews, setLiveReviews] = useState([]);
+  const [reviewError, setReviewError] = useState('');
   const [reviewForm, setReviewForm] = useState({
     rating: 0,
-    title: '',
     content: '',
-    pros: '',
-    cons: '',
   });
 
   useEffect(() => {
@@ -134,12 +132,22 @@ export default function UniversityDetail() {
 
   const setReviewField = (key, value) => setReviewForm((prev) => ({ ...prev, [key]: value }));
 
-  const handleReviewSubmit = async () => {
+  const handleReviewSubmit = async (event) => {
+    event?.preventDefault();
+    setReviewError('');
+
     if (!isAuthenticated) {
+      setReviewError('Please log in to submit a review.');
       error('Please log in to submit a review');
       return;
     }
+    if (!uni?.id) {
+      setReviewError('University details are still loading. Please try again.');
+      error('University details are still loading');
+      return;
+    }
     if (!reviewForm.rating) {
+      setReviewError('Please select an overall rating.');
       error('Please select an overall rating');
       return;
     }
@@ -148,26 +156,25 @@ export default function UniversityDetail() {
     try {
       await universityApi.createReview(uni.id, {
         rating: reviewForm.rating,
-        title: reviewForm.title.trim() || null,
         content: reviewForm.content.trim() || null,
-        pros: reviewForm.pros.trim() || null,
-        cons: reviewForm.cons.trim() || null,
+        title: null,
+        pros: null,
+        cons: null,
       });
       setReviewSubmitted(true);
       setReviewForm({
         rating: 0,
-        title: '',
         content: '',
-        pros: '',
-        cons: '',
       });
       if (tab === 'Reviews') {
         const res = await universityApi.getReviews(uni.id);
         setLiveReviews(res.data.data || []);
       }
-      success('Review submitted. Pending approval.');
+      success('Review published successfully.');
     } catch (err) {
-      error(err.response?.data?.message || 'Failed to submit review');
+      const message = err.response?.data?.message || 'Failed to submit review';
+      setReviewError(message);
+      error(message);
     } finally {
       setReviewSubmitting(false);
     }
@@ -604,15 +611,15 @@ export default function UniversityDetail() {
                 <SectionTitle
                   title="Share Your Experience"
                   subtitle={isAuthenticated
-                    ? 'Your review helps other students. New submissions are moderated before they appear publicly.'
+                    ? 'Your review helps other students and appears on the page right away.'
                     : 'Log in to leave a review for this university.'}
                 />
                 {reviewSubmitted ? (
                   <div className="rounded-2xl border border-green-200 bg-green-50 px-4 py-4 text-sm text-green-700">
-                    Your review has been submitted and is waiting for admin approval.
+                    Your review has been published successfully.
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <form onSubmit={handleReviewSubmit} className="space-y-4">
                     <div>
                       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Overall Rating</p>
                       <div className="flex items-center gap-2">
@@ -634,67 +641,35 @@ export default function UniversityDetail() {
                       </div>
                     </div>
 
-                    <div className="grid gap-4 md:grid-cols-2">
-                      <div>
-                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Review Title</label>
-                        <input
-                          type="text"
-                          value={reviewForm.title}
-                          onChange={(e) => setReviewField('title', e.target.value)}
-                          disabled={!isAuthenticated || reviewSubmitting}
-                          placeholder="Summarize your experience"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none transition-all focus:border-[#1B3A6B] focus:ring-2 focus:ring-[#1B3A6B]/10 disabled:cursor-not-allowed disabled:opacity-60"
-                        />
-                      </div>
-                      <div>
-                        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Best Part</label>
-                        <input
-                          type="text"
-                          value={reviewForm.pros}
-                          onChange={(e) => setReviewField('pros', e.target.value)}
-                          disabled={!isAuthenticated || reviewSubmitting}
-                          placeholder="What stood out positively?"
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none transition-all focus:border-[#1B3A6B] focus:ring-2 focus:ring-[#1B3A6B]/10 disabled:cursor-not-allowed disabled:opacity-60"
-                        />
-                      </div>
-                    </div>
-
                     <div>
-                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Detailed Review</label>
+                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Your Review</label>
                       <textarea
                         value={reviewForm.content}
                         onChange={(e) => setReviewField('content', e.target.value)}
                         disabled={!isAuthenticated || reviewSubmitting}
-                        rows={5}
-                        placeholder="Share what studying here is really like"
+                        rows={4}
+                        placeholder="Optional: share a few words about your experience"
                         className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none transition-all focus:border-[#1B3A6B] focus:ring-2 focus:ring-[#1B3A6B]/10 disabled:cursor-not-allowed disabled:opacity-60"
                       />
                     </div>
 
-                    <div>
-                      <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">What Could Be Better?</label>
-                      <textarea
-                        value={reviewForm.cons}
-                        onChange={(e) => setReviewField('cons', e.target.value)}
-                        disabled={!isAuthenticated || reviewSubmitting}
-                        rows={3}
-                        placeholder="Any drawbacks or things future students should know"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none transition-all focus:border-[#1B3A6B] focus:ring-2 focus:ring-[#1B3A6B]/10 disabled:cursor-not-allowed disabled:opacity-60"
-                      />
-                    </div>
+                    {reviewError && (
+                      <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        {reviewError}
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-xs text-slate-400">One review per account. Reviews appear after moderation.</p>
+                      <p className="text-xs text-slate-400">One review per account. Keep it honest, respectful, and helpful for future students.</p>
                       <button
-                        type="button"
-                        onClick={handleReviewSubmit}
+                        type="submit"
                         disabled={!isAuthenticated || reviewSubmitting}
                         className="rounded-xl bg-[#1B3A6B] px-4 py-2.5 text-sm font-semibold text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
                       </button>
                     </div>
-                  </div>
+                  </form>
                 )}
               </Card>
 
@@ -749,51 +724,65 @@ export default function UniversityDetail() {
                 </div>
               ) : approvedReviews.length > 0 ? (
                 approvedReviews.map((rev) => (
-                  <Card key={rev.id} className="p-6">
-                    <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-700 shrink-0">
-                          {rev.Author?.name?.[0]?.toUpperCase() || 'A'}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">{rev.Author?.name || 'Anonymous'}</p>
-                          <p className="text-xs text-slate-400">{new Date(rev.createdAt || rev.created_at).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span style={{ color: '#F47B20' }}><Stars n={rev.rating} /></span>
-                        {rev.title && <span className="hidden md:inline text-xs font-semibold uppercase tracking-wide text-slate-400">Review</span>}
-                      </div>
-                    </div>
-                    {rev.title   && <p className="text-base font-semibold text-slate-800 mb-2">{rev.title}</p>}
-                    {rev.content && <p className="text-sm text-slate-600 leading-relaxed mb-4">{rev.content}</p>}
-                    {(rev.pros || rev.cons) && (
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {rev.pros && (
-                          <div className="rounded-2xl bg-green-50 border border-green-200 p-4">
-                            <p className="text-xs font-bold text-green-700 mb-1">Pros</p>
-                            <p className="text-sm text-green-700">{rev.pros}</p>
+                  <Card key={rev.id} className="p-4 md:p-5">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex min-w-0 items-start gap-2.5">
+                          <div className="h-9 w-9 overflow-hidden rounded-full bg-slate-100 shrink-0 flex items-center justify-center text-xs font-semibold text-slate-700">
+                            {rev.Author?.avatar_url ? (
+                              <img src={rev.Author.avatar_url} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              rev.Author?.name?.[0]?.toUpperCase() || 'A'
+                            )}
                           </div>
-                        )}
-                        {rev.cons && (
-                          <div className="rounded-2xl bg-red-50 border border-red-200 p-4">
-                            <p className="text-xs font-bold text-red-700 mb-1">Cons</p>
-                            <p className="text-sm text-red-700">{rev.cons}</p>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-900">{rev.Author?.name || 'Anonymous student'}</p>
+                            <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] text-slate-400">
+                              <span>{new Date(rev.createdAt || rev.created_at).toLocaleDateString()}</span>
+                              <span>•</span>
+                              <span>{Number(rev.rating || 0).toFixed(1)}/5</span>
+                            </div>
                           </div>
-                        )}
+                        </div>
+                        <div className="shrink-0 text-xs" style={{ color: '#F47B20' }}>
+                          <Stars n={rev.rating} />
+                        </div>
                       </div>
-                    )}
-                    {rev.owner_reply && (
-                      <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-xs font-bold uppercase tracking-wide text-[#1B3A6B]">Official university reply</p>
-                          {rev.owner_replied_at && (
-                            <span className="text-xs text-slate-400">{formatDate(rev.owner_replied_at)}</span>
+
+                      <div>
+                        {rev.title && <h4 className="mb-1 text-[15px] font-semibold text-slate-900">{rev.title}</h4>}
+                        {rev.content && <p className="text-sm leading-6 text-slate-600">{rev.content}</p>}
+                      </div>
+
+                      {(rev.pros || rev.cons) && (
+                        <div className="grid gap-2.5 md:grid-cols-2">
+                          {rev.pros && (
+                            <div className="rounded-lg bg-slate-50 px-3 py-2.5">
+                              <p className="mb-0.5 text-[11px] font-medium text-slate-400">Pros</p>
+                              <p className="text-sm leading-6 text-slate-700">{rev.pros}</p>
+                            </div>
+                          )}
+                          {rev.cons && (
+                            <div className="rounded-lg bg-slate-50 px-3 py-2.5">
+                              <p className="mb-0.5 text-[11px] font-medium text-slate-400">Cons</p>
+                              <p className="text-sm leading-6 text-slate-700">{rev.cons}</p>
+                            </div>
                           )}
                         </div>
-                        <p className="mt-2 text-sm leading-relaxed text-slate-700">{rev.owner_reply}</p>
-                      </div>
-                    )}
+                      )}
+
+                      {rev.owner_reply && (
+                        <div className="border-l-2 border-slate-200 pl-3">
+                          <div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between">
+                            <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-slate-500">University reply</p>
+                            {rev.owner_replied_at && (
+                              <span className="text-[11px] text-slate-400">{formatDate(rev.owner_replied_at)}</span>
+                            )}
+                          </div>
+                          <p className="mt-1.5 text-sm leading-6 text-slate-700">{rev.owner_reply}</p>
+                        </div>
+                      )}
+                    </div>
                   </Card>
                 ))
               ) : (

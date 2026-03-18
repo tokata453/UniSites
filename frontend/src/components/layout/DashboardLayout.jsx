@@ -109,11 +109,24 @@ export default function DashboardLayout({ role }) {
         {!collapsed && (
           <div className="mx-3 mt-3 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-200">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden"
+              <div className="relative w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden"
                 style={{ background: accent.color }}>
-                {user?.avatar_url
-                  ? <img src={user.avatar_url} alt="" className="w-full h-full object-cover" onError={e => e.target.style.display = 'none'} />
-                  : user?.name?.[0]?.toUpperCase() || 'U'}
+                <span className={`flex h-full w-full items-center justify-center ${user?.avatar_url ? 'absolute opacity-0 pointer-events-none' : ''}`}>
+                  {user?.name?.[0]?.toUpperCase() || 'U'}
+                </span>
+                {user?.avatar_url && (
+                  <img
+                    src={user.avatar_url}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const fallback = e.currentTarget.parentElement?.querySelector('span');
+                      if (fallback) fallback.className = 'flex h-full w-full items-center justify-center';
+                    }}
+                  />
+                )}
               </div>
               <div className="min-w-0">
                 <div className="text-xs font-semibold text-slate-700 truncate">{user?.name}</div>

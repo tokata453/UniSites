@@ -40,9 +40,10 @@ const create = async (req, res) => {
       ...req.body,
       university_id: req.params.universityId,
       author_id:     req.user.id,
-      is_approved:   false,
+      is_approved:   true,
     });
-    return created(res, { review }, 'Review submitted. Pending approval.');
+    await recalcRating(review.university_id);
+    return created(res, { review }, 'Review published successfully.');
   } catch (err) {
     return error(res, err.message, 500);
   }
@@ -121,4 +122,37 @@ const ownerFlag = async (req, res) => {
   }
 };
 
-module.exports = { list, create, approve, remove, ownerList, ownerReply, ownerFlag };
+const ownerApprove = async (req, res) => {
+  try {
+    const review = await db.Review.findByPk(req.params.id);
+    if (!review) return notFound(res, 'Review not found');
+    if (review.university_id !== req.university.id) return forbidden(res, 'This review does not belong to your university');
+
+    await review.update({ is_approved: !review.is_approved });
+    await recalcRating(review.university_id);
+
+    return success(
+      res,
+      { review },
+      `Review ${review.is_approved ? 'is now visible' : 'has been hidden'}`
+    );
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+const ownerRemove = async (req, res) => {
+  try {
+    const review = await db.Review.findByPk(req.params.id);
+    if (!review) return notFound(res, 'Review not found');
+    if (review.university_id !== req.university.id) return forbidden(res, 'This review does not belong to your university');
+
+    await review.destroy();
+    await recalcRating(req.university.id);
+    return success(res, {}, 'Review deleted');
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
+module.exports = { list, create, approve, remove, ownerList, ownerReply, ownerFlag, ownerApprove, ownerRemove };

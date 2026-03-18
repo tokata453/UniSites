@@ -1627,21 +1627,19 @@ export function OwnerReviews() {
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [reviewTab, setReviewTab] = useState('all');
   const [replyDrafts, setReplyDrafts] = useState({});
-  const [flagDrafts, setFlagDrafts] = useState({});
+  const [savingApproveId, setSavingApproveId] = useState(null);
   const [savingReplyId, setSavingReplyId] = useState(null);
-  const [savingFlagId, setSavingFlagId] = useState(null);
+  const [deletingReviewId, setDeletingReviewId] = useState(null);
 
   const reviewTabOptions = [
     { key: 'all', label: `All (${reviews.length})` },
-    { key: 'approved', label: `Approved (${reviews.filter((review) => review.is_approved).length})` },
-    { key: 'pending', label: `Pending (${reviews.filter((review) => !review.is_approved).length})` },
-    { key: 'flagged', label: `Flagged (${reviews.filter((review) => review.flagged_for_recheck).length})` },
+    { key: 'visible', label: `Visible (${reviews.filter((review) => review.is_approved).length})` },
+    { key: 'hidden', label: `Hidden (${reviews.filter((review) => !review.is_approved).length})` },
   ];
 
   const filteredReviews = reviews.filter((review) => {
-    if (reviewTab === 'approved') return review.is_approved;
-    if (reviewTab === 'pending') return !review.is_approved;
-    if (reviewTab === 'flagged') return review.flagged_for_recheck;
+    if (reviewTab === 'visible') return review.is_approved;
+    if (reviewTab === 'hidden') return !review.is_approved;
     return true;
   });
 
@@ -1652,7 +1650,6 @@ export function OwnerReviews() {
       const nextReviews = res.data.reviews || [];
       setReviews(nextReviews);
       setReplyDrafts(Object.fromEntries(nextReviews.map((review) => [review.id, review.owner_reply || ''])));
-      setFlagDrafts(Object.fromEntries(nextReviews.map((review) => [review.id, review.flag_reason || ''])));
     } catch (err) {
       setReviews([]);
     } finally {
@@ -1678,17 +1675,31 @@ export function OwnerReviews() {
     }
   };
 
-  const flagForRecheck = async (reviewId) => {
+  const deleteReview = async (reviewId) => {
     if (!university?.id) return;
-    setSavingFlagId(reviewId);
+    setDeletingReviewId(reviewId);
     try {
-      await universityApi.flagReview(university.id, reviewId, { reason: flagDrafts[reviewId] || '' });
-      success(flagDrafts[reviewId]?.trim() ? 'Review flagged for admin re-check' : 'Review flag cleared');
+      await universityApi.deleteReview(university.id, reviewId);
+      success('Review deleted');
       loadReviews(university.id);
     } catch (err) {
-      error(err.response?.data?.message || 'Failed to update flag');
+      error(err.response?.data?.message || 'Failed to delete review');
     } finally {
-      setSavingFlagId(null);
+      setDeletingReviewId(null);
+    }
+  };
+
+  const approveReview = async (reviewId) => {
+    if (!university?.id) return;
+    setSavingApproveId(reviewId);
+    try {
+      await universityApi.approveReview(university.id, reviewId);
+      success('Review visibility updated');
+      loadReviews(university.id);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to update review approval');
+    } finally {
+      setSavingApproveId(null);
     }
   };
 
@@ -1698,11 +1709,11 @@ export function OwnerReviews() {
   return (
     <PageSection
       title="Reviews"
-      subtitle="Monitor student feedback, add an official owner reply, and flag any review that needs admin re-check."
+      subtitle="Manage student feedback for your university, control visibility, reply publicly, or remove reviews when needed."
     >
       <Panel
         title="University Reviews"
-        description={`${reviews.length} review(s) submitted for ${university.name}. Admin still controls approval and removal.`}
+        description={`${reviews.length} review(s) submitted for ${university.name}. You can show, hide, reply to, or delete them directly from here.`}
       >
         <div className="mb-4 flex flex-wrap gap-2">
           {reviewTabOptions.map((item) => (
@@ -1732,14 +1743,31 @@ export function OwnerReviews() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-bold text-slate-800">{review.title || 'Untitled review'}</p>
-                      <StatusPill tone={review.is_approved ? 'green' : 'amber'}>{review.is_approved ? 'Approved' : 'Pending admin approval'}</StatusPill>
+                      <StatusPill tone={review.is_approved ? 'green' : 'slate'}>{review.is_approved ? 'Visible' : 'Hidden'}</StatusPill>
                       <StatusPill tone="blue">{review.rating}/5 stars</StatusPill>
-                      {review.flagged_for_recheck && <StatusPill tone="amber">Flagged for re-check</StatusPill>}
                     </div>
                     <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
                       <span>By {review.Author?.name || 'Unknown student'}</span>
                       {review.Author?.email && <span>{review.Author.email}</span>}
                       <span>{formatDate(review.createdAt || review.created_at)}</span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => approveReview(review.id)}
+                        disabled={savingApproveId === review.id}
+                        className={review.is_approved ? secondaryBtn : primaryBtn}
+                      >
+                        {savingApproveId === review.id ? 'Saving...' : review.is_approved ? 'Hide Review' : 'Show Review'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteReview(review.id)}
+                        disabled={deletingReviewId === review.id}
+                        className={dangerBtn}
+                      >
+                        {deletingReviewId === review.id ? 'Deleting...' : 'Delete Review'}
+                      </button>
                     </div>
                     {review.content && <p className="mt-3 text-sm leading-6 text-slate-600">{review.content}</p>}
                     {(review.pros || review.cons) && (
@@ -1781,22 +1809,14 @@ export function OwnerReviews() {
 
                   <div className="rounded-2xl border border-slate-200 bg-white p-4">
                     <div className="mb-3">
-                      <p className="text-sm font-semibold text-slate-800">Request Admin Re-check</p>
-                      <p className="text-xs text-slate-500">Use this when a review looks abusive, inaccurate, or needs platform moderation.</p>
+                      <p className="text-sm font-semibold text-slate-800">Visibility</p>
+                      <p className="text-xs text-slate-500">Hidden reviews stay in your dashboard but no longer appear on the public university page.</p>
                     </div>
-                    <TextArea
-                      rows={4}
-                      value={flagDrafts[review.id] || ''}
-                      onChange={(e) => setFlagDrafts((prev) => ({ ...prev, [review.id]: e.target.value }))}
-                      placeholder="Explain why this review should be reviewed again by admin."
-                    />
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                      <span className="text-xs text-slate-400">
-                        {review.flagged_at ? `Last flagged ${formatDate(review.flagged_at)}` : 'Not currently flagged'}
-                      </span>
-                      <button type="button" onClick={() => flagForRecheck(review.id)} disabled={savingFlagId === review.id} className={secondaryBtn}>
-                        {savingFlagId === review.id ? 'Saving...' : flagDrafts[review.id]?.trim() ? 'Flag for Re-check' : 'Clear Flag'}
-                      </button>
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
+                      Current status: <span className="font-semibold text-slate-800">{review.is_approved ? 'Visible on public page' : 'Hidden from public page'}</span>
+                    </div>
+                    <div className="mt-3 text-xs text-slate-400">
+                      Use “Hide Review” to remove a review from the public page without deleting it permanently.
                     </div>
                   </div>
                 </div>

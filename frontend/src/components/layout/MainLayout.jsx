@@ -89,16 +89,22 @@ export default function MainLayout() {
                   )}
                 </Link>
                 <Link to='/dashboard'>
-                  <div className="size-9 rounded-full overflow-hidden bg-blue-800 flex items-center justify-center text-xs font-bold text-white shrink-0 transition-transform duration-150 active:scale-90 hover:opacity-80">
-                    {user?.avatar_url ? (
+                  <div className="relative size-9 rounded-full overflow-hidden bg-blue-800 flex items-center justify-center text-xs font-bold text-white shrink-0 transition-transform duration-150 active:scale-90 hover:opacity-80">
+                    <span className={`flex h-full w-full items-center justify-center ${user?.avatar_url ? 'absolute opacity-0 pointer-events-none' : ''}`}>
+                      {user?.name?.[0]?.toUpperCase() || 'U'}
+                    </span>
+                    {user?.avatar_url && (
                       <img
                         src={user.avatar_url}
                         alt={user.name}
                         className="w-full h-full object-cover"
-                        onError={e => { e.target.style.display = 'none'; }}
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.parentElement?.querySelector('span');
+                          if (fallback) fallback.className = 'flex h-full w-full items-center justify-center';
+                        }}
                       />
-                    ) : (
-                      user?.name?.[0]?.toUpperCase() || 'U'
                     )}
                   </div>
                 </Link>

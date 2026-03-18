@@ -4,6 +4,32 @@ const GoogleStrategy   = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const LocalStrategy    = require('passport-local').Strategy;
 
+const normalizeGooglePhoto = (url) => {
+  if (!url) return null;
+  if (!url.includes('googleusercontent.com')) return url;
+
+  if (/[?&]sz=\d+/i.test(url)) {
+    return url.replace(/([?&])sz=\d+/i, '$1sz=256');
+  }
+
+  if (/=s\d+-c$/i.test(url)) {
+    return url.replace(/=s\d+-c$/i, '=s256-c');
+  }
+
+  return `${url}${url.includes('?') ? '&' : '?'}sz=256`;
+};
+
+const getSocialAvatar = (profile, provider) => {
+  const rawUrl =
+    profile?.photos?.find((photo) => photo?.value)?.value ||
+    profile?._json?.picture ||
+    profile?._json?.image?.url ||
+    null;
+
+  if (!rawUrl) return null;
+  return provider === 'google' ? normalizeGooglePhoto(rawUrl) : rawUrl;
+};
+
 module.exports = (db) => {
   const { User, Role } = db;
 
@@ -42,12 +68,22 @@ module.exports = (db) => {
       async (accessToken, refreshToken, profile, done) => {
         try {
           const email = profile.emails?.[0]?.value || null;
+          const avatarUrl = getSocialAvatar(profile, 'google');
 
           // 1. Returning Google user — look up by provider_id
           let user = await User.findOne({
             where: { provider: 'google', provider_id: profile.id },
             include: [{ model: Role, as: 'Role' }],
           });
+
+          if (user) {
+            await user.update({
+              name: profile.displayName || user.name,
+              email: email || user.email,
+              avatar_url: avatarUrl || user.avatar_url || null,
+            });
+            user = await User.findByPk(user.id, { include: [{ model: Role, as: 'Role' }] });
+          }
 
           // 2. Same email already exists (e.g. local account) — link it to Google
           if (!user && email) {
@@ -59,7 +95,8 @@ module.exports = (db) => {
               await user.update({
                 provider:    'google',
                 provider_id: profile.id,
-                avatar_url:  user.avatar_url || profile.photos?.[0]?.value || null,
+                name:        user.name || profile.displayName,
+                avatar_url:  user.avatar_url || avatarUrl || null,
               });
               user = await User.findByPk(user.id, { include: [{ model: Role, as: 'Role' }] });
             }
@@ -71,7 +108,7 @@ module.exports = (db) => {
             user = await User.create({
               name:        profile.displayName,
               email,
-              avatar_url:  profile.photos?.[0]?.value || null,
+              avatar_url:  avatarUrl,
               provider:    'google',
               provider_id: profile.id,
               role_id:     studentRole?.id || null,
@@ -100,12 +137,22 @@ module.exports = (db) => {
       async (accessToken, refreshToken, profile, done) => {
         try {
           const email = profile.emails?.[0]?.value || null;
+          const avatarUrl = getSocialAvatar(profile, 'facebook');
 
           // 1. Returning Facebook user
           let user = await User.findOne({
             where: { provider: 'facebook', provider_id: profile.id },
             include: [{ model: Role, as: 'Role' }],
           });
+
+          if (user) {
+            await user.update({
+              name: profile.displayName || user.name,
+              email: email || user.email,
+              avatar_url: avatarUrl || user.avatar_url || null,
+            });
+            user = await User.findByPk(user.id, { include: [{ model: Role, as: 'Role' }] });
+          }
 
           // 2. Same email exists — link it
           if (!user && email) {
@@ -117,7 +164,8 @@ module.exports = (db) => {
               await user.update({
                 provider:    'facebook',
                 provider_id: profile.id,
-                avatar_url:  user.avatar_url || profile.photos?.[0]?.value || null,
+                name:        user.name || profile.displayName,
+                avatar_url:  user.avatar_url || avatarUrl || null,
               });
               user = await User.findByPk(user.id, { include: [{ model: Role, as: 'Role' }] });
             }
@@ -129,7 +177,7 @@ module.exports = (db) => {
             user = await User.create({
               name:        profile.displayName,
               email,
-              avatar_url:  profile.photos?.[0]?.value || null,
+              avatar_url:  avatarUrl,
               provider:    'facebook',
               provider_id: profile.id,
               role_id:     studentRole?.id || null,

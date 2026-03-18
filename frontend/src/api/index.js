@@ -80,8 +80,10 @@ export const universityApi = {
   getReviews:     (uniId)        => api.get(`/universities/${uniId}/reviews`),
   createReview:   (uniId, data)  => api.post(`/universities/${uniId}/reviews`, data),
   getOwnerReviews:(uniId)        => api.get(`/universities/${uniId}/reviews/owner`),
+  approveReview:  (uniId, id)    => api.put(`/universities/${uniId}/reviews/${id}/approve`),
   replyToReview:  (uniId, id, data) => api.put(`/universities/${uniId}/reviews/${id}/owner-reply`, data),
   flagReview:     (uniId, id, data) => api.put(`/universities/${uniId}/reviews/${id}/flag`, data),
+  deleteReview:   (uniId, id)    => api.delete(`/universities/${uniId}/reviews/${id}`),
 
   // Analytics
   getAnalytics:   (uniId)        => api.get(`/analytics/${uniId}`),

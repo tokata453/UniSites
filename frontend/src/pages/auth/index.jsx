@@ -3,13 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { authApi } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 
-const dashboardForRole = (role) => (
-  role === 'owner' ? '/owner'
-    : role === 'organization' ? '/organization'
-    : role === 'admin' ? '/admin'
-    : '/dashboard'
-);
-
 // ── Icons ─────────────────────────────────────────────────────────────────────
 const GOOGLE_ICON = (
   <svg width="18" height="18" viewBox="0 0 24 24">
@@ -179,8 +172,7 @@ export function LoginPage() {
     try {
       const res = await authApi.login({ email, password });
       setAuth(res.data.user, res.data.token);
-      const role = res.data.user?.Role?.name;
-      navigate(dashboardForRole(role));
+      navigate('/');
     } catch (e) {
       setErr(e.response?.data?.message || 'Invalid email or password');
     } finally {
@@ -262,7 +254,7 @@ export function RegisterPage() {
         return;
       }
       setAuth(res.data.user, res.data.token);
-      navigate(dashboardForRole(res.data.user?.Role?.name || role));
+      navigate('/');
     } catch (e) {
       setErr(e.response?.data?.message || 'Registration failed. Please try again.');
     } finally {
@@ -387,8 +379,7 @@ export function OAuthCallback() {
       .then(data => {
         if (!data.user) throw new Error('No user');
         setAuth(data.user, token);
-        const role = data.user?.Role?.name;
-        navigate(dashboardForRole(role), { replace: true });
+        navigate('/', { replace: true });
       })
       .catch(() => {
         setErr('Failed to load profile. Redirecting...');
