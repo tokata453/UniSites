@@ -44,7 +44,13 @@ const list = async (req, res) => {
       order: [[safeSort, safeOrder]],
       include: [
         { model: db.OpportunityTag, as: 'Tags' },
-        { model: db.University, as: 'University', required: false, attributes: ['id', 'name', 'slug', 'logo_url'] },
+        {
+          model: db.University,
+          as: 'University',
+          required: false,
+          attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id'],
+          include: [{ model: db.User, as: 'Owner', attributes: ['id', 'name', 'avatar_url'] }],
+        },
         { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'] },
       ],
     });
@@ -61,7 +67,13 @@ const getFeatured = async (req, res) => {
       limit: 6,
       order: [['created_at', 'DESC']],
       include: [
-        { model: db.University, as: 'University', required: false, attributes: ['id', 'name', 'logo_url'] },
+        {
+          model: db.University,
+          as: 'University',
+          required: false,
+          attributes: ['id', 'name', 'logo_url', 'owner_id'],
+          include: [{ model: db.User, as: 'Owner', attributes: ['id', 'name', 'avatar_url'] }],
+        },
         { model: db.OpportunityTag, as: 'Tags' },
         { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'] },
       ],
@@ -97,7 +109,13 @@ const getMine = async (req, res) => {
       where,
       include: [
         { model: db.OpportunityTag, as: 'Tags' },
-        { model: db.University, as: 'University', required: false, attributes: ['id', 'name', 'slug', 'logo_url'] },
+        {
+          model: db.University,
+          as: 'University',
+          required: false,
+          attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id'],
+          include: [{ model: db.User, as: 'Owner', attributes: ['id', 'name', 'avatar_url'] }],
+        },
         { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'] },
       ],
       order: [['created_at', 'DESC']],
@@ -114,7 +132,13 @@ const getBySlug = async (req, res) => {
       where: { slug: req.params.slug, is_published: true },
       include: [
         { model: db.OpportunityTag, as: 'Tags' },
-        { model: db.University, as: 'University', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'province'] },
+        {
+          model: db.University,
+          as: 'University',
+          required: false,
+          attributes: ['id', 'name', 'slug', 'logo_url', 'province', 'owner_id'],
+          include: [{ model: db.User, as: 'Owner', attributes: ['id', 'name', 'avatar_url'] }],
+        },
         { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'] },
       ],
     });

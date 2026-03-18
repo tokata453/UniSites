@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { opportunityApi } from '@/api';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { opportunityApi, inboxApi } from '@/api';
 import { Spinner, Pagination, Empty } from '@/components/common';
 import { avatarUrl, formatDate, truncate } from '@/utils';
+import { useAuth, useToast } from '@/hooks';
 
 const TYPES = ['', 'scholarship', 'internship', 'exchange', 'competition', 'workshop', 'research', 'parttime', 'volunteer'];
 
@@ -248,6 +249,9 @@ export function OpportunitiesPage() {
 // ── OpportunityDetail ─────────────────────────────────────────────────────────
 export function OpportunityDetail() {
   const { slug }  = useParams();
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
+  const { error, info } = useToast();
   const [opp,     setOpp]     = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -263,6 +267,33 @@ export function OpportunityDetail() {
   const ts      = TYPE_STYLES[opp.type] || {};
   const expired = isExpired(opp.deadline);
   const days    = opp.deadline && !expired ? daysLeft(opp.deadline) : null;
+  const inboxPath = user?.Role?.name === 'owner'
+    ? '/owner/inbox'
+    : user?.Role?.name === 'organization'
+    ? '/organization/inbox'
+    : user?.Role?.name === 'admin'
+    ? '/admin/inbox'
+    : '/dashboard/inbox';
+
+  const handleMessage = async () => {
+    const recipientId = opp.PostedBy?.id || opp.University?.Owner?.id || opp.University?.owner_id;
+    if (!isAuthenticated) {
+      info('Please log in to send a message');
+      navigate('/login');
+      return;
+    }
+    if (!recipientId) {
+      error('No direct contact is available for this opportunity');
+      return;
+    }
+    try {
+      const res = await inboxApi.createConversation({ recipient_id: recipientId });
+      const conversationId = res.data.conversation?.id;
+      navigate(`${inboxPath}${conversationId ? `?conversation=${conversationId}` : ''}`);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to open conversation');
+    }
+  };
 
   return (
     <div className="bg-slate-50 min-h-screen">
@@ -413,6 +444,14 @@ export function OpportunityDetail() {
                   {expired ? 'Applications Closed' : 'Apply Now →'}
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={handleMessage}
+                className="mt-3 w-full rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50"
+              >
+                Message Poster
+              </button>
 
               {opp.source_url && (
                 <a href={opp.source_url} target="_blank" rel="noreferrer"

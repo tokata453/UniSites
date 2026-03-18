@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { universityApi, authApi } from '@/api';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { universityApi, authApi, inboxApi } from '@/api';
 import { Spinner, Empty } from '@/components/common';
 import { coverUrl, logoUrl, galleryUrl, formatCurrency, formatDate, cloudinaryUrl } from '@/utils';
 import { useAuth, useToast } from '@/hooks';
@@ -175,8 +175,9 @@ const GalleryFilterSelect = ({ value, onChange, options, placeholder = 'Select a
 
 export default function UniversityDetail() {
   const { slug }            = useParams();
-  const { isAuthenticated } = useAuth();
-  const { success, error }  = useToast();
+  const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
+  const { success, error, info }  = useToast();
   const [uni,     setUni]     = useState(null);
   const [loading, setLoading] = useState(true);
   const [tab,     setTab]     = useState('Overview');
@@ -297,6 +298,34 @@ export default function UniversityDetail() {
       success(nextSaved ? 'Saved!' : 'Removed from saved');
     } catch { error('Failed to save'); }
     finally { setSavingLoading(false); }
+  };
+
+  const inboxPath = user?.Role?.name === 'owner'
+    ? '/owner/inbox'
+    : user?.Role?.name === 'organization'
+    ? '/organization/inbox'
+    : user?.Role?.name === 'admin'
+    ? '/admin/inbox'
+    : '/dashboard/inbox';
+
+  const handleMessageUniversity = async () => {
+    const recipientId = uni?.Owner?.id || uni?.owner_id;
+    if (!isAuthenticated) {
+      info('Please log in to send a message');
+      navigate('/login');
+      return;
+    }
+    if (!recipientId) {
+      error('This university does not have a contact owner yet');
+      return;
+    }
+    try {
+      const res = await inboxApi.createConversation({ recipient_id: recipientId });
+      const conversationId = res.data.conversation?.id;
+      navigate(`${inboxPath}${conversationId ? `?conversation=${conversationId}` : ''}`);
+    } catch (err) {
+      error(err.response?.data?.message || 'Failed to open conversation');
+    }
   };
 
   const setReviewField = (key, value) => setReviewForm((prev) => ({ ...prev, [key]: value }));
@@ -484,6 +513,13 @@ export default function UniversityDetail() {
                 </button>
               </a>
             )}
+            <button
+              type="button"
+              onClick={handleMessageUniversity}
+              className="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm transition-all"
+            >
+              ✉️ Inbox
+            </button>
             {isAuthenticated && (
               <button onClick={handleSave} disabled={savingLoading || savedLoading}
                 className="px-4 py-2 rounded-xl text-sm font-semibold shadow-sm transition-all disabled:opacity-60"
