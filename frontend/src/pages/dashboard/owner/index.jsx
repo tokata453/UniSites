@@ -2421,6 +2421,7 @@ export function OwnerFAQ() {
   const [faqs, setFaqs] = useState([]);
   const [contact, setContact] = useState(emptyContactForm);
   const [faqForm, setFaqForm] = useState(emptyFaqForm);
+  const [editingFaqId, setEditingFaqId] = useState(null);
   const [savingFaq, setSavingFaq] = useState(false);
   const [savingContact, setSavingContact] = useState(false);
 
@@ -2437,18 +2438,41 @@ export function OwnerFAQ() {
     if (university?.id) loadData(university.id);
   }, [loadData, university?.id]);
 
+  const resetFaqForm = () => {
+    setFaqForm(emptyFaqForm);
+    setEditingFaqId(null);
+  };
+
+  const startEditFaq = (faq) => {
+    setEditingFaqId(faq.id);
+    setFaqForm({
+      question: faq.question || '',
+      answer: faq.answer || '',
+      category: faq.category || '',
+      sort_order: faq.sort_order || 0,
+      is_published: Boolean(faq.is_published),
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const submitFaq = async () => {
     setSavingFaq(true);
     try {
-      await universityApi.createFAQ(university.id, {
+      const payload = {
         ...faqForm,
         sort_order: numericValue(faqForm.sort_order) || 0,
-      });
-      success('FAQ added');
-      setFaqForm(emptyFaqForm);
+      };
+      if (editingFaqId) {
+        await universityApi.updateFAQ(university.id, editingFaqId, payload);
+        success('FAQ updated');
+      } else {
+        await universityApi.createFAQ(university.id, payload);
+        success('FAQ added');
+      }
+      resetFaqForm();
       loadData(university.id);
     } catch (err) {
-      error(err.response?.data?.message || 'Failed to create FAQ');
+      error(err.response?.data?.message || 'Failed to save FAQ');
     } finally {
       setSavingFaq(false);
     }
@@ -2471,6 +2495,7 @@ export function OwnerFAQ() {
     try {
       await universityApi.deleteFAQ(university.id, id);
       success('FAQ deleted');
+      if (editingFaqId === id) resetFaqForm();
       loadData(university.id);
     } catch (err) {
       error(err.response?.data?.message || 'Failed to delete FAQ');
@@ -2483,14 +2508,17 @@ export function OwnerFAQ() {
   return (
     <PageSection title="FAQs & Contact" subtitle="Answer common questions and make it easy for students to reach out.">
       <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-        <Panel title="Create FAQ">
+        <Panel
+          title={editingFaqId ? 'Edit FAQ' : 'Create FAQ'}
+          action={editingFaqId ? <button type="button" onClick={resetFaqForm} className={secondaryBtn}>Cancel Editing</button> : null}
+        >
           <div className="space-y-4">
             <Field label="Question"><TextInput value={faqForm.question} onChange={(e) => setFaqForm((prev) => ({ ...prev, question: e.target.value }))} placeholder="Do you offer scholarships?" /></Field>
             <Field label="Answer"><TextArea rows={5} value={faqForm.answer} onChange={(e) => setFaqForm((prev) => ({ ...prev, answer: e.target.value }))} placeholder="Write a clear, helpful answer" /></Field>
             <Field label="Category"><TextInput value={faqForm.category} onChange={(e) => setFaqForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="Admissions, Tuition, Housing" /></Field>
             <div className="flex flex-wrap gap-3">
               <ToggleField label="Publish immediately" checked={faqForm.is_published} onChange={(value) => setFaqForm((prev) => ({ ...prev, is_published: value }))} />
-              <button type="button" onClick={submitFaq} disabled={savingFaq || !faqForm.question.trim() || !faqForm.answer.trim()} className={primaryBtn}>{savingFaq ? 'Saving...' : 'Add FAQ'}</button>
+              <button type="button" onClick={submitFaq} disabled={savingFaq || !faqForm.question.trim() || !faqForm.answer.trim()} className={primaryBtn}>{savingFaq ? 'Saving...' : editingFaqId ? 'Update FAQ' : 'Add FAQ'}</button>
             </div>
           </div>
         </Panel>
@@ -2529,7 +2557,10 @@ export function OwnerFAQ() {
                     </div>
                     <p className="mt-2 text-sm text-slate-600">{faq.answer}</p>
                   </div>
-                  <button type="button" onClick={() => deleteFaq(faq.id)} className={dangerBtn}>Delete</button>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => startEditFaq(faq)} className={secondaryBtn}>Edit</button>
+                    <button type="button" onClick={() => deleteFaq(faq.id)} className={dangerBtn}>Delete</button>
+                  </div>
                 </div>
               </div>
             ))}
