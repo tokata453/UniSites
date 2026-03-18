@@ -1,10 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { universityApi } from '@/api';
 import { Spinner, Pagination, Empty } from '@/components/common';
 import { logoUrl, coverUrl, formatCurrency, truncate } from '@/utils';
 
-const PROVINCES = ['All', 'Phnom Penh', 'Siem Reap', 'Battambang', 'Kampong Cham', 'Other'];
+const PROVINCES = [
+  { value: '', label: 'All' },
+  { value: 'Phnom Penh', label: 'Phnom Penh' },
+  { value: 'Siem Reap', label: 'Siem Reap' },
+  { value: 'Battambang', label: 'Battambang' },
+  { value: 'Kampong Cham', label: 'Kampong Cham' },
+  { value: 'Kandal', label: 'Kandal' },
+  { value: 'Kampot', label: 'Kampot' },
+  { value: 'Sihanoukville', label: 'Sihanoukville' },
+  { value: 'Other', label: 'Other' },
+];
 const SORT_OPTIONS = [
   { value: 'rating_avg-DESC', label: 'Top rated' },
   { value: 'name-ASC', label: 'Name A-Z' },
@@ -34,12 +44,34 @@ const CheckIcon = () => (
   </svg>
 );
 
+const ChevronDownIcon = ({ open = false }) => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={`transition-transform ${open ? 'rotate-180' : ''}`}
+  >
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
 export default function UniversityList() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [universities, setUniversities] = useState([]);
   const [loading, setLoading]           = useState(true);
   const [total,   setTotal]             = useState(0);
   const [page,    setPage]              = useState(1);
+  const [typeOpen, setTypeOpen]         = useState(false);
+  const [provinceOpen, setProvinceOpen] = useState(false);
+  const [sortOpen, setSortOpen]         = useState(false);
+  const typeRef = useRef(null);
+  const provinceRef = useRef(null);
+  const sortRef = useRef(null);
 
   const [filters, setFilters] = useState({
     search:                searchParams.get('search')   || '',
@@ -55,6 +87,18 @@ export default function UniversityList() {
   const limit      = 12;
   const totalPages = Math.ceil(total / limit);
   const setFilter  = (k) => (v) => { setFilters((p) => ({ ...p, [k]: v })); setPage(1); };
+  const selectedTypeLabel = useMemo(() => {
+    if (!filters.type) return 'All Types';
+    return filters.type.charAt(0).toUpperCase() + filters.type.slice(1);
+  }, [filters.type]);
+  const selectedProvinceLabel = useMemo(
+    () => PROVINCES.find((province) => province.value === filters.province)?.label || 'All',
+    [filters.province]
+  );
+  const selectedSortLabel = useMemo(
+    () => SORT_OPTIONS.find((option) => option.value === filters.sort)?.label || 'Top rated',
+    [filters.sort]
+  );
 
   useEffect(() => {
     const fetch = async () => {
@@ -96,6 +140,17 @@ export default function UniversityList() {
     setSearchParams(params);
   }, [filters, page, setSearchParams]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!typeRef.current?.contains(event.target)) setTypeOpen(false);
+      if (!provinceRef.current?.contains(event.target)) setProvinceOpen(false);
+      if (!sortRef.current?.contains(event.target)) setSortOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <div className="max-w-7xl mx-auto px-6 py-10 bg-slate-50 min-h-screen">
 
@@ -130,29 +185,81 @@ export default function UniversityList() {
             {/* Type */}
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-2">Type</label>
-              <div className="space-y-1">
-                {['', 'public', 'private', 'international'].map((t) => (
-                  <button key={t} onClick={() => setFilter('type')(t)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-sm capitalize transition-all font-medium ${
-                      filters.type === t
-                        ? 'bg-[#1B3A6B] text-white'
-                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
-                    }`}>
-                    {t || 'All Types'}
-                  </button>
-                ))}
+              <div ref={typeRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setTypeOpen((open) => !open)}
+                  className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 transition-all hover:border-slate-300 focus:border-[#1B3A6B] focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/10"
+                >
+                  <span>{selectedTypeLabel}</span>
+                  <span className="text-slate-400">
+                    <ChevronDownIcon open={typeOpen} />
+                  </span>
+                </button>
+
+                {typeOpen && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 shadow-lg">
+                    {['', 'public', 'private', 'international'].map((type) => (
+                      <button
+                        key={type || 'all'}
+                        type="button"
+                        onClick={() => {
+                          setFilter('type')(type);
+                          setTypeOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-medium transition-all ${
+                          filters.type === type
+                            ? 'bg-[#1B3A6B] text-white'
+                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+                        }`}
+                      >
+                        <span className="capitalize">{type || 'All Types'}</span>
+                        {filters.type === type && <CheckIcon />}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Province */}
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-2">Province</label>
-              <select
-                value={filters.province}
-                onChange={(e) => setFilter('province')(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 outline-none focus:border-[#1B3A6B] transition-all cursor-pointer">
-                {PROVINCES.map((p) => <option key={p} value={p === 'All' ? '' : p}>{p}</option>)}
-              </select>
+              <div ref={provinceRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setProvinceOpen((open) => !open)}
+                  className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 transition-all hover:border-slate-300 focus:border-[#1B3A6B] focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/10"
+                >
+                  <span>{selectedProvinceLabel}</span>
+                  <span className="text-slate-400">
+                    <ChevronDownIcon open={provinceOpen} />
+                  </span>
+                </button>
+
+                {provinceOpen && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 shadow-lg">
+                    {PROVINCES.map((province) => (
+                      <button
+                        key={province.label}
+                        type="button"
+                        onClick={() => {
+                          setFilter('province')(province.value);
+                          setProvinceOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-medium transition-all ${
+                          filters.province === province.value
+                            ? 'bg-[#1B3A6B] text-white'
+                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+                        }`}
+                      >
+                        <span>{province.label}</span>
+                        {filters.province === province.value && <CheckIcon />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Tuition range */}
@@ -182,21 +289,40 @@ export default function UniversityList() {
             {/* Sort */}
             <div>
               <label className="block text-xs font-semibold text-slate-600 mb-2">Sort By</label>
-              <div className="space-y-1">
-                {SORT_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setFilter('sort')(option.value)}
-                    className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-all font-medium ${
-                      filters.sort === option.value
-                        ? 'bg-[#1B3A6B] text-white'
-                        : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
+              <div ref={sortRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setSortOpen((open) => !open)}
+                  className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-600 transition-all hover:border-slate-300 focus:border-[#1B3A6B] focus:outline-none focus:ring-2 focus:ring-[#1B3A6B]/10"
+                >
+                  <span>{selectedSortLabel}</span>
+                  <span className="text-slate-400">
+                    <ChevronDownIcon open={sortOpen} />
+                  </span>
+                </button>
+
+                {sortOpen && (
+                  <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-2xl border border-slate-200 bg-white p-1 shadow-lg">
+                    {SORT_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => {
+                          setFilter('sort')(option.value);
+                          setSortOpen(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm font-medium transition-all ${
+                          filters.sort === option.value
+                            ? 'bg-[#1B3A6B] text-white'
+                            : 'text-slate-500 hover:bg-slate-100 hover:text-slate-800'
+                        }`}
+                      >
+                        <span>{option.label}</span>
+                        {filters.sort === option.value && <CheckIcon />}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
