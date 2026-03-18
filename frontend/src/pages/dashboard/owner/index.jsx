@@ -527,7 +527,7 @@ export function OwnerOverview() {
   const weeklyViews = analytics?.weekly_views ?? 0;
   const weeklyAvg = weeklyViews / 7;
   const dailyTrend = dailyViews > weeklyAvg ? 'up' : dailyViews < weeklyAvg ? 'down' : 'flat';
-  const clickThroughBase = Math.max(analytics?.total_views ?? university.views_count ?? 0, 1);
+  const clickThroughBase = Math.max(analytics?.total_views ?? university?.views_count ?? 0, 1);
   const clickThroughRate = Math.round((((analytics?.website_clicks ?? 0) + (analytics?.contact_clicks ?? 0)) / clickThroughBase) * 100);
   const performanceNotes = [
     dailyTrend === 'up'
@@ -559,7 +559,7 @@ export function OwnerOverview() {
       }
     >
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <OverviewStat label="Total Views" value={(analytics?.total_views ?? university.views_count ?? 0).toLocaleString()} tone="blue" />
+        <OverviewStat label="Total Views" value={(analytics?.total_views ?? university?.views_count ?? 0).toLocaleString()} tone="blue" />
         <OverviewStat label="Average Rating" value={`${Number(university.rating_avg || 0).toFixed(1)} / 5`} tone="orange" />
         <OverviewStat label="Reviews" value={(university.review_count || 0).toLocaleString()} tone="green" />
         <OverviewStat label="Profile Completion" value={`${profileCompletion}%`} tone="slate" />
