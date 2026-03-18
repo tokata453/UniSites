@@ -88,7 +88,7 @@ export default function MainLayout() {
                     </span>
                   )}
                 </Link>
-                <Link to={dashboardPath}>
+                <Link to='/dashboard'>
                   <div className="size-9 rounded-full overflow-hidden bg-blue-800 flex items-center justify-center text-xs font-bold text-white shrink-0 transition-transform duration-150 active:scale-90 hover:opacity-80">
                     {user?.avatar_url ? (
                       <img
