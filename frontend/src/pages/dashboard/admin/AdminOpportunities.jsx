@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { adminApi } from '@/api';
-import { Badge, SearchBar, Select, DeleteBtn, Table, Pagination, PageHeader, Card, FilterBar, ConfirmModal, Toast, ToggleSwitch, ActionBtn } from './AdminShared';
+import { Badge, SearchBar, Select, DeleteBtn, Table, Pagination, PageHeader, Card, ConfirmModal, Toast, ToggleSwitch, ActionBtn } from './AdminShared';
 
 const TYPE_OPTIONS = [
   { value: '', label: 'All Types' },
@@ -10,6 +10,8 @@ const TYPE_OPTIONS = [
   { value: 'parttime', label: 'Part-time' },       { value: 'volunteer', label: 'Volunteer' },
 ];
 const PUB_OPTIONS = [{ value: '', label: 'All Status' }, { value: 'true', label: 'Published' }, { value: 'false', label: 'Unpublished' }];
+const FEATURED_OPTIONS = [{ value: '', label: 'All' }, { value: 'true', label: 'Featured' }, { value: 'false', label: 'Not featured' }];
+const DEADLINE_OPTIONS = [{ value: '', label: 'All deadlines' }, { value: 'active', label: 'Active' }, { value: 'expired', label: 'Expired' }, { value: 'none', label: 'No deadline' }];
 const TYPE_COLORS = {
   scholarship: '#d97706', internship: '#15803d', exchange: '#1B3A6B',
   competition: '#be185d', workshop: '#7c3aed',   research: '#1d4ed8',
@@ -34,7 +36,10 @@ export default function AdminOpportunities() {
   const [editing, setEditing] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [toast,   setToast]   = useState('');
-  const [density, setDensity] = useState('comfortable');
+  const [orgSearch, setOrgSearch] = useState('');
+  const [deadlineFilter, setDeadlineFilter] = useState('');
+  const [featuredFilter, setFeaturedFilter] = useState('');
+  const [viewsMin, setViewsMin] = useState('');
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -48,6 +53,20 @@ export default function AdminOpportunities() {
   useEffect(() => { load(); }, [load]);
   useEffect(() => { setPage(1); }, [search, type, pub]);
 
+  const filteredOpps = useMemo(() => (
+    opps.filter((opp) => {
+      const orgLabel = opp.University?.name || opp.PostedBy?.name || 'External';
+      if (orgSearch && !orgLabel.toLowerCase().includes(orgSearch.toLowerCase())) return false;
+      if (featuredFilter === 'true' && !opp.is_featured) return false;
+      if (featuredFilter === 'false' && opp.is_featured) return false;
+      if (viewsMin && Number(opp.views_count || 0) < Number(viewsMin)) return false;
+      if (deadlineFilter === 'none' && opp.deadline) return false;
+      if (deadlineFilter === 'active' && (!opp.deadline || new Date(opp.deadline) < new Date())) return false;
+      if (deadlineFilter === 'expired' && (!opp.deadline || new Date(opp.deadline) >= new Date())) return false;
+      return true;
+    })
+  ), [opps, orgSearch, featuredFilter, viewsMin, deadlineFilter]);
+
   const toggle = async (opp, field) => {
     try { await adminApi.updateOpportunity(opp.id, { [field]: !opp[field] }); showToast('Updated'); load(); }
     catch { showToast('Failed'); }
@@ -60,7 +79,9 @@ export default function AdminOpportunities() {
   };
 
   const cols = [
-    { key: 'title', label: 'Title', render: o => (
+    { key: 'title', label: 'Title', filterRender: () => (
+      <SearchBar value={search} onChange={setSearch} placeholder="Search titles..." />
+    ), render: o => (
       <div style={{ minWidth: 280, maxWidth: 320 }}>
         <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13, ...textClamp }} title={o.title}>{o.title}</div>
         <div
@@ -71,15 +92,31 @@ export default function AdminOpportunities() {
         </div>
       </div>
     ), width: 320, minWidth: 320 },
-    { key: 'type',     label: 'Type',     render: o => <Badge label={o.type} color={TYPE_COLORS[o.type] || '#1B3A6B'} /> },
-    { key: 'deadline', label: 'Deadline', render: o => (
+    { key: 'type', label: 'Type', filterRender: () => (
+      <Select value={type} onChange={setType} options={TYPE_OPTIONS} style={{ width: '100%', minWidth: 140 }} />
+    ), render: o => <Badge label={o.type} color={TYPE_COLORS[o.type] || '#1B3A6B'} /> },
+    { key: 'deadline', label: 'Deadline', filterRender: () => (
+      <Select value={deadlineFilter} onChange={setDeadlineFilter} options={DEADLINE_OPTIONS} style={{ width: '100%', minWidth: 145 }} />
+    ), render: o => (
       <span style={{ fontSize: 12, color: o.deadline && new Date(o.deadline) < new Date() ? '#ef4444' : '#64748b' }}>
         {o.deadline ? new Date(o.deadline).toLocaleDateString() : '—'}
       </span>
     )},
-    { key: 'published', label: 'Published', render: o => <ToggleSwitch checked={o.is_published} onChange={() => toggle(o, 'is_published')} color="#15803d" /> },
-    { key: 'featured',  label: 'Featured',  render: o => <ToggleSwitch checked={o.is_featured}  onChange={() => toggle(o, 'is_featured')}  color="#d97706" /> },
-    { key: 'views',    label: 'Views',    render: o => <span style={{ fontSize: 12, color: '#94a3b8' }}>{o.views_count?.toLocaleString() || 0}</span> },
+    { key: 'published', label: 'Published', filterRender: () => (
+      <Select value={pub} onChange={setPub} options={PUB_OPTIONS} style={{ width: '100%', minWidth: 140 }} />
+    ), render: o => <ToggleSwitch checked={o.is_published} onChange={() => toggle(o, 'is_published')} color="#15803d" /> },
+    { key: 'featured', label: 'Featured', filterRender: () => (
+      <Select value={featuredFilter} onChange={setFeaturedFilter} options={FEATURED_OPTIONS} style={{ width: '100%', minWidth: 125 }} />
+    ), render: o => <ToggleSwitch checked={o.is_featured}  onChange={() => toggle(o, 'is_featured')}  color="#d97706" /> },
+    { key: 'views', label: 'Views', filterRender: () => (
+      <input
+        value={viewsMin}
+        onChange={(e) => setViewsMin(e.target.value)}
+        placeholder="Min"
+        type="number"
+        style={{ width: '100%', minWidth: 90, padding: '8px 10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, color: '#1e293b', fontSize: 13, outline: 'none', fontFamily: "'DM Sans',sans-serif", boxSizing: 'border-box' }}
+      />
+    ), render: o => <span style={{ fontSize: 12, color: '#94a3b8' }}>{o.views_count?.toLocaleString() || 0}</span> },
     { key: 'actions',  label: 'Actions',  render: o => (
       <div style={{ display: 'flex', gap: 6 }}>
         <ActionBtn onClick={() => setEditing(o)} color="#1B3A6B">Edit</ActionBtn>
@@ -92,15 +129,7 @@ export default function AdminOpportunities() {
     <div style={{ fontFamily: "'DM Sans',sans-serif" }}>
       <PageHeader title="Opportunities" subtitle="Manage scholarships, internships, and all opportunities" count={total} />
       <Card>
-        <FilterBar>
-          <SearchBar value={search} onChange={setSearch} placeholder="Search by title..." />
-          <Select value={type} onChange={setType} options={TYPE_OPTIONS} />
-          <Select value={pub}  onChange={setPub}  options={PUB_OPTIONS} />
-          <ActionBtn onClick={() => setDensity((prev) => prev === 'comfortable' ? 'compact' : 'comfortable')} color="#475569" title="Toggle row density">
-            {density === 'compact' ? 'Comfortable rows' : 'Compact rows'}
-          </ActionBtn>
-        </FilterBar>
-        <Table columns={cols} rows={opps} loading={loading} emptyMsg="No opportunities found" density={density} />
+        <Table columns={cols} rows={filteredOpps} loading={loading} emptyMsg="No opportunities found" />
         <div style={{ padding: '8px 16px 14px' }}><Pagination page={page} pages={pages} onChange={setPage} /></div>
       </Card>
       {confirm && <ConfirmModal message={`Delete <strong>"${confirm.name}"</strong>?`} onConfirm={handleDelete} onCancel={() => setConfirm(null)} />}

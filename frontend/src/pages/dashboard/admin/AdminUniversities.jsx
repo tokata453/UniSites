@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { adminApi } from '@/api';
 import { CAMBODIA_PROVINCE_OPTIONS } from '@/constants/cambodiaLocations';
-import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, FilterBar, ConfirmModal, Toast, ToggleSwitch, IC } from './AdminShared';
+import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, ConfirmModal, Toast, ToggleSwitch, IC } from './AdminShared';
 
 const TYPE_OPTIONS = [
   { value: '', label: 'All Types' },
@@ -10,6 +10,7 @@ const TYPE_OPTIONS = [
   { value: 'international', label: 'International' },
 ];
 const PUB_OPTIONS = [{ value: '', label: 'All Status' }, { value: 'true', label: 'Published' }, { value: 'false', label: 'Unpublished' }];
+const BOOL_OPTIONS = [{ value: '', label: 'All' }, { value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }];
 const TYPE_COLORS = { public: '#1d4ed8', private: '#15803d', international: '#7c3aed' };
 const TYPE_BG     = { public: '#eff6ff',  private: '#f0fdf4',  international: '#faf5ff' };
 
@@ -479,6 +480,9 @@ export default function AdminUniversities() {
   const [transferUni, setTransferUni] = useState(null);
   const [editingUni,  setEditingUni]  = useState(null);
   const [showCreate,  setShowCreate]  = useState(false);
+  const [ownerSearch, setOwnerSearch] = useState('');
+  const [verifiedFilter, setVerifiedFilter] = useState('');
+  const [featuredFilter, setFeaturedFilter] = useState('');
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -492,6 +496,18 @@ export default function AdminUniversities() {
   useEffect(() => { load(); }, [load]);
   useEffect(() => { setPage(1); }, [search, type, pub]);
 
+  const filteredUnis = useMemo(() => (
+    unis.filter((uni) => {
+      const ownerName = `${uni.Owner?.name || ''} ${uni.Owner?.email || ''}`.toLowerCase();
+      if (ownerSearch && !ownerName.includes(ownerSearch.toLowerCase())) return false;
+      if (verifiedFilter === 'true' && !uni.is_verified) return false;
+      if (verifiedFilter === 'false' && uni.is_verified) return false;
+      if (featuredFilter === 'true' && !uni.is_featured) return false;
+      if (featuredFilter === 'false' && uni.is_featured) return false;
+      return true;
+    })
+  ), [unis, ownerSearch, verifiedFilter, featuredFilter]);
+
   const toggle = async (uni, field) => {
     try { await adminApi.updateUniversity(uni.id, { [field]: !uni[field] }); showToast('Updated'); load(); }
     catch { showToast('Update failed'); }
@@ -504,7 +520,9 @@ export default function AdminUniversities() {
   };
 
   const cols = [
-    { key: 'name', label: 'University', render: u => (
+    { key: 'name', label: 'University', filterRender: () => (
+      <SearchBar value={search} onChange={setSearch} placeholder="Search universities..." />
+    ), render: u => (
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {u.logo_url
           ? <img src={u.logo_url} alt="" style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover', border: '1px solid #e2e8f0' }} onError={e => e.target.style.display='none'} />
@@ -516,7 +534,9 @@ export default function AdminUniversities() {
         </div>
       </div>
     )},
-    { key: 'type',  label: 'Type',  render: u => <Badge label={u.type || 'N/A'} color={TYPE_COLORS[u.type] || '#1B3A6B'} /> },
+    { key: 'type',  label: 'Type', filterRender: () => (
+      <Select value={type} onChange={setType} options={TYPE_OPTIONS} style={{ width: '100%', minWidth: 140 }} />
+    ), render: u => <Badge label={u.type || 'N/A'} color={TYPE_COLORS[u.type] || '#1B3A6B'} /> },
     { key: 'owner', label: 'Owner', render: u => (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <span style={{ fontSize: 12, color: u.Owner ? '#334155' : '#94a3b8', fontWeight: u.Owner ? 500 : 400 }}>
@@ -530,10 +550,18 @@ export default function AdminUniversities() {
           <IC d="M16 3h5v5M4 20L20.2 3.8M21 16v5h-5M15 15l5.9 5.9" size={11} />
         </button>
       </div>
+    ), filterRender: () => (
+      <SearchBar value={ownerSearch} onChange={setOwnerSearch} placeholder="Search owners..." />
     )},
-    { key: 'published', label: 'Published', render: u => <ToggleSwitch checked={u.is_published} onChange={() => toggle(u, 'is_published')} color="#15803d" /> },
-    { key: 'verified',  label: 'Verified',  render: u => <ToggleSwitch checked={u.is_verified}  onChange={() => toggle(u, 'is_verified')}  color="#1B3A6B" /> },
-    { key: 'featured',  label: 'Featured',  render: u => <ToggleSwitch checked={u.is_featured}  onChange={() => toggle(u, 'is_featured')}  color="#d97706" /> },
+    { key: 'published', label: 'Published', filterRender: () => (
+      <Select value={pub} onChange={setPub} options={PUB_OPTIONS} style={{ width: '100%', minWidth: 140 }} />
+    ), render: u => <ToggleSwitch checked={u.is_published} onChange={() => toggle(u, 'is_published')} color="#15803d" /> },
+    { key: 'verified',  label: 'Verified', filterRender: () => (
+      <Select value={verifiedFilter} onChange={setVerifiedFilter} options={BOOL_OPTIONS} style={{ width: '100%', minWidth: 110 }} />
+    ), render: u => <ToggleSwitch checked={u.is_verified}  onChange={() => toggle(u, 'is_verified')}  color="#1B3A6B" /> },
+    { key: 'featured',  label: 'Featured', filterRender: () => (
+      <Select value={featuredFilter} onChange={setFeaturedFilter} options={BOOL_OPTIONS} style={{ width: '100%', minWidth: 110 }} />
+    ), render: u => <ToggleSwitch checked={u.is_featured}  onChange={() => toggle(u, 'is_featured')}  color="#d97706" /> },
     { key: 'actions',   label: 'Actions',   render: u => (
       <div style={{ display: 'flex', gap: 6 }}>
         <ActionBtn onClick={() => setEditingUni(u)} color="#1B3A6B">Edit</ActionBtn>
@@ -554,12 +582,7 @@ export default function AdminUniversities() {
         </button>
       </div>
       <Card>
-        <FilterBar>
-          <SearchBar value={search} onChange={setSearch} placeholder="Search by name..." />
-          <Select value={type} onChange={setType} options={TYPE_OPTIONS} />
-          <Select value={pub}  onChange={setPub}  options={PUB_OPTIONS} />
-        </FilterBar>
-        <Table columns={cols} rows={unis} loading={loading} emptyMsg="No universities found" />
+        <Table columns={cols} rows={filteredUnis} loading={loading} emptyMsg="No universities found" />
         <div style={{ padding: '8px 16px 14px' }}><Pagination page={page} pages={pages} onChange={setPage} /></div>
       </Card>
 

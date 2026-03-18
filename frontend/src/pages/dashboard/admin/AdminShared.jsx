@@ -1,5 +1,6 @@
 // Shared primitives for admin pages — light theme
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 export const IC = ({ d, size = 16, stroke = 'currentColor' }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -34,16 +35,53 @@ export function SearchBar({ value, onChange, placeholder = 'Search...' }) {
 export function Select({ value, onChange, options, style = {} }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
+  const menuRef = useRef(null);
+  const [menuStyle, setMenuStyle] = useState(null);
   const selected = options.find((option) => option.value === value) || options[0];
 
   useEffect(() => {
     const handlePointerDown = (event) => {
-      if (!rootRef.current?.contains(event.target)) setOpen(false);
+      if (rootRef.current?.contains(event.target) || menuRef.current?.contains(event.target)) return;
+      setOpen(false);
     };
 
     document.addEventListener('mousedown', handlePointerDown);
     return () => document.removeEventListener('mousedown', handlePointerDown);
   }, []);
+
+  useLayoutEffect(() => {
+    if (!open || !rootRef.current) return undefined;
+
+    const updatePosition = () => {
+      const rect = rootRef.current.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const maxWidth = Math.min(Math.max(rect.width, 180), viewportWidth - 16);
+      const left = Math.min(rect.left, viewportWidth - maxWidth - 8);
+
+      setMenuStyle({
+        position: 'fixed',
+        top: rect.bottom + 6,
+        left: Math.max(8, left),
+        width: maxWidth,
+        maxHeight: Math.min(280, window.innerHeight - rect.bottom - 16),
+        overflowY: 'auto',
+        background: '#fff',
+        border: '1px solid #e2e8f0',
+        borderRadius: 12,
+        boxShadow: '0 12px 28px rgba(15, 23, 42, 0.12)',
+        padding: 6,
+        zIndex: 1000,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener('resize', updatePosition);
+    window.addEventListener('scroll', updatePosition, true);
+    return () => {
+      window.removeEventListener('resize', updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+    };
+  }, [open]);
 
   return (
     <div ref={rootRef} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
@@ -73,22 +111,8 @@ export function Select({ value, onChange, options, style = {} }) {
       <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
         <IC d="M6 9l6 6 6-6" size={14} />
       </div>
-      {open && (
-        <div
-          role="listbox"
-          style={{
-            position: 'absolute',
-            top: 'calc(100% + 6px)',
-            left: 0,
-            minWidth: '100%',
-            background: '#fff',
-            border: '1px solid #e2e8f0',
-            borderRadius: 12,
-            boxShadow: '0 12px 28px rgba(15, 23, 42, 0.12)',
-            padding: 6,
-            zIndex: 40,
-          }}
-        >
+      {open && menuStyle && createPortal(
+        <div ref={menuRef} role="listbox" style={menuStyle}>
           {options.map((option) => {
             const active = option.value === value;
             return (
@@ -117,7 +141,8 @@ export function Select({ value, onChange, options, style = {} }) {
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
@@ -136,6 +161,77 @@ export function ActionBtn({ onClick, color = '#1B3A6B', children, title, type = 
 
 export function DeleteBtn({ onClick, title = 'Delete' }) {
   return <ActionBtn onClick={onClick} color="#ef4444" title={title}>Delete</ActionBtn>;
+}
+
+function HeaderFilter({ label, renderFilter, active = false }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, [open]);
+
+  return (
+    <div ref={rootRef} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+      <span>{label}</span>
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        title={`Filter ${label.toLowerCase()}`}
+        aria-label={`Filter ${label.toLowerCase()}`}
+        aria-expanded={open}
+        style={{
+          width: 24,
+          height: 24,
+          borderRadius: 8,
+          border: `1px solid ${active || open ? '#93c5fd' : '#dbe4f0'}`,
+          background: active || open ? '#eff6ff' : '#fff',
+          color: active || open ? '#1d4ed8' : '#64748b',
+          cursor: 'pointer',
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          transition: 'all 0.15s',
+        }}
+      >
+        <IC d="M4 6h16M7 12h10M10 18h4" size={13} />
+      </button>
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 8px)',
+            right: 0,
+            minWidth: 220,
+            maxWidth: 320,
+            padding: 10,
+            borderRadius: 14,
+            background: '#fff',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 16px 36px rgba(15, 23, 42, 0.16)',
+            zIndex: 80,
+            textTransform: 'none',
+            letterSpacing: 'normal',
+          }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+            Filter {label}
+          </div>
+          <div style={{ fontWeight: 500 }}>
+            {renderFilter({ close: () => setOpen(false) })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function Table({ columns, rows, loading, emptyMsg = 'No data found', density = 'comfortable', getRowStyle }) {
@@ -166,7 +262,15 @@ export function Table({ columns, rows, loading, emptyMsg = 'No data found', dens
                   ...col.headStyle,
                 }}
               >
-                {col.label}
+                {col.filterRender ? (
+                  <HeaderFilter
+                    label={col.label}
+                    renderFilter={col.filterRender}
+                    active={Boolean(col.filterActive)}
+                  />
+                ) : (
+                  <span>{col.label}</span>
+                )}
               </th>
             ))}
           </tr>

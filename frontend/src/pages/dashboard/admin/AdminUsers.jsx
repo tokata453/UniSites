@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { adminApi } from '@/api';
-import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, FilterBar, ConfirmModal, Toast } from './AdminShared';
+import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, ConfirmModal, Toast } from './AdminShared';
 
 const ROLE_COLORS  = { admin: '#d97706', owner: '#15803d', organization: '#0f766e', student: '#1B3A6B' };
 const ROLE_OPTIONS = [
@@ -10,6 +10,18 @@ const ROLE_OPTIONS = [
   { value: 'owner', label: 'Owner' },
   { value: 'organization', label: 'Organization' },
   { value: 'student', label: 'Student' },
+];
+const STATUS_OPTIONS = [
+  { value: '', label: 'All statuses' },
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+  { value: 'pending_org', label: 'Pending org approval' },
+];
+const PROVIDER_OPTIONS = [
+  { value: '', label: 'All auth' },
+  { value: 'local', label: 'Local' },
+  { value: 'google', label: 'Google' },
+  { value: 'facebook', label: 'Facebook' },
 ];
 
 function UserEditModal({ user, onClose, onSaved, showToast }) {
@@ -113,6 +125,9 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [search,  setSearch]  = useState(() => searchParams.get('search') || '');
   const [role,    setRole]    = useState(() => searchParams.get('role') || '');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [providerFilter, setProviderFilter] = useState('');
+  const [joinedSearch, setJoinedSearch] = useState('');
   const [confirm, setConfirm] = useState(null);
   const [editing, setEditing] = useState(null);
   const [toast,   setToast]   = useState('');
@@ -134,6 +149,18 @@ export default function AdminUsers() {
     setRole(searchParams.get('role') || '');
     setPage(1);
   }, [searchParams]);
+
+  const filteredUsers = useMemo(() => (
+    users.filter((user) => {
+      const joinedText = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '';
+      if (statusFilter === 'active' && !user.is_active) return false;
+      if (statusFilter === 'inactive' && user.is_active) return false;
+      if (statusFilter === 'pending_org' && !(user.Role?.name === 'organization' && !user.is_approved)) return false;
+      if (providerFilter && (user.provider || 'local') !== providerFilter) return false;
+      if (joinedSearch && !joinedText.includes(joinedSearch)) return false;
+      return true;
+    })
+  ), [users, statusFilter, providerFilter, joinedSearch]);
 
   const handleToggleStatus = async (user) => {
     try {
@@ -171,7 +198,9 @@ export default function AdminUsers() {
   };
 
   const cols = [
-    { key: 'name', label: 'User', render: u => (
+    { key: 'name', label: 'User', filterRender: () => (
+      <SearchBar value={search} onChange={setSearch} placeholder="Search users..." />
+    ), render: u => (
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1B3A6B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
           {u.name?.[0]?.toUpperCase() || 'U'}
@@ -182,7 +211,9 @@ export default function AdminUsers() {
         </div>
       </div>
     )},
-    { key: 'role', label: 'Role', render: u => (
+    { key: 'role', label: 'Role', filterRender: () => (
+      <Select value={role} onChange={setRole} options={ROLE_OPTIONS} style={{ width: '100%', minWidth: 140 }} />
+    ), render: u => (
       <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
         <select value={u.Role?.name || ''} onChange={e => handleChangeRole(u, e.target.value)}
           style={{
@@ -208,7 +239,9 @@ export default function AdminUsers() {
         </div>
       </div>
     )},
-    { key: 'status', label: 'Status', render: u => (
+    { key: 'status', label: 'Status', filterRender: () => (
+      <Select value={statusFilter} onChange={setStatusFilter} options={STATUS_OPTIONS} style={{ width: '100%', minWidth: 150 }} />
+    ), render: u => (
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <Badge label={u.is_active ? 'Active' : 'Inactive'} color={u.is_active ? '#15803d' : '#94a3b8'} />
         {u.Role?.name === 'organization' && (
@@ -216,10 +249,19 @@ export default function AdminUsers() {
         )}
       </div>
     )},
-    { key: 'provider', label: 'Auth', render: u => (
+    { key: 'provider', label: 'Auth', filterRender: () => (
+      <Select value={providerFilter} onChange={setProviderFilter} options={PROVIDER_OPTIONS} style={{ width: '100%', minWidth: 130 }} />
+    ), render: u => (
       <Badge label={u.provider || 'local'} color={u.provider === 'google' ? '#ea4335' : u.provider === 'facebook' ? '#1877f2' : '#475569'} />
     )},
-    { key: 'joined', label: 'Joined', render: u => (
+    { key: 'joined', label: 'Joined', filterRender: () => (
+      <input
+        value={joinedSearch}
+        onChange={(e) => setJoinedSearch(e.target.value)}
+        placeholder="MM/DD/YYYY"
+        style={{ width: '100%', minWidth: 120, padding: '8px 10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, color: '#1e293b', fontSize: 13, outline: 'none', fontFamily: "'DM Sans',sans-serif", boxSizing: 'border-box' }}
+      />
+    ), render: u => (
       <span style={{ fontSize: 12, color: '#94a3b8' }}>{new Date(u.createdAt).toLocaleDateString()}</span>
     )},
     { key: 'actions', label: 'Actions', render: u => (
@@ -245,11 +287,7 @@ export default function AdminUsers() {
       <PageHeader title="Users" subtitle="Manage all registered users" count={total} />
 
       <Card>
-        <FilterBar>
-          <SearchBar value={search} onChange={setSearch} placeholder="Search by name or email..." />
-          <Select value={role} onChange={setRole} options={ROLE_OPTIONS} />
-        </FilterBar>
-        <Table columns={cols} rows={users} loading={loading} emptyMsg="No users found" />
+        <Table columns={cols} rows={filteredUsers} loading={loading} emptyMsg="No users found" />
         <div style={{ padding: '8px 16px 14px' }}>
           <Pagination page={page} pages={pages} onChange={setPage} />
         </div>

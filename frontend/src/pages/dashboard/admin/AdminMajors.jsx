@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { majorApi } from '@/api';
-import { Badge, SearchBar, Select, Table, Pagination, PageHeader, Card, FilterBar, Toast, ActionBtn, DeleteBtn, ConfirmModal } from './AdminShared';
+import { Badge, SearchBar, Select, Table, Pagination, PageHeader, Card, Toast, ActionBtn, DeleteBtn, ConfirmModal } from './AdminShared';
 
 const FIELD_OPTIONS = [
   { value: '', label: 'All Fields' },
@@ -32,6 +32,10 @@ const JOB_DEMAND_OPTIONS = [
   { value: 'high', label: 'High' },
   { value: 'very_high', label: 'Very High' },
 ];
+const JOB_DEMAND_FILTER_OPTIONS = [
+  { value: '', label: 'All demand' },
+  ...JOB_DEMAND_OPTIONS,
+];
 
 const DEMAND_COLORS = {
   low: '#94a3b8',
@@ -61,6 +65,8 @@ export default function AdminMajors() {
   const [search, setSearch] = useState('');
   const [field, setField] = useState('');
   const [stem, setStem] = useState('');
+  const [demandFilter, setDemandFilter] = useState('');
+  const [salaryMin, setSalaryMin] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -105,6 +111,14 @@ export default function AdminMajors() {
 
   useEffect(() => { load(); }, [load]);
   useEffect(() => { setPage(1); }, [search, field, stem]);
+
+  const filteredMajors = useMemo(() => (
+    majors.filter((major) => {
+      if (demandFilter && major.job_demand !== demandFilter) return false;
+      if (salaryMin && Number(major.average_salary || 0) < Number(salaryMin)) return false;
+      return true;
+    })
+  ), [majors, demandFilter, salaryMin]);
 
   const formTitle = useMemo(() => (editing ? `Edit ${editing.name}` : 'Create Major'), [editing]);
 
@@ -201,6 +215,9 @@ export default function AdminMajors() {
     {
       key: 'name',
       label: 'Major',
+      filterRender: () => (
+        <SearchBar value={search} onChange={setSearch} placeholder="Search majors..." />
+      ),
       render: (m) => (
         <div style={{ minWidth: 240 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -220,6 +237,9 @@ export default function AdminMajors() {
     {
       key: 'field',
       label: 'Field',
+      filterRender: () => (
+        <Select value={field} onChange={setField} options={FIELD_OPTIONS} style={{ width: '100%', minWidth: 150 }} />
+      ),
       render: (m) => m.field_of_study ? <Badge label={m.field_of_study} color="#4AAEE0" /> : <span style={{ fontSize: 12, color: '#94a3b8' }}>—</span>,
       width: 140,
       minWidth: 140,
@@ -227,6 +247,9 @@ export default function AdminMajors() {
     {
       key: 'demand',
       label: 'Demand',
+      filterRender: () => (
+        <Select value={demandFilter} onChange={setDemandFilter} options={JOB_DEMAND_FILTER_OPTIONS} style={{ width: '100%', minWidth: 130 }} />
+      ),
       render: (m) => m.job_demand ? <Badge label={m.job_demand.replace('_', ' ')} color={DEMAND_COLORS[m.job_demand] || '#64748b'} /> : <span style={{ fontSize: 12, color: '#94a3b8' }}>—</span>,
       width: 130,
       minWidth: 130,
@@ -234,6 +257,15 @@ export default function AdminMajors() {
     {
       key: 'salary',
       label: 'Avg Salary',
+      filterRender: () => (
+        <input
+          value={salaryMin}
+          onChange={(e) => setSalaryMin(e.target.value)}
+          placeholder="Min salary"
+          type="number"
+          style={{ width: '100%', minWidth: 110, padding: '8px 10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, color: '#1e293b', fontSize: 13, outline: 'none', fontFamily: "'DM Sans',sans-serif", boxSizing: 'border-box' }}
+        />
+      ),
       render: (m) => <span style={{ fontSize: 12, color: '#334155' }}>{m.average_salary ? `$${Number(m.average_salary).toLocaleString()}/yr` : '—'}</span>,
       width: 130,
       minWidth: 130,
@@ -241,6 +273,9 @@ export default function AdminMajors() {
     {
       key: 'tags',
       label: 'Tags',
+      filterRender: () => (
+        <Select value={stem} onChange={setStem} options={STEM_OPTIONS} style={{ width: '100%', minWidth: 140 }} />
+      ),
       render: (m) => (
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minWidth: 160 }}>
           {m.is_stem && <Badge label="STEM" color="#15803d" />}
@@ -339,14 +374,9 @@ export default function AdminMajors() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 16, alignItems: 'start' }}>
         <Card>
-          <FilterBar>
-            <SearchBar value={search} onChange={setSearch} placeholder="Search major by name..." />
-            <Select value={field} onChange={setField} options={FIELD_OPTIONS} />
-            <Select value={stem} onChange={setStem} options={STEM_OPTIONS} />
-          </FilterBar>
           <Table
             columns={cols}
-            rows={majors}
+            rows={filteredMajors}
             loading={loading}
             emptyMsg="No majors found"
             getRowStyle={(row) => row.id === highlightedId ? { background: '#ecfdf5' } : undefined}
