@@ -29,9 +29,10 @@ export const feedApi = {
 
 // ── Uploads ───────────────────────────────────────────────────────────────────
 export const uploadApi = {
-  image: (data) => api.post('/upload/image', data),
-  cover: (data) => api.post('/upload/cover', data),
-  logo:  (data) => api.post('/upload/logo', data),
+  image: (data) => api.post('/upload/image', data, { timeout: 60000 }),
+  images: (data) => api.post('/upload/images', data, { timeout: 120000 }),
+  cover: (data) => api.post('/upload/cover', data, { timeout: 60000 }),
+  logo:  (data) => api.post('/upload/logo', data, { timeout: 60000 }),
 };
 
 // ── Universities ──────────────────────────────────────────────────────────────

@@ -4,6 +4,18 @@ const db = require('../models');
 const { success, created, error, notFound } = require('../utils/response.utils');
 const { getPagination, paginateResponse } = require('../utils/pagination.utils');
 
+const normalizeImages = (payload = {}) => {
+  const image_urls = Array.isArray(payload.image_urls)
+    ? payload.image_urls.filter(Boolean)
+    : [];
+
+  return {
+    ...payload,
+    image_urls,
+    cover_url: image_urls[0] || payload.cover_url || null,
+  };
+};
+
 const list = async (req, res) => {
   try {
     const { page = 1, limit = 10, upcoming } = req.query;
@@ -23,7 +35,7 @@ const list = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const event = await db.UniversityEvent.create({ ...req.body, university_id: req.params.universityId });
+    const event = await db.UniversityEvent.create({ ...normalizeImages(req.body), university_id: req.params.universityId });
     return created(res, { event });
   } catch (err) {
     return error(res, err.message, 500);
@@ -34,7 +46,7 @@ const update = async (req, res) => {
   try {
     const event = await db.UniversityEvent.findByPk(req.params.id);
     if (!event) return notFound(res);
-    await event.update(req.body);
+    await event.update(normalizeImages(req.body));
     return success(res, { event });
   } catch (err) {
     return error(res, err.message, 500);

@@ -5,6 +5,18 @@ const { success, created, error, notFound } = require('../utils/response.utils')
 const { getPagination, paginateResponse } = require('../utils/pagination.utils');
 const { uniqueSlug } = require('../utils/slug.utils');
 
+const normalizeImages = (payload = {}) => {
+  const image_urls = Array.isArray(payload.image_urls)
+    ? payload.image_urls.filter(Boolean)
+    : [];
+
+  return {
+    ...payload,
+    image_urls,
+    cover_url: image_urls[0] || payload.cover_url || null,
+  };
+};
+
 const list = async (req, res) => {
   try {
     const { page = 1, limit = 10, search } = req.query;
@@ -40,7 +52,7 @@ const getBySlug = async (req, res) => {
 const create = async (req, res) => {
   try {
     const news = await db.UniversityNews.create({
-      ...req.body,
+      ...normalizeImages(req.body),
       slug:          uniqueSlug(req.body.title),
       university_id: req.params.universityId,
       author_id:     req.user.id,
@@ -57,7 +69,7 @@ const update = async (req, res) => {
     const news = await db.UniversityNews.findByPk(req.params.id);
     if (!news) return notFound(res);
     const publishNow = req.body.is_published && !news.published_at;
-    await news.update({ ...req.body, ...(publishNow && { published_at: new Date() }) });
+    await news.update({ ...normalizeImages(req.body), ...(publishNow && { published_at: new Date() }) });
     return success(res, { news });
   } catch (err) {
     return error(res, err.message, 500);

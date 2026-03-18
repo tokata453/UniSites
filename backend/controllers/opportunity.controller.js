@@ -5,6 +5,18 @@ const { success, created, error, notFound } = require('../utils/response.utils')
 const { getPagination, paginateResponse } = require('../utils/pagination.utils');
 const { uniqueSlug } = require('../utils/slug.utils');
 
+const normalizeImages = (payload = {}) => {
+  const image_urls = Array.isArray(payload.image_urls)
+    ? payload.image_urls.filter(Boolean)
+    : [];
+
+  return {
+    ...payload,
+    image_urls,
+    cover_url: image_urls[0] || payload.cover_url || null,
+  };
+};
+
 const list = async (req, res) => {
   try {
     const { page = 1, limit = 12, search, type, field_of_study, country, is_fully_funded, source, sort = 'created_at', order = 'DESC' } = req.query;
@@ -118,7 +130,7 @@ const create = async (req, res) => {
   try {
     const { tags, ...data } = req.body;
     const opportunity = await db.Opportunity.create({
-      ...data,
+      ...normalizeImages(data),
       slug:         uniqueSlug(data.title),
       posted_by:    req.user.id,
       is_published: false,
@@ -135,7 +147,7 @@ const create = async (req, res) => {
 const update = async (req, res) => {
   try {
     const { tags, ...data } = req.body;
-    await req.opportunity.update(data);
+    await req.opportunity.update(normalizeImages(data));
     if (tags !== undefined) {
       await db.OpportunityTag.destroy({ where: { opportunity_id: req.opportunity.id } });
       if (tags.length > 0) {

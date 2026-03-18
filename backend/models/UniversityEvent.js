@@ -28,6 +28,11 @@ module.exports = (sequelize, DataTypes) => {
     cover_url: {
       type: DataTypes.TEXT,
     },
+    image_urls: {
+      type: DataTypes.ARRAY(DataTypes.TEXT),
+      allowNull: false,
+      defaultValue: [],
+    },
     event_date: {
       type: DataTypes.DATE,
       allowNull: false,

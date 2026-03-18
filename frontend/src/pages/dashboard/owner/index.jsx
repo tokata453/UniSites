@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { universityApi, uploadApi, opportunityApi, majorApi } from '@/api';
 import { Spinner } from '@/components/common';
 import { useToast } from '@/hooks';
-import { formatCurrency, formatDate, galleryUrl, logoUrl, coverUrl } from '@/utils';
+import { formatCurrency, formatDate, galleryUrl, logoUrl, coverUrl, optimizeImageFile } from '@/utils';
 
 const TYPE_OPTIONS = [
   { value: 'public', label: 'Public' },
@@ -49,6 +49,8 @@ const GALLERY_OPTIONS = [
   { value: 'students', label: 'Students' },
   { value: 'other', label: 'Other' },
 ];
+
+const MAX_UPLOAD_IMAGE_BYTES = 20 * 1024 * 1024;
 
 const cardClass = 'bg-white border border-slate-200 rounded-2xl shadow-sm';
 const inputClass = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none focus:border-[#1B3A6B] focus:ring-2 focus:ring-[#1B3A6B]/10 transition-all';
@@ -117,6 +119,8 @@ const emptyNewsForm = {
   content: '',
   category: '',
   tags: '',
+  cover_url: '',
+  image_urls: [],
   is_published: true,
   is_pinned: false,
 };
@@ -124,6 +128,8 @@ const emptyNewsForm = {
 const emptyEventForm = {
   title: '',
   description: '',
+  cover_url: '',
+  image_urls: [],
   event_date: '',
   end_date: '',
   location: '',
@@ -148,6 +154,8 @@ const emptyFaqForm = {
 const emptyOpportunityForm = {
   title: '',
   description: '',
+  cover_url: '',
+  image_urls: [],
   type: 'scholarship',
   deadline: '',
   start_date: '',
@@ -251,6 +259,85 @@ function TextInput(props) {
 
 function TextArea(props) {
   return <textarea className={`${inputClass} resize-y`} {...props} />;
+}
+
+function ImageUploadField({ values = [], onUpload, uploading, onRemove, hint = 'Recommended for feed cards and detail pages.' }) {
+  return (
+    <Field label="Images" hint={hint}>
+      <div className="space-y-3">
+        {values.length ? (
+          <div className="grid gap-3 sm:grid-cols-2">
+            {values.map((value, index) => (
+              <div key={`${value}-${index}`} className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+                <img src={coverUrl(value) || value} alt={`Upload ${index + 1}`} className="h-36 w-full object-cover" />
+                <div className="absolute left-3 top-3 rounded-full bg-slate-900/70 px-2 py-1 text-[11px] font-semibold text-white">
+                  {index === 0 ? 'Main' : `Image ${index + 1}`}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onRemove?.(index)}
+                  className="absolute right-3 top-3 rounded-full bg-white/90 px-2 py-1 text-xs font-semibold text-red-600 shadow-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex h-32 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-400">
+            No images uploaded yet
+          </div>
+        )}
+        <div className="flex flex-wrap items-center gap-3">
+          <label className={secondaryBtn}>
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => onUpload?.(Array.from(e.target.files || []), e)}
+              disabled={uploading}
+            />
+            {uploading ? 'Uploading...' : values.length ? 'Add More Images' : 'Upload Images'}
+          </label>
+        </div>
+      </div>
+    </Field>
+  );
+}
+
+function OpportunityImageCarousel({ item, imageIndex, onPrev, onNext }) {
+  const images = Array.isArray(item.image_urls) && item.image_urls.length
+    ? item.image_urls
+    : item.cover_url
+    ? [item.cover_url]
+    : [];
+
+  if (!images.length) return null;
+
+  const currentIndex = Math.min(imageIndex ?? 0, images.length - 1);
+  const currentImage = images[currentIndex];
+
+  return (
+    <div className="mb-4 overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="flex h-56 items-center justify-center bg-slate-50 p-2 md:h-72">
+        <img src={coverUrl(currentImage) || currentImage} alt={item.title} className="h-full w-full object-contain" />
+      </div>
+      {images.length > 1 && (
+        <div className="flex items-center justify-between border-t border-slate-200 px-3 py-2">
+          <button type="button" onClick={onPrev} className={secondaryBtn}>
+            Prev
+          </button>
+          <span className="text-xs font-medium text-slate-500">
+            {currentIndex + 1} / {images.length}
+          </span>
+          <button type="button" onClick={onNext} className={secondaryBtn}>
+            Next
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SelectInput({ options, value, onChange, placeholder = 'Select an option' }) {
@@ -1279,6 +1366,7 @@ export function OwnerNews() {
   const [newsForm, setNewsForm] = useState(emptyNewsForm);
   const [eventForm, setEventForm] = useState(emptyEventForm);
   const [saving, setSaving] = useState(false);
+  const [uploadingTarget, setUploadingTarget] = useState('');
 
   const loadData = useCallback(async (uniId) => {
     const [newsRes, eventRes] = await Promise.all([
@@ -1292,6 +1380,52 @@ export function OwnerNews() {
   useEffect(() => {
     if (university?.id) loadData(university.id);
   }, [loadData, university?.id]);
+
+  const uploadImages = async (kind, files) => {
+    if (!files?.length) return;
+    setUploadingTarget(kind);
+    const urls = [];
+    const failures = [];
+    try {
+      const preparedFiles = await Promise.all(files.map((file) => optimizeImageFile(file)));
+      const validFiles = preparedFiles.filter((file) => file.size <= MAX_UPLOAD_IMAGE_BYTES);
+      const oversizedFiles = preparedFiles.filter((file) => file.size > MAX_UPLOAD_IMAGE_BYTES);
+      if (oversizedFiles.length > 0) {
+        error(`${oversizedFiles.length} image${oversizedFiles.length > 1 ? 's are' : ' is'} over 20MB even after compression and was skipped`);
+      }
+      if (!validFiles.length) return;
+
+      for (const file of validFiles) {
+        const body = new FormData();
+        body.append('image', file);
+        try {
+          const res = await uploadApi.image(body);
+          if (res.data.url) urls.push(res.data.url);
+        } catch (err) {
+          failures.push(err.response?.data?.message || file.name || 'Upload failed');
+        }
+      }
+      if (urls.length > 0 && kind === 'news') {
+        setNewsForm((prev) => {
+          const image_urls = [...(prev.image_urls || []), ...urls];
+          return { ...prev, image_urls, cover_url: image_urls[0] || '' };
+        });
+      } else if (urls.length > 0) {
+        setEventForm((prev) => {
+          const image_urls = [...(prev.image_urls || []), ...urls];
+          return { ...prev, image_urls, cover_url: image_urls[0] || '' };
+        });
+      }
+      if (urls.length > 0) {
+        success(`${urls.length} image${urls.length > 1 ? 's' : ''} uploaded`);
+      }
+      if (failures.length > 0) {
+        error(`${failures.length} image${failures.length > 1 ? 's were' : ' was'} skipped`);
+      }
+    } finally {
+      setUploadingTarget('');
+    }
+  };
 
   const submitNews = async () => {
     setSaving(true);
@@ -1360,6 +1494,18 @@ export function OwnerNews() {
             <Field label="Excerpt"><TextArea rows={3} value={newsForm.excerpt} onChange={(e) => setNewsForm((prev) => ({ ...prev, excerpt: e.target.value }))} placeholder="Short preview shown in listings" /></Field>
             <Field label="Content"><TextArea rows={6} value={newsForm.content} onChange={(e) => setNewsForm((prev) => ({ ...prev, content: e.target.value }))} placeholder="Full article content" /></Field>
             <Field label="Tags"><TextInput value={newsForm.tags} onChange={(e) => setNewsForm((prev) => ({ ...prev, tags: e.target.value }))} placeholder="admissions, scholarship, 2026" /></Field>
+            <ImageUploadField
+              values={newsForm.image_urls}
+              uploading={uploadingTarget === 'news'}
+              onUpload={(files, event) => {
+                uploadImages('news', files);
+                if (event?.target) event.target.value = '';
+              }}
+              onRemove={(index) => setNewsForm((prev) => {
+                const image_urls = (prev.image_urls || []).filter((_, itemIndex) => itemIndex !== index);
+                return { ...prev, image_urls, cover_url: image_urls[0] || '' };
+              })}
+            />
             <div className="flex flex-wrap gap-3">
               <ToggleField label="Publish immediately" checked={newsForm.is_published} onChange={(value) => setNewsForm((prev) => ({ ...prev, is_published: value }))} />
               <ToggleField label="Pin this post" checked={newsForm.is_pinned} onChange={(value) => setNewsForm((prev) => ({ ...prev, is_pinned: value }))} />
@@ -1381,6 +1527,20 @@ export function OwnerNews() {
             <div className="md:col-span-2">
               <Field label="Description"><TextArea rows={5} value={eventForm.description} onChange={(e) => setEventForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="What attendees can expect" /></Field>
             </div>
+            <div className="md:col-span-2">
+              <ImageUploadField
+                values={eventForm.image_urls}
+                uploading={uploadingTarget === 'event'}
+                onUpload={(files, event) => {
+                  uploadImages('event', files);
+                  if (event?.target) event.target.value = '';
+                }}
+                onRemove={(index) => setEventForm((prev) => {
+                  const image_urls = (prev.image_urls || []).filter((_, itemIndex) => itemIndex !== index);
+                  return { ...prev, image_urls, cover_url: image_urls[0] || '' };
+                })}
+              />
+            </div>
             <div className="md:col-span-2 flex flex-wrap gap-3">
               <ToggleField label="Online event" checked={eventForm.is_online} onChange={(value) => setEventForm((prev) => ({ ...prev, is_online: value }))} />
               <ToggleField label="Publish immediately" checked={eventForm.is_published} onChange={(value) => setEventForm((prev) => ({ ...prev, is_published: value }))} />
@@ -1397,6 +1557,11 @@ export function OwnerNews() {
             <div className="space-y-3">
               {news.map((item) => (
                 <div key={item.id} className="rounded-xl border border-slate-200 p-4">
+                  {item.cover_url ? (
+                    <div className="mb-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                      <img src={coverUrl(item.cover_url) || item.cover_url} alt={item.title} className="h-36 w-full object-cover" />
+                    </div>
+                  ) : null}
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -1419,6 +1584,11 @@ export function OwnerNews() {
             <div className="space-y-3">
               {events.map((item) => (
                 <div key={item.id} className="rounded-xl border border-slate-200 p-4">
+                  {item.cover_url ? (
+                    <div className="mb-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-100">
+                      <img src={coverUrl(item.cover_url) || item.cover_url} alt={item.title} className="h-36 w-full object-cover" />
+                    </div>
+                  ) : null}
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
@@ -1446,6 +1616,8 @@ export function OwnerOpportunities() {
   const [items, setItems] = useState([]);
   const [itemsLoading, setItemsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [imageIndexes, setImageIndexes] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyOpportunityForm);
 
@@ -1477,6 +1649,11 @@ export function OwnerOpportunities() {
     setForm({
       ...emptyOpportunityForm,
       ...item,
+      image_urls: Array.isArray(item.image_urls) && item.image_urls.length
+        ? item.image_urls
+        : item.cover_url
+        ? [item.cover_url]
+        : [],
       field_of_study: Array.isArray(item.field_of_study) ? item.field_of_study.join(', ') : '',
       deadline: item.deadline || '',
       start_date: item.start_date || '',
@@ -1485,12 +1662,53 @@ export function OwnerOpportunities() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleImageUpload = async (files) => {
+    if (!files?.length) return;
+    setUploadingCover(true);
+    const urls = [];
+    const failures = [];
+    try {
+      const preparedFiles = await Promise.all(files.map((file) => optimizeImageFile(file)));
+      const validFiles = preparedFiles.filter((file) => file.size <= MAX_UPLOAD_IMAGE_BYTES);
+      const oversizedFiles = preparedFiles.filter((file) => file.size > MAX_UPLOAD_IMAGE_BYTES);
+      if (oversizedFiles.length > 0) {
+        error(`${oversizedFiles.length} image${oversizedFiles.length > 1 ? 's are' : ' is'} over 20MB even after compression and was skipped`);
+      }
+      if (!validFiles.length) return;
+
+      for (const file of validFiles) {
+        const body = new FormData();
+        body.append('image', file);
+        try {
+          const res = await uploadApi.image(body);
+          if (res.data.url) urls.push(res.data.url);
+        } catch (err) {
+          failures.push(err.response?.data?.message || file.name || 'Upload failed');
+        }
+      }
+      if (urls.length > 0) {
+        setForm((prev) => {
+          const image_urls = [...(prev.image_urls || []), ...urls];
+          return { ...prev, image_urls, cover_url: image_urls[0] || '' };
+        });
+        success(`${urls.length} image${urls.length > 1 ? 's' : ''} uploaded`);
+      }
+      if (failures.length > 0) {
+        error(`${failures.length} image${failures.length > 1 ? 's were' : ' was'} skipped`);
+      }
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!university?.id) return;
     setSaving(true);
     try {
       const payload = {
         ...form,
+        image_urls: Array.isArray(form.image_urls) ? form.image_urls : [],
+        cover_url: Array.isArray(form.image_urls) && form.image_urls.length ? form.image_urls[0] : form.cover_url || null,
         university_id: university.id,
         field_of_study: form.field_of_study
           ? form.field_of_study.split(',').map((item) => item.trim()).filter(Boolean)
@@ -1526,6 +1744,21 @@ export function OwnerOpportunities() {
     } catch (err) {
       error(err.response?.data?.message || 'Failed to delete opportunity');
     }
+  };
+
+  const cycleItemImage = (item, direction) => {
+    const images = Array.isArray(item.image_urls) && item.image_urls.length
+      ? item.image_urls
+      : item.cover_url
+      ? [item.cover_url]
+      : [];
+    if (images.length <= 1) return;
+
+    setImageIndexes((prev) => {
+      const current = prev[item.id] ?? 0;
+      const next = (current + direction + images.length) % images.length;
+      return { ...prev, [item.id]: next };
+    });
   };
 
   if (loading) return <LoadingBlock />;
@@ -1571,6 +1804,20 @@ export function OwnerOpportunities() {
             <div className="md:col-span-2">
               <Field label="Description"><TextArea rows={6} value={form.description} onChange={(e) => setField('description', e.target.value)} placeholder="Describe the opportunity, benefits, and how students should approach it" /></Field>
             </div>
+            <div className="md:col-span-2">
+              <ImageUploadField
+                values={form.image_urls}
+                uploading={uploadingCover}
+                onUpload={(files, event) => {
+                  handleImageUpload(files);
+                  if (event?.target) event.target.value = '';
+                }}
+                onRemove={(index) => setForm((prev) => {
+                  const image_urls = (prev.image_urls || []).filter((_, itemIndex) => itemIndex !== index);
+                  return { ...prev, image_urls, cover_url: image_urls[0] || '' };
+                })}
+              />
+            </div>
             <Field label="Application URL"><TextInput value={form.application_url} onChange={(e) => setField('application_url', e.target.value)} placeholder="https://..." /></Field>
             <Field label="Source URL"><TextInput value={form.source_url} onChange={(e) => setField('source_url', e.target.value)} placeholder="Optional external link" /></Field>
             <div className="md:col-span-2 flex flex-wrap gap-3">
@@ -1589,26 +1836,28 @@ export function OwnerOpportunities() {
             <div className="space-y-4">
               {items.map((item) => (
                 <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-sm font-bold text-slate-800">{item.title}</p>
-                        <StatusPill tone={item.is_published ? 'green' : 'amber'}>{item.is_published ? 'Published' : 'Pending review'}</StatusPill>
-                        <StatusPill tone="blue">{item.type}</StatusPill>
-                        {item.is_fully_funded && <StatusPill tone="green">Fully funded</StatusPill>}
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
-                        {item.deadline && <span>Deadline: {formatDate(item.deadline)}</span>}
-                        {item.country && <span>Country: {item.country}</span>}
-                        <span>Applicants: {item.applicant_count || 0}</span>
-                        <span>Views: {item.views_count || 0}</span>
-                      </div>
-                      {item.description && <p className="mt-3 text-sm text-slate-600">{item.description}</p>}
-                    </div>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => startEdit(item)} className={secondaryBtn}>Edit</button>
-                      <button type="button" onClick={() => handleDelete(item.id)} className={dangerBtn}>Delete</button>
-                    </div>
+                  <OpportunityImageCarousel
+                    item={item}
+                    imageIndex={imageIndexes[item.id] ?? 0}
+                    onPrev={() => cycleItemImage(item, -1)}
+                    onNext={() => cycleItemImage(item, 1)}
+                  />
+                  <p className="text-2xl font-bold leading-tight text-slate-800">{item.title}</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <StatusPill tone={item.is_published ? 'green' : 'amber'}>{item.is_published ? 'Published' : 'Pending review'}</StatusPill>
+                    <StatusPill tone="blue">{item.type}</StatusPill>
+                    {item.is_fully_funded && <StatusPill tone="green">Fully funded</StatusPill>}
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500">
+                    {item.deadline && <span>Deadline: {formatDate(item.deadline)}</span>}
+                    {item.country && <span>Country: {item.country}</span>}
+                    <span>Applicants: {item.applicant_count || 0}</span>
+                    <span>Views: {item.views_count || 0}</span>
+                  </div>
+                  {item.description && <p className="mt-3 max-w-4xl text-base leading-8 text-slate-600 line-clamp-3">{item.description}</p>}
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <button type="button" onClick={() => startEdit(item)} className={secondaryBtn}>Edit</button>
+                    <button type="button" onClick={() => handleDelete(item.id)} className={dangerBtn}>Delete</button>
                   </div>
                 </div>
               ))}

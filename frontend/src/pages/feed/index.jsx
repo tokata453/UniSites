@@ -11,11 +11,6 @@ const FILTERS = [
   { value: 'opportunity', label: 'Opportunities' },
 ];
 
-const TYPE_STYLES = {
-  news: { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8', label: 'Official update' },
-  opportunity: { bg: '#ecfdf5', border: '#bbf7d0', text: '#15803d', label: 'Opportunity' },
-};
-
 const Card = ({ children, className = '' }) => (
   <div className={`rounded-3xl border border-slate-200 bg-white shadow-sm ${className}`}>{children}</div>
 );
@@ -80,6 +75,62 @@ const InteractionButton = ({ active = false, icon, label, count, onClick }) => (
   </button>
 );
 
+const getFeedImages = (item) => {
+  if (item.kind === 'news') {
+    const images = item.News?.image_urls;
+    if (Array.isArray(images) && images.length) return images;
+    return item.News?.cover_url ? [item.News.cover_url] : [];
+  }
+
+  const images = item.Opportunity?.image_urls;
+  if (Array.isArray(images) && images.length) return images;
+  return item.Opportunity?.cover_url ? [item.Opportunity.cover_url] : [];
+};
+
+const FeedImageCarousel = ({ item, imageIndex, onPrev, onNext }) => {
+  const images = getFeedImages(item);
+  if (!images.length) return null;
+
+  const currentIndex = Math.min(imageIndex ?? 0, images.length - 1);
+  const currentImage = images[currentIndex];
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl bg-slate-100">
+      <div className="flex max-h-[540px] min-h-[280px] items-center justify-center bg-slate-950">
+        <img src={coverUrl(currentImage) || currentImage} alt="" className="max-h-[540px] w-full object-contain" />
+      </div>
+      {images.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={onPrev}
+            className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-slate-950/55 text-sm font-bold text-white backdrop-blur transition-all hover:bg-slate-950/70"
+            aria-label="Previous image"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            onClick={onNext}
+            className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-slate-950/55 text-sm font-bold text-white backdrop-blur transition-all hover:bg-slate-950/70"
+            aria-label="Next image"
+          >
+            ›
+          </button>
+          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-slate-950/45 px-3 py-1.5 backdrop-blur">
+            {images.map((_, index) => (
+              <span
+                key={index}
+                className={`h-1.5 w-1.5 rounded-full ${index === currentIndex ? 'bg-white' : 'bg-white/45'}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
 export default function FeedPage() {
   const { isAuthenticated } = useAuth();
   const { success, info } = useToast();
@@ -92,6 +143,7 @@ export default function FeedPage() {
   const [commentsLoading, setCommentsLoading] = useState({});
   const [commentDrafts, setCommentDrafts] = useState({});
   const [commentSubmitting, setCommentSubmitting] = useState({});
+  const [imageIndexes, setImageIndexes] = useState({});
 
   useEffect(() => {
     let cancelled = false;
@@ -205,6 +257,17 @@ export default function FeedPage() {
     }
   };
 
+  const cycleItemImage = (item, direction) => {
+    const images = getFeedImages(item);
+    if (images.length <= 1) return;
+
+    setImageIndexes((prev) => {
+      const current = prev[`${item.kind}:${item.id}`] ?? 0;
+      const next = (current + direction + images.length) % images.length;
+      return { ...prev, [`${item.kind}:${item.id}`]: next };
+    });
+  };
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -271,19 +334,12 @@ export default function FeedPage() {
                 {items.map((item) => {
                   const publisher = getPublisher(item);
                   const timestamp = getTimestamp(item);
-                  const style = TYPE_STYLES[item.kind] || TYPE_STYLES.news;
                   const key = `${item.kind}:${item.id}`;
                   const comments = commentsByItem[key] || [];
                   const commentsOpen = !!openComments[key];
 
                   return (
                     <Card key={key} className="overflow-hidden">
-                      {item.kind === 'news' && item.News?.cover_url ? (
-                        <div className="h-52 w-full overflow-hidden bg-slate-100">
-                          <img src={coverUrl(item.News.cover_url) || item.News.cover_url} alt="" className="h-full w-full object-cover" />
-                        </div>
-                      ) : null}
-
                       <div className="p-5 sm:p-6">
                         <div className="flex items-start gap-3">
                           <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
@@ -315,9 +371,6 @@ export default function FeedPage() {
                               )}
                             </div>
                           </div>
-                          <span className="inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold capitalize" style={{ background: style.bg, border: `1px solid ${style.border}`, color: style.text }}>
-                            {item.kind === 'news' ? style.label : item.Opportunity?.type}
-                          </span>
                         </div>
 
                         <div className="mt-4">
@@ -340,6 +393,15 @@ export default function FeedPage() {
                           {item.kind === 'opportunity' && item.Opportunity?.is_featured && <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700">#featured</span>}
                           {item.kind === 'opportunity' && item.Opportunity?.is_fully_funded && <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">#fullyfunded</span>}
                           {item.kind === 'opportunity' && item.Opportunity?.country && <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">#{item.Opportunity.country.replace(/\s+/g, '').toLowerCase()}</span>}
+                        </div>
+
+                        <div className="mt-4">
+                          <FeedImageCarousel
+                            item={item}
+                            imageIndex={imageIndexes[key] ?? 0}
+                            onPrev={() => cycleItemImage(item, -1)}
+                            onNext={() => cycleItemImage(item, 1)}
+                          />
                         </div>
 
                         <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">

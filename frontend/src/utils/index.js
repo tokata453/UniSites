@@ -48,3 +48,60 @@ export const debounce = (fn, ms = 300) => {
     timer = setTimeout(() => fn(...args), ms);
   };
 };
+
+// ── Client-side image optimization ───────────────────────────────────────────
+export const optimizeImageFile = async (
+  file,
+  {
+    maxWidth = 1600,
+    maxHeight = 1600,
+    quality = 0.82,
+    outputType = 'image/jpeg',
+  } = {}
+) => {
+  if (!(file instanceof File)) return file;
+  if (!file.type?.startsWith('image/')) return file;
+  if (file.type === 'image/gif') return file;
+
+  const imageUrl = URL.createObjectURL(file);
+
+  try {
+    const image = await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = imageUrl;
+    });
+
+    const ratio = Math.min(maxWidth / image.width, maxHeight / image.height, 1);
+    const targetWidth = Math.max(1, Math.round(image.width * ratio));
+    const targetHeight = Math.max(1, Math.round(image.height * ratio));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+
+    const context = canvas.getContext('2d');
+    if (!context) return file;
+
+    context.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+    const blob = await new Promise((resolve) =>
+      canvas.toBlob(resolve, outputType, quality)
+    );
+
+    if (!blob || blob.size >= file.size) return file;
+
+    const extension = outputType === 'image/webp' ? 'webp' : 'jpg';
+    const nextName = file.name.replace(/\.[^.]+$/, '') || 'image';
+
+    return new File([blob], `${nextName}.${extension}`, {
+      type: outputType,
+      lastModified: Date.now(),
+    });
+  } catch {
+    return file;
+  } finally {
+    URL.revokeObjectURL(imageUrl);
+  }
+};
