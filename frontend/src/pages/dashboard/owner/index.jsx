@@ -389,10 +389,67 @@ function OverviewStat({ label, value, tone = 'blue' }) {
   );
 }
 
+function MiniBarChart({ title, description, data, color = '#1B3A6B' }) {
+  const maxValue = Math.max(...data.map((item) => item.value), 1);
+
+  return (
+    <Panel title={title} description={description}>
+      <div className="space-y-4">
+        <div className="flex h-52 items-end gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 pb-4 pt-6">
+          {data.map((item) => (
+            <div key={item.label} className="flex flex-1 flex-col items-center justify-end gap-3">
+              <span className="text-xs font-semibold text-slate-500">{item.value.toLocaleString()}</span>
+              <div className="flex h-36 w-full items-end justify-center">
+                <div
+                  className="w-full max-w-[64px] rounded-t-2xl transition-all"
+                  style={{
+                    height: `${Math.max((item.value / maxValue) * 100, item.value > 0 ? 12 : 4)}%`,
+                    background: `linear-gradient(180deg, ${color} 0%, ${color}cc 100%)`,
+                    boxShadow: `0 10px 18px ${color}22`,
+                  }}
+                />
+              </div>
+              <span className="text-center text-xs font-semibold uppercase tracking-wide text-slate-400">{item.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
+function ProgressChart({ title, description, rows, accent = '#15803d' }) {
+  const maxValue = Math.max(...rows.map((row) => row.value), 1);
+
+  return (
+    <Panel title={title} description={description}>
+      <div className="space-y-4">
+        {rows.map((row) => (
+          <div key={row.label}>
+            <div className="mb-2 flex items-center justify-between text-sm">
+              <span className="font-medium text-slate-600">{row.label}</span>
+              <span className="font-semibold text-slate-800">{row.value.toLocaleString()}</span>
+            </div>
+            <div className="h-3 overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full transition-all"
+                style={{
+                  width: `${Math.max((row.value / maxValue) * 100, row.value > 0 ? 8 : 0)}%`,
+                  background: `linear-gradient(90deg, ${accent} 0%, ${accent}aa 100%)`,
+                }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </Panel>
+  );
+}
+
 export function OwnerOverview() {
   const { university, loading } = useOwnerUniversity();
   const [analytics, setAnalytics] = useState(null);
-  const [summary, setSummary] = useState({ gallery: 0, faculties: 0, programs: 0, news: 0, events: 0, faqs: 0 });
+  const [summary, setSummary] = useState({ gallery: 0, faculties: 0, programs: 0, news: 0, events: 0, faqs: 0, opportunities: 0, pendingReviews: 0, flaggedReviews: 0 });
 
   useEffect(() => {
     if (!university?.id) return;
@@ -405,7 +462,11 @@ export function OwnerOverview() {
       universityApi.getNews(university.id).catch(() => ({ data: { news: [], items: [] } })),
       universityApi.getEvents(university.id).catch(() => ({ data: { events: [], items: [] } })),
       universityApi.getFAQs(university.id).catch(() => ({ data: { faqs: [] } })),
-    ]).then(([analyticsRes, galleryRes, facultiesRes, programsRes, newsRes, eventsRes, faqRes]) => {
+      opportunityApi.getMine().catch(() => ({ data: { opportunities: [] } })),
+      universityApi.getOwnerReviews(university.id).catch(() => ({ data: { reviews: [] } })),
+    ]).then(([analyticsRes, galleryRes, facultiesRes, programsRes, newsRes, eventsRes, faqRes, opportunitiesRes, ownerReviewsRes]) => {
+      const ownerOpportunities = (opportunitiesRes.data.opportunities || []).filter((opp) => opp.university_id === university.id);
+      const ownerReviews = ownerReviewsRes.data.reviews || [];
       setAnalytics(analyticsRes.data.analytics || analyticsRes.data || null);
       setSummary({
         gallery: galleryRes.data.gallery?.length || 0,
@@ -414,6 +475,9 @@ export function OwnerOverview() {
         news: newsRes.data.news?.length || newsRes.data.items?.length || 0,
         events: eventsRes.data.events?.length || eventsRes.data.items?.length || 0,
         faqs: faqRes.data.faqs?.length || 0,
+        opportunities: ownerOpportunities.length,
+        pendingReviews: ownerReviews.filter((review) => !review.is_approved).length,
+        flaggedReviews: ownerReviews.filter((review) => review.flagged_for_recheck).length,
       });
     });
   }, [university?.id]);
@@ -435,6 +499,51 @@ export function OwnerOverview() {
     const complete = importantFields.filter(Boolean).length;
     return Math.round((complete / importantFields.length) * 100);
   }, [university]);
+
+  const actionItems = useMemo(() => {
+    if (!university) return [];
+    return [
+      { label: 'Add a logo and cover image', done: Boolean(university.logo_url && university.cover_url), to: '/owner/profile' },
+      { label: 'Publish your university profile', done: Boolean(university.is_published), to: '/owner/profile' },
+      { label: 'Add at least one faculty', done: summary.faculties > 0, to: '/owner/faculties' },
+      { label: 'Add at least one program', done: summary.programs > 0, to: '/owner/faculties' },
+      { label: 'Publish a news post or event', done: summary.news > 0 || summary.events > 0, to: '/owner/news' },
+      { label: 'Complete contact links', done: Boolean(university.website_url && university.email && university.phone), to: '/owner/profile' },
+    ];
+  }, [summary.events, summary.faculties, summary.news, summary.programs, university]);
+
+  const completedActions = actionItems.filter((item) => item.done).length;
+  const trafficTrend = [
+    { label: 'Daily', value: analytics?.daily_views ?? 0 },
+    { label: 'Weekly', value: analytics?.weekly_views ?? 0 },
+    { label: 'Monthly', value: analytics?.monthly_views ?? 0 },
+  ];
+  const engagementBreakdown = [
+    { label: 'Website Clicks', value: analytics?.website_clicks ?? 0 },
+    { label: 'Contact Clicks', value: analytics?.contact_clicks ?? 0 },
+    { label: 'Gallery Views', value: analytics?.gallery_views ?? 0 },
+  ];
+  const dailyViews = analytics?.daily_views ?? 0;
+  const weeklyViews = analytics?.weekly_views ?? 0;
+  const weeklyAvg = weeklyViews / 7;
+  const dailyTrend = dailyViews > weeklyAvg ? 'up' : dailyViews < weeklyAvg ? 'down' : 'flat';
+  const clickThroughBase = Math.max(analytics?.total_views ?? university.views_count ?? 0, 1);
+  const clickThroughRate = Math.round((((analytics?.website_clicks ?? 0) + (analytics?.contact_clicks ?? 0)) / clickThroughBase) * 100);
+  const performanceNotes = [
+    dailyTrend === 'up'
+      ? 'Daily traffic is running above your weekly pace.'
+      : dailyTrend === 'down'
+        ? 'Daily traffic is softer than your weekly average right now.'
+        : 'Daily traffic is tracking close to your weekly average.',
+    clickThroughRate >= 10
+      ? 'Your page is converting views into clicks strongly.'
+      : clickThroughRate >= 5
+        ? 'Students are engaging at a healthy level, but there is room to improve calls-to-action.'
+        : 'Clicks are low compared with views, so contact and application prompts may need to be stronger.',
+    summary.pendingReviews > 0
+      ? `You have ${summary.pendingReviews} review${summary.pendingReviews === 1 ? '' : 's'} waiting on moderation or follow-up.`
+      : 'There are no pending reviews waiting on your attention right now.',
+  ];
 
   if (loading) return <LoadingBlock />;
   if (!university) return <NoUniversity />;
@@ -500,24 +609,80 @@ export function OwnerOverview() {
           </div>
         </Panel>
 
-        <Panel title="Traffic Signals" description="These come from your university analytics record.">
-          <div className="space-y-3 text-sm">
-            {[
-              ['Monthly Views', analytics?.monthly_views ?? 0],
-              ['Weekly Views', analytics?.weekly_views ?? 0],
-              ['Daily Views', analytics?.daily_views ?? 0],
-              ['Website Clicks', analytics?.website_clicks ?? 0],
-              ['Contact Clicks', analytics?.contact_clicks ?? 0],
-              ['Gallery Views', analytics?.gallery_views ?? 0],
-            ].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5">
-                <span className="text-slate-500">{label}</span>
-                <span className="font-semibold text-slate-800">{value}</span>
+        <Panel title="Performance Notes" description="A short read on what the current analytics are telling you.">
+          <div className="space-y-3">
+            {performanceNotes.map((note) => (
+              <div key={note} className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                {note}
               </div>
             ))}
           </div>
           <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
             Tip: complete your profile, publish at least one news post, and keep gallery photos fresh to make the page feel active.
+          </div>
+        </Panel>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+        <MiniBarChart
+          title="Traffic Trend"
+          description="A simple view of your current traffic levels across daily, weekly, and monthly windows."
+          data={trafficTrend}
+          color="#1B3A6B"
+        />
+        <ProgressChart
+          title="Engagement Breakdown"
+          description="These interactions show whether students are moving beyond page views."
+          rows={engagementBreakdown}
+          accent="#15803d"
+        />
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+        <Panel title="Action Checklist" description="A quick guide to the most important owner tasks.">
+          <div className="mb-4 flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-800">Completion progress</p>
+              <p className="text-sm text-slate-500">{completedActions} of {actionItems.length} core tasks completed</p>
+            </div>
+            <div className="text-2xl font-bold text-slate-800">{Math.round((completedActions / actionItems.length) * 100)}%</div>
+          </div>
+          <div className="space-y-3">
+            {actionItems.map((item) => (
+              <Link key={item.label} to={item.to} className="flex items-center justify-between rounded-xl border border-slate-200 px-4 py-3 transition hover:border-slate-300 hover:bg-slate-50">
+                <div className="flex items-center gap-3">
+                  <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${item.done ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {item.done ? '✓' : '!'}
+                  </span>
+                  <span className="text-sm font-medium text-slate-700">{item.label}</span>
+                </div>
+                <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">{item.done ? 'Done' : 'Open'}</span>
+              </Link>
+            ))}
+          </div>
+        </Panel>
+
+        <Panel title="Quick Actions" description="Jump straight to the sections owners update most often.">
+          <div className="grid gap-3">
+            {[
+              { to: '/owner/profile', title: 'Update profile', meta: 'Refresh contact details, tuition, and brand assets' },
+              { to: '/owner/faculties', title: 'Manage faculties & programs', meta: 'Keep your academic structure current and complete' },
+              { to: '/owner/news', title: 'Publish news & events', meta: 'Share fresh updates so the page feels active' },
+              { to: '/owner/opportunities', title: 'Manage opportunities', meta: 'Post scholarships, internships, and new openings' },
+              { to: '/owner/reviews', title: 'Review responses', meta: 'Reply to students and follow up on flagged feedback' },
+              { to: '/owner/faq', title: 'Improve FAQs', meta: 'Answer common questions before students need to ask' },
+            ].map((item) => (
+              <Link key={item.to} to={item.to} className="rounded-xl border border-slate-200 p-4 transition hover:border-slate-300 hover:bg-slate-50">
+                <p className="text-sm font-semibold text-slate-800">{item.title}</p>
+                <p className="mt-1 text-sm text-slate-500">{item.meta}</p>
+              </Link>
+            ))}
+          </div>
+          <div className="mt-4 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            Public page status:{' '}
+            <span className="font-semibold">
+              {university.is_published ? 'Students can view your page live' : 'Your page is still in draft mode'}
+            </span>
           </div>
         </Panel>
       </div>

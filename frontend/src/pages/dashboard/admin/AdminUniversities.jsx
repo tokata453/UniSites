@@ -13,6 +13,16 @@ const TYPE_COLORS = { public: '#1d4ed8', private: '#15803d', international: '#7c
 const TYPE_BG     = { public: '#eff6ff',  private: '#f0fdf4',  international: '#faf5ff' };
 
 const PROVINCES = ['Phnom Penh','Siem Reap','Battambang','Kampong Cham','Kandal','Kampot','Sihanoukville','Other'];
+const UNIVERSITY_TYPE_OPTIONS = [
+  { value: '', label: 'Select type...' },
+  { value: 'public', label: 'Public' },
+  { value: 'private', label: 'Private' },
+  { value: 'international', label: 'International' },
+];
+const PROVINCE_OPTIONS = [
+  { value: '', label: 'Select province...' },
+  ...PROVINCES.map((province) => ({ value: province, label: province })),
+];
 
 const Field = ({ label, required, children }) => (
   <div>
@@ -29,38 +39,6 @@ const Input = ({ value, onChange, placeholder, type = 'text' }) => (
     onFocus={e => e.target.style.borderColor = '#1B3A6B'}
     onBlur={e => e.target.style.borderColor = '#e2e8f0'}
   />
-);
-
-const selectStyle = (hasValue) => ({
-  width: '100%',
-  appearance: 'none',
-  WebkitAppearance: 'none',
-  MozAppearance: 'none',
-  padding: '9px 36px 9px 12px',
-  background: '#f8fafc',
-  border: '1px solid #e2e8f0',
-  borderRadius: 9,
-  color: hasValue ? '#1e293b' : '#94a3b8',
-  fontSize: 13,
-  lineHeight: 1.4,
-  outline: 'none',
-  fontFamily: "'DM Sans',sans-serif",
-  cursor: 'pointer',
-  boxSizing: 'border-box',
-});
-
-const SelectInput = ({ value: selectedValue, onChange, options }) => (
-  <div style={{ position: 'relative' }}>
-    <select value={selectedValue} onChange={e => onChange(e.target.value)}
-      style={selectStyle(selectedValue)}
-      onFocus={e => e.target.style.borderColor = '#1B3A6B'}
-      onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
-      {options.map(opt => { const v = String(opt.value); const l = String(opt.label); return <option key={v} value={v}>{l}</option>; })}
-    </select>
-    <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
-      <IC d="M6 9l6 6 6-6" size={14} />
-    </div>
-  </div>
 );
 
 const Textarea = ({ value, onChange, placeholder, rows = 3 }) => (
@@ -81,19 +59,31 @@ const CheckboxField = ({ label, checked, onChange }) => (
   </label>
 );
 
-// ── Create University Modal ───────────────────────────────────────────────────
-function CreateUniversityModal({ onClose, onSuccess, showToast }) {
+// ── University Modal ──────────────────────────────────────────────────────────
+function UniversityModal({ mode = 'create', university = null, onClose, onSuccess, showToast }) {
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
   const [ownerSearch,  setOwnerSearch]  = useState('');
   const [ownerResults, setOwnerResults] = useState([]);
   const [ownerLoading, setOwnerLoading] = useState(false);
   const [form, setForm] = useState({
-    name: '', university_type: '', province: '', description: '',
-    website_url: '', email: '', phone: '', facebook_url: '',
-    tuition_min: '', tuition_max: '', founded_year: '', student_count: '',
-    scholarship_available: false, dormitory_available: false, international_students: false,
-    owner_id: '', owner_name: '',
+    name: university?.name || '',
+    university_type: university?.type || university?.university_type || '',
+    province: university?.province || '',
+    description: university?.description || '',
+    website_url: university?.website_url || '',
+    email: university?.email || '',
+    phone: university?.phone || '',
+    facebook_url: university?.facebook_url || '',
+    tuition_min: university?.tuition_min || '',
+    tuition_max: university?.tuition_max || '',
+    founded_year: university?.founded_year || '',
+    student_count: university?.student_count || '',
+    scholarship_available: Boolean(university?.scholarship_available),
+    dormitory_available: Boolean(university?.dormitory_available),
+    international_students: Boolean(university?.international_students),
+    owner_id: university?.owner_id || university?.Owner?.id || '',
+    owner_name: university?.Owner?.name || '',
   });
 
   const set = (key) => (val) => setForm(p => ({ ...p, [key]: val }));
@@ -120,19 +110,28 @@ function CreateUniversityModal({ onClose, onSuccess, showToast }) {
     if (!validate()) return;
     setSaving(true);
     try {
-      await adminApi.createUniversity({
+      const payload = {
         ...form,
+        type: form.university_type || null,
+        university_type: form.university_type || null,
         tuition_min:   form.tuition_min   ? Number(form.tuition_min)   : null,
         tuition_max:   form.tuition_max   ? Number(form.tuition_max)   : null,
         founded_year:  form.founded_year  ? Number(form.founded_year)  : null,
         student_count: form.student_count ? Number(form.student_count) : null,
         owner_id:      form.owner_id      || null,
-      });
-      showToast(`"${form.name}" created successfully`);
+      };
+
+      if (mode === 'edit' && university?.id) {
+        await adminApi.updateUniversity(university.id, payload);
+        showToast(`"${form.name}" updated successfully`);
+      } else {
+        await adminApi.createUniversity(payload);
+        showToast(`"${form.name}" created successfully`);
+      }
       onSuccess();
       onClose();
     } catch (e) {
-      showToast(e.response?.data?.message || 'Failed to create university');
+      showToast(e.response?.data?.message || `Failed to ${mode === 'edit' ? 'update' : 'create'} university`);
     } finally {
       setSaving(false);
     }
@@ -145,8 +144,8 @@ function CreateUniversityModal({ onClose, onSuccess, showToast }) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #f1f5f9' }}>
           <div>
-            <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0, fontFamily: "'Syne',sans-serif" }}>Create University</h2>
-            <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>Add a new university to the platform</p>
+            <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0, fontFamily: "'Syne',sans-serif" }}>{mode === 'edit' ? 'Edit University' : 'Create University'}</h2>
+            <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>{mode === 'edit' ? 'Update university details and ownership' : 'Add a new university to the platform'}</p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 6, borderRadius: 8 }}
             onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
@@ -169,33 +168,11 @@ function CreateUniversityModal({ onClose, onSuccess, showToast }) {
                 </Field>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <Field label="Type" required>
-                    <div style={{ position: 'relative' }}>
-                      <select value={form.university_type} onChange={e => set('university_type')(e.target.value)}
-                        style={selectStyle(form.university_type)}
-                        onFocus={e => e.target.style.borderColor = '#1B3A6B'} onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
-                        <option value="">Select type...</option>
-                        <option value="public">Public</option>
-                        <option value="private">Private</option>
-                        <option value="international">International</option>
-                      </select>
-                      <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
-                        <IC d="M6 9l6 6 6-6" size={14} />
-                      </div>
-                    </div>
+                    <Select value={form.university_type} onChange={set('university_type')} options={UNIVERSITY_TYPE_OPTIONS} style={{ width: '100%' }} />
                     {errors.university_type && <p style={{ fontSize: 11, color: '#ef4444', margin: '3px 0 0' }}>{errors.university_type}</p>}
                   </Field>
                   <Field label="Province" required>
-                    <div style={{ position: 'relative' }}>
-                      <select value={form.province} onChange={e => set('province')(e.target.value)}
-                        style={selectStyle(form.province)}
-                        onFocus={e => e.target.style.borderColor = '#1B3A6B'} onBlur={e => e.target.style.borderColor = '#e2e8f0'}>
-                        <option value="">Select province...</option>
-                        {PROVINCES.map(p => { const pv = String(p); return <option key={pv} value={pv}>{pv}</option>; })}
-                      </select>
-                      <div style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', pointerEvents: 'none', display: 'flex', alignItems: 'center' }}>
-                        <IC d="M6 9l6 6 6-6" size={14} />
-                      </div>
-                    </div>
+                    <Select value={form.province} onChange={set('province')} options={PROVINCE_OPTIONS} style={{ width: '100%' }} />
                     {errors.province && <p style={{ fontSize: 11, color: '#ef4444', margin: '3px 0 0' }}>{errors.province}</p>}
                   </Field>
                 </div>
@@ -287,7 +264,7 @@ function CreateUniversityModal({ onClose, onSuccess, showToast }) {
 
         {/* Footer */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 24px', borderTop: '1px solid #f1f5f9' }}>
-          <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>University will be created as unpublished</p>
+          <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>{mode === 'edit' ? 'Changes apply immediately after saving' : 'University will be created as unpublished'}</p>
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={onClose} style={{ padding: '9px 18px', borderRadius: 9, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>
               Cancel
@@ -296,7 +273,7 @@ function CreateUniversityModal({ onClose, onSuccess, showToast }) {
               style={{ padding: '9px 22px', borderRadius: 9, border: 'none', background: saving ? '#e2e8f0' : '#1B3A6B', color: saving ? '#94a3b8' : '#fff', cursor: saving ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 6 }}
               onMouseEnter={e => { if (!saving) e.currentTarget.style.background = '#15305a'; }}
               onMouseLeave={e => { if (!saving) e.currentTarget.style.background = '#1B3A6B'; }}>
-              {saving ? 'Creating...' : '+ Create University'}
+              {saving ? (mode === 'edit' ? 'Saving...' : 'Creating...') : (mode === 'edit' ? 'Save Changes' : '+ Create University')}
             </button>
           </div>
         </div>
@@ -476,6 +453,7 @@ export default function AdminUniversities() {
   const [toast,      setToast]      = useState('');
   const [confirm,    setConfirm]    = useState(null);
   const [transferUni, setTransferUni] = useState(null);
+  const [editingUni,  setEditingUni]  = useState(null);
   const [showCreate,  setShowCreate]  = useState(false);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
@@ -532,7 +510,12 @@ export default function AdminUniversities() {
     { key: 'published', label: 'Published', render: u => <ToggleSwitch checked={u.is_published} onChange={() => toggle(u, 'is_published')} color="#15803d" /> },
     { key: 'verified',  label: 'Verified',  render: u => <ToggleSwitch checked={u.is_verified}  onChange={() => toggle(u, 'is_verified')}  color="#1B3A6B" /> },
     { key: 'featured',  label: 'Featured',  render: u => <ToggleSwitch checked={u.is_featured}  onChange={() => toggle(u, 'is_featured')}  color="#d97706" /> },
-    { key: 'actions',   label: '',          render: u => <DeleteBtn onClick={() => setConfirm({ id: u.id, name: u.name })} /> },
+    { key: 'actions',   label: 'Actions',   render: u => (
+      <div style={{ display: 'flex', gap: 6 }}>
+        <ActionBtn onClick={() => setEditingUni(u)} color="#1B3A6B">Edit</ActionBtn>
+        <DeleteBtn onClick={() => setConfirm({ id: u.id, name: u.name })} />
+      </div>
+    ) },
   ];
 
   return (
@@ -574,8 +557,18 @@ export default function AdminUniversities() {
       )}
 
       {showCreate && (
-        <CreateUniversityModal
+        <UniversityModal
           onClose={() => setShowCreate(false)}
+          onSuccess={load}
+          showToast={showToast}
+        />
+      )}
+
+      {editingUni && (
+        <UniversityModal
+          mode="edit"
+          university={editingUni}
+          onClose={() => setEditingUni(null)}
           onSuccess={load}
           showToast={showToast}
         />

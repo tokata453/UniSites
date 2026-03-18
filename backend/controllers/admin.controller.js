@@ -98,7 +98,12 @@ exports.updateUser = async (req, res) => {
     if (!isAdmin(req, res)) return;
     const user = await db.User.findByPk(req.params.id);
     if (!user) return notFound(res, 'User not found');
-    const { is_active, is_approved, role } = req.body;
+    const { name, email, bio, website_url, contact_phone, is_active, is_approved, role } = req.body;
+    if (name !== undefined) user.name = name;
+    if (email !== undefined) user.email = email;
+    if (bio !== undefined) user.bio = bio;
+    if (website_url !== undefined) user.website_url = website_url;
+    if (contact_phone !== undefined) user.contact_phone = contact_phone;
     if (is_active !== undefined) user.is_active = is_active;
     if (is_approved !== undefined) user.is_approved = is_approved;
     if (role) {

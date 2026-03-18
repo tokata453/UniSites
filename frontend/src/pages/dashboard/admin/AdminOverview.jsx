@@ -40,7 +40,6 @@ export default function AdminOverview() {
   }, []);
 
   const S = (key) => loading ? '—' : (stats?.[key] ?? 0);
-
   return (
     <div style={{ fontFamily: "'DM Sans',sans-serif" }}>
 
@@ -74,14 +73,14 @@ export default function AdminOverview() {
         <div style={{ padding: '20px', borderRadius: 14, background: '#fff', border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
           <h3 style={{ fontSize: 13, fontWeight: 700, color: '#1e293b', margin: '0 0 16px' }}>User Breakdown</h3>
           {[
-            { label: 'Students',          key: 'students', color: '#1B3A6B' },
-            { label: 'University Owners', key: 'owners',   color: '#15803d' },
-            { label: 'Organizations',     key: 'organizations', color: '#0f766e' },
-            { label: 'Admins',            key: 'admins',   color: '#F47B20' },
-          ].map(row => {
-            const val   = stats?.[row.key] ?? 0;
+            { label: 'Students', key: 'students', color: '#1B3A6B' },
+            { label: 'University Owners', key: 'owners', color: '#15803d' },
+            { label: 'Organizations', key: 'organizations', color: '#0f766e' },
+            { label: 'Admins', key: 'admins', color: '#F47B20' },
+          ].map((row) => {
+            const val = stats?.[row.key] ?? 0;
             const total = stats?.users ?? 1;
-            const pct   = Math.round((val / total) * 100);
+            const pct = Math.round((val / total) * 100);
             return (
               <div key={row.key} style={{ marginBottom: 14 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>

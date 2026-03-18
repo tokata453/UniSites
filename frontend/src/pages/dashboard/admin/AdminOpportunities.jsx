@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { adminApi } from '@/api';
 import { Badge, SearchBar, Select, DeleteBtn, Table, Pagination, PageHeader, Card, FilterBar, ConfirmModal, Toast, ToggleSwitch, ActionBtn } from './AdminShared';
-import { avatarUrl } from '@/utils';
 
 const TYPE_OPTIONS = [
   { value: '', label: 'All Types' },
@@ -33,6 +31,7 @@ export default function AdminOpportunities() {
   const [search,  setSearch]  = useState('');
   const [type,    setType]    = useState('');
   const [pub,     setPub]     = useState('');
+  const [editing, setEditing] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [toast,   setToast]   = useState('');
   const [density, setDensity] = useState('comfortable');
@@ -60,112 +59,19 @@ export default function AdminOpportunities() {
     catch { setConfirm(null); showToast('Failed'); }
   };
 
-  const renderOwner = (opp) => {
-    if (opp.University?.name) {
-      const ownerName = opp.University.name;
-      if (opp.University.slug) {
-        return (
-          <Link
-            to={`/universities/${opp.University.slug}`}
-            style={{ fontWeight: 600, color: '#1B3A6B', fontSize: 12, textDecoration: 'none', ...textClamp }}
-            title={ownerName}
-          >
-            {ownerName}
-          </Link>
-        );
-      }
-
-      return (
-        <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 12, ...textClamp }} title={ownerName}>
-          {ownerName}
-        </div>
-      );
-    }
-
-    if (opp.PostedBy?.Role?.name === 'organization') {
-      const ownerName = opp.PostedBy?.name || 'Organization';
-      return (
-        <Link
-          to={`/admin/users?role=organization&search=${encodeURIComponent(opp.PostedBy.email || ownerName)}`}
-          style={{ fontWeight: 600, color: '#0f766e', fontSize: 12, textDecoration: 'none', ...textClamp }}
-          title={ownerName}
-        >
-          {ownerName}
-        </Link>
-      );
-    }
-
-    return <div style={{ fontWeight: 600, color: '#64748b', fontSize: 12 }}>Unknown</div>;
-  };
-
   const cols = [
     { key: 'title', label: 'Title', render: o => (
       <div style={{ minWidth: 280, maxWidth: 320 }}>
         <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13, ...textClamp }} title={o.title}>{o.title}</div>
-        <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1, ...textClamp }} title={o.University?.name || 'External'}>
-          {o.University?.name || 'External'}
+        <div
+          style={{ fontSize: 11, color: '#94a3b8', marginTop: 1, ...textClamp }}
+          title={o.University?.name || (o.PostedBy?.Role?.name === 'organization' ? o.PostedBy?.name : o.PostedBy?.name || 'External')}
+        >
+          {o.University?.name || (o.PostedBy?.Role?.name === 'organization' ? o.PostedBy?.name : o.PostedBy?.name || 'External')}
         </div>
       </div>
     ), width: 320, minWidth: 320 },
-    { key: 'ownedBy', label: 'Owned By', render: o => (
-      <div style={{ minWidth: 150, maxWidth: 180 }}>
-        {renderOwner(o)}
-        <div style={{ marginTop: 4 }}>
-          {o.University ? (
-            <Badge label="University" color="#15803d" />
-          ) : o.PostedBy?.Role?.name === 'organization' ? (
-            <Badge label="Organization" color="#0f766e" />
-          ) : (
-            <span style={{ fontSize: 11, color: '#94a3b8' }}>No owner</span>
-          )}
-        </div>
-      </div>
-    ), width: 180, minWidth: 180 },
-    { key: 'submittedBy', label: 'Submitted By', render: o => (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 190, maxWidth: 220 }}>
-        <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#475569', flexShrink: 0, overflow: 'hidden' }}>
-          {o.PostedBy?.avatar_url ? (
-            <img
-              src={avatarUrl(o.PostedBy.avatar_url) || o.PostedBy.avatar_url}
-              alt={o.PostedBy.name || 'User avatar'}
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-            />
-          ) : (
-            o.PostedBy?.name?.[0]?.toUpperCase() || 'S'
-          )}
-        </div>
-        <div style={{ minWidth: 0 }}>
-          {o.PostedBy?.id ? (
-            <Link
-              to={`/admin/users/${o.PostedBy.id}`}
-              style={{ display: 'block', fontWeight: 600, color: '#1B3A6B', fontSize: 12, textDecoration: 'none', ...textClamp }}
-              title={o.PostedBy?.name}
-            >
-              {o.PostedBy?.name}
-            </Link>
-          ) : (
-            <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 12, ...textClamp }} title={o.PostedBy?.name || 'Seeded record'}>
-              {o.PostedBy?.name || 'Seeded record'}
-            </div>
-          )}
-          <div
-            style={{ fontSize: 11, color: '#94a3b8', marginTop: 1, ...textClamp }}
-            title={o.PostedBy ? `${o.PostedBy?.Role?.name || 'No role'}${o.PostedBy?.email ? ` • ${o.PostedBy.email}` : ''}` : 'Legacy seeded import'}
-          >
-            {o.PostedBy
-              ? `${o.PostedBy?.Role?.name || 'No role'}${o.PostedBy?.email ? ` • ${o.PostedBy.email}` : ''}`
-              : 'Legacy seeded import'}
-          </div>
-        </div>
-      </div>
-    ), width: 220, minWidth: 220 },
     { key: 'type',     label: 'Type',     render: o => <Badge label={o.type} color={TYPE_COLORS[o.type] || '#1B3A6B'} /> },
-    { key: 'funding',  label: 'Funding',  render: o => (
-      <div style={{ minWidth: 220, maxWidth: 240 }}>
-        <div style={{ fontSize: 12, color: '#334155', lineHeight: 1.45 }}>{o.funding_amount || '—'}</div>
-        {o.is_fully_funded && <Badge label="Full" color="#15803d" />}
-      </div>
-    ), width: 240, minWidth: 240 },
     { key: 'deadline', label: 'Deadline', render: o => (
       <span style={{ fontSize: 12, color: o.deadline && new Date(o.deadline) < new Date() ? '#ef4444' : '#64748b' }}>
         {o.deadline ? new Date(o.deadline).toLocaleDateString() : '—'}
@@ -174,7 +80,12 @@ export default function AdminOpportunities() {
     { key: 'published', label: 'Published', render: o => <ToggleSwitch checked={o.is_published} onChange={() => toggle(o, 'is_published')} color="#15803d" /> },
     { key: 'featured',  label: 'Featured',  render: o => <ToggleSwitch checked={o.is_featured}  onChange={() => toggle(o, 'is_featured')}  color="#d97706" /> },
     { key: 'views',    label: 'Views',    render: o => <span style={{ fontSize: 12, color: '#94a3b8' }}>{o.views_count?.toLocaleString() || 0}</span> },
-    { key: 'actions',  label: '',         render: o => <DeleteBtn onClick={() => setConfirm({ id: o.id, name: o.title })} /> },
+    { key: 'actions',  label: 'Actions',  render: o => (
+      <div style={{ display: 'flex', gap: 6 }}>
+        <ActionBtn onClick={() => setEditing(o)} color="#1B3A6B">Edit</ActionBtn>
+        <DeleteBtn onClick={() => setConfirm({ id: o.id, name: o.title })} />
+      </div>
+    ) },
   ];
 
   return (
@@ -193,7 +104,169 @@ export default function AdminOpportunities() {
         <div style={{ padding: '8px 16px 14px' }}><Pagination page={page} pages={pages} onChange={setPage} /></div>
       </Card>
       {confirm && <ConfirmModal message={`Delete <strong>"${confirm.name}"</strong>?`} onConfirm={handleDelete} onCancel={() => setConfirm(null)} />}
+      {editing && <OpportunityEditModal opportunity={editing} onClose={() => setEditing(null)} onSaved={load} showToast={showToast} />}
       <Toast message={toast} />
     </div>
   );
 }
+
+function OpportunityEditModal({ opportunity, onClose, onSaved, showToast }) {
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    title: opportunity.title || '',
+    type: opportunity.type || 'scholarship',
+    description: opportunity.description || '',
+    deadline: opportunity.deadline || '',
+    funding_amount: opportunity.funding_amount || '',
+    contact_email: opportunity.contact_email || '',
+    application_url: opportunity.application_url || '',
+    source_url: opportunity.source_url || '',
+    is_featured: Boolean(opportunity.is_featured),
+    is_verified: Boolean(opportunity.is_verified),
+    is_published: Boolean(opportunity.is_published),
+    is_fully_funded: Boolean(opportunity.is_fully_funded),
+  });
+
+  const set = (key) => (value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleSave = async () => {
+    if (!form.title.trim()) {
+      showToast('Opportunity title is required');
+      return;
+    }
+    setSaving(true);
+    try {
+      await adminApi.updateOpportunity(opportunity.id, {
+        title: form.title.trim(),
+        type: form.type,
+        description: form.description.trim(),
+        deadline: form.deadline || null,
+        funding_amount: form.funding_amount.trim() || null,
+        contact_email: form.contact_email.trim() || null,
+        application_url: form.application_url.trim() || null,
+        source_url: form.source_url.trim() || null,
+        is_featured: form.is_featured,
+        is_verified: form.is_verified,
+        is_published: form.is_published,
+        is_fully_funded: form.is_fully_funded,
+      });
+      showToast('Opportunity updated');
+      onSaved();
+      onClose();
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to update opportunity');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, width: '100%', maxWidth: 620, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #f1f5f9' }}>
+          <div>
+            <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0, fontFamily: "'Syne',sans-serif" }}>Edit Opportunity</h2>
+            <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>Update the opportunity listing and publication settings.</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 6, borderRadius: 8, fontSize: 18, lineHeight: 1 }}>×</button>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'grid', gap: 14 }}>
+          <Field label="Title"><Input value={form.title} onChange={set('title')} placeholder="Opportunity title" /></Field>
+          <Field label="Type"><Select value={form.type} onChange={set('type')} options={TYPE_OPTIONS.filter((option) => option.value)} style={{ width: '100%' }} /></Field>
+          <Field label="Description"><Textarea value={form.description} onChange={set('description')} placeholder="Opportunity description" rows={5} /></Field>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="Deadline"><Input value={form.deadline} onChange={set('deadline')} type="date" /></Field>
+            <Field label="Funding"><Input value={form.funding_amount} onChange={set('funding_amount')} placeholder="e.g. $1,000 stipend" /></Field>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="Contact Email"><Input value={form.contact_email} onChange={set('contact_email')} placeholder="contact@example.com" type="email" /></Field>
+            <Field label="Application URL"><Input value={form.application_url} onChange={set('application_url')} placeholder="https://..." /></Field>
+          </div>
+          <Field label="Source URL"><Input value={form.source_url} onChange={set('source_url')} placeholder="https://..." /></Field>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+            <label style={checkboxStyle}><input type="checkbox" checked={form.is_published} onChange={(e) => set('is_published')(e.target.checked)} /><span>Published</span></label>
+            <label style={checkboxStyle}><input type="checkbox" checked={form.is_featured} onChange={(e) => set('is_featured')(e.target.checked)} /><span>Featured</span></label>
+            <label style={checkboxStyle}><input type="checkbox" checked={form.is_verified} onChange={(e) => set('is_verified')(e.target.checked)} /><span>Verified</span></label>
+            <label style={checkboxStyle}><input type="checkbox" checked={form.is_fully_funded} onChange={(e) => set('is_fully_funded')(e.target.checked)} /><span>Fully funded</span></label>
+          </div>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '16px 24px', borderTop: '1px solid #f1f5f9' }}>
+          <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
+          <button onClick={handleSave} disabled={saving} style={{ ...primaryBtnStyle, opacity: saving ? 0.7 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}>
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const fieldLabelStyle = {
+  display: 'block',
+  fontSize: 11,
+  fontWeight: 700,
+  color: '#64748b',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  marginBottom: 6,
+};
+
+function Field({ label, children }) {
+  return (
+    <div>
+      <label style={fieldLabelStyle}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const inputStyle = {
+  width: '100%',
+  padding: '9px 12px',
+  background: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: 9,
+  color: '#1e293b',
+  fontSize: 13,
+  outline: 'none',
+  fontFamily: "'DM Sans',sans-serif",
+  boxSizing: 'border-box',
+};
+
+function Input({ value, onChange, placeholder, type = 'text' }) {
+  return <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />;
+}
+
+function Textarea({ value, onChange, placeholder, rows = 3 }) {
+  return <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} rows={rows} style={{ ...inputStyle, resize: 'vertical' }} />;
+}
+
+const checkboxStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  fontSize: 13,
+  color: '#475569',
+  fontWeight: 500,
+};
+
+const secondaryBtnStyle = {
+  padding: '9px 18px',
+  borderRadius: 9,
+  border: '1px solid #e2e8f0',
+  background: '#f8fafc',
+  color: '#64748b',
+  cursor: 'pointer',
+  fontSize: 13,
+  fontWeight: 500,
+};
+
+const primaryBtnStyle = {
+  padding: '9px 20px',
+  borderRadius: 9,
+  border: 'none',
+  background: '#1B3A6B',
+  color: '#fff',
+  fontSize: 13,
+  fontWeight: 700,
+};

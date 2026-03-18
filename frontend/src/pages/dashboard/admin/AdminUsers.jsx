@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { adminApi } from '@/api';
-import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, FilterBar } from './AdminShared';
+import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, FilterBar, ConfirmModal, Toast } from './AdminShared';
 
 const ROLE_COLORS  = { admin: '#d97706', owner: '#15803d', organization: '#0f766e', student: '#1B3A6B' };
 const ROLE_OPTIONS = [
@@ -12,24 +12,94 @@ const ROLE_OPTIONS = [
   { value: 'student', label: 'Student' },
 ];
 
-function ConfirmModal({ message, onConfirm, onCancel }) {
+function UserEditModal({ user, onClose, onSaved, showToast }) {
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    name: user.name || '',
+    email: user.email || '',
+    role: user.Role?.name || 'student',
+    is_active: Boolean(user.is_active),
+    is_approved: Boolean(user.is_approved),
+    bio: user.bio || '',
+    website_url: user.website_url || '',
+    contact_phone: user.contact_phone || '',
+  });
+
+  const set = (key) => (value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await adminApi.updateUser(user.id, {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        role: form.role,
+        is_active: form.is_active,
+        is_approved: form.is_approved,
+        bio: form.bio.trim() || null,
+        website_url: form.website_url.trim() || null,
+        contact_phone: form.contact_phone.trim() || null,
+      });
+      showToast('User updated');
+      onSaved();
+      onClose();
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to update user');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, padding: 28, maxWidth: 360, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
-        <p style={{ fontSize: 14, color: '#334155', margin: '0 0 20px', lineHeight: 1.6 }}>{message}</p>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button onClick={onCancel} style={{ padding: '8px 18px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', cursor: 'pointer', fontSize: 13, fontWeight: 500 }}>Cancel</button>
-          <button onClick={onConfirm} style={{ padding: '8px 18px', borderRadius: 8, border: 'none', background: '#ef4444', color: '#fff', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>Delete</button>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 16, width: '100%', maxWidth: 520, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 60px rgba(0,0,0,0.15)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #f1f5f9' }}>
+          <div>
+            <h2 style={{ fontSize: 16, fontWeight: 800, color: '#0f172a', margin: 0, fontFamily: "'Syne',sans-serif" }}>Edit User</h2>
+            <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>Update role, status, and profile details.</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 6, borderRadius: 8, fontSize: 18, lineHeight: 1 }}>×</button>
+        </div>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'grid', gap: 14 }}>
+          <Field label="Name"><Input value={form.name} onChange={set('name')} placeholder="Full name" /></Field>
+          <Field label="Email"><Input value={form.email} onChange={set('email')} placeholder="email@example.com" type="email" /></Field>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <Field label="Role">
+              <Select value={form.role} onChange={set('role')} options={ROLE_OPTIONS.filter((option) => option.value)} style={{ width: '100%' }} />
+            </Field>
+            {form.role === 'organization' ? (
+              <Field label="Approval">
+                <Select
+                  value={form.is_approved ? 'approved' : 'pending'}
+                  onChange={(value) => set('is_approved')(value === 'approved')}
+                  options={[
+                    { value: 'approved', label: 'Approved' },
+                    { value: 'pending', label: 'Pending Approval' },
+                  ]}
+                  style={{ width: '100%' }}
+                />
+              </Field>
+            ) : (
+              <div />
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+            <label style={checkboxStyle}>
+              <input type="checkbox" checked={form.is_active} onChange={(e) => set('is_active')(e.target.checked)} />
+              <span>Active account</span>
+            </label>
+          </div>
+          <Field label="Website"><Input value={form.website_url} onChange={set('website_url')} placeholder="https://example.com" /></Field>
+          <Field label="Contact Phone"><Input value={form.contact_phone} onChange={set('contact_phone')} placeholder="+855 ..." /></Field>
+          <Field label="Bio"><Textarea value={form.bio} onChange={set('bio')} placeholder="Short admin notes or profile bio" rows={4} /></Field>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '16px 24px', borderTop: '1px solid #f1f5f9' }}>
+          <button onClick={onClose} style={secondaryBtnStyle}>Cancel</button>
+          <button onClick={handleSave} disabled={saving} style={{ ...primaryBtnStyle, opacity: saving ? 0.7 : 1, cursor: saving ? 'not-allowed' : 'pointer' }}>
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Toast({ message }) {
-  return (
-    <div style={{ position: 'fixed', bottom: 24, right: 24, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '12px 18px', color: '#334155', fontSize: 13, zIndex: 99, boxShadow: '0 8px 24px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span style={{ color: '#22c55e' }}>✓</span> {message}
     </div>
   );
 }
@@ -44,6 +114,7 @@ export default function AdminUsers() {
   const [search,  setSearch]  = useState(() => searchParams.get('search') || '');
   const [role,    setRole]    = useState(() => searchParams.get('role') || '');
   const [confirm, setConfirm] = useState(null);
+  const [editing, setEditing] = useState(null);
   const [toast,   setToast]   = useState('');
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
@@ -153,6 +224,9 @@ export default function AdminUsers() {
     )},
     { key: 'actions', label: 'Actions', render: u => (
       <div style={{ display: 'flex', gap: 6 }}>
+        <ActionBtn onClick={() => setEditing(u)} color="#1B3A6B">
+          Edit
+        </ActionBtn>
         {u.Role?.name === 'organization' && !u.is_approved && (
           <ActionBtn onClick={() => handleApproveOrganization(u)} color="#0f766e">
             Approve
@@ -183,12 +257,75 @@ export default function AdminUsers() {
 
       {confirm && (
         <ConfirmModal
-          message={`Delete user "${confirm.name}"? This cannot be undone.`}
+          message={`Delete user <strong>"${confirm.name}"</strong>? This cannot be undone.`}
           onConfirm={handleDelete}
           onCancel={() => setConfirm(null)}
         />
       )}
-      {toast && <Toast message={toast} />}
+      {editing && <UserEditModal user={editing} onClose={() => setEditing(null)} onSaved={load} showToast={showToast} />}
+      <Toast message={toast} />
     </div>
   );
 }
+
+const inputStyle = {
+  width: '100%',
+  padding: '9px 12px',
+  background: '#f8fafc',
+  border: '1px solid #e2e8f0',
+  borderRadius: 9,
+  color: '#1e293b',
+  fontSize: 13,
+  outline: 'none',
+  fontFamily: "'DM Sans',sans-serif",
+  boxSizing: 'border-box',
+};
+
+function Field({ label, children }) {
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+        {label}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function Input({ value, onChange, placeholder, type = 'text' }) {
+  return <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} style={inputStyle} />;
+}
+
+function Textarea({ value, onChange, placeholder, rows = 3 }) {
+  return <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows} style={{ ...inputStyle, resize: 'vertical' }} />;
+}
+
+const checkboxStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  fontSize: 13,
+  color: '#475569',
+  fontWeight: 500,
+};
+
+const secondaryBtnStyle = {
+  padding: '9px 18px',
+  borderRadius: 9,
+  border: '1px solid #e2e8f0',
+  background: '#f8fafc',
+  color: '#64748b',
+  cursor: 'pointer',
+  fontSize: 13,
+  fontWeight: 500,
+};
+
+const primaryBtnStyle = {
+  padding: '9px 20px',
+  borderRadius: 9,
+  border: 'none',
+  background: '#1B3A6B',
+  color: '#fff',
+  fontSize: 13,
+  fontWeight: 700,
+};
