@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { feedApi } from '@/api';
 import { Empty, Spinner } from '@/components/common';
@@ -140,38 +140,77 @@ export default function FeedPage() {
   const { success, info } = useToast();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
   const [openComments, setOpenComments] = useState({});
   const [commentsByItem, setCommentsByItem] = useState({});
   const [commentsLoading, setCommentsLoading] = useState({});
   const [commentDrafts, setCommentDrafts] = useState({});
   const [commentSubmitting, setCommentSubmitting] = useState({});
   const [imageIndexes, setImageIndexes] = useState({});
+  const loadMoreRef = useRef(null);
+
+  useEffect(() => {
+    setPage(1);
+    setItems([]);
+    setHasNextPage(false);
+  }, [filter, search]);
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      setLoading(true);
+      if (page === 1) setLoading(true);
+      else setLoadingMore(true);
       try {
         const res = await feedApi.list({
           kind: filter,
           search: search.trim() || undefined,
-          limit: 30,
+          page,
+          limit: 12,
         });
-        if (!cancelled) setItems(res.data.items || []);
+        if (!cancelled) {
+          const nextItems = res.data.items || [];
+          setItems((prev) => (page === 1 ? nextItems : [...prev, ...nextItems]));
+          setHasNextPage(Boolean(res.data.meta?.hasNext));
+        }
       } catch {
-        if (!cancelled) setItems([]);
+        if (!cancelled && page === 1) {
+          setItems([]);
+          setHasNextPage(false);
+        }
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+          setLoadingMore(false);
+        }
       }
     })();
 
     return () => {
       cancelled = true;
     };
-  }, [filter, search]);
+  }, [filter, page, search]);
+
+  useEffect(() => {
+    const node = loadMoreRef.current;
+    if (!node || loading || loadingMore || !hasNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setPage((prev) => prev + 1);
+        }
+      },
+      { rootMargin: '320px 0px' }
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasNextPage, loading, loadingMore, items.length]);
 
   const summary = useMemo(() => {
     const newsCount = items.filter((item) => item.kind === 'news').length;
@@ -275,59 +314,35 @@ export default function FeedPage() {
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <Card className="p-5 sm:p-6">
-            <div className="flex flex-col gap-5">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                <div className="max-w-2xl">
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Campus activity</p>
-                  <h1 className="mt-1 text-3xl font-bold text-slate-900" style={{ fontFamily: "'Syne',sans-serif" }}>Feed</h1>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">
-                    Follow official university updates and opportunities from across Cambodia in one place.
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3 text-center">
-                    <p className="text-lg font-semibold text-slate-900">{items.length}</p>
-                    <p className="mt-1 text-xs text-slate-500">Posts</p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3 text-center">
-                    <p className="text-lg font-semibold text-slate-900">{summary.publishers}</p>
-                    <p className="mt-1 text-xs text-slate-500">Sources</p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3 text-center">
-                    <p className="text-lg font-semibold text-slate-900">{summary.newsCount}</p>
-                    <p className="mt-1 text-xs text-slate-500">Updates</p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 px-4 py-3 text-center">
-                    <p className="text-lg font-semibold text-slate-900">{summary.opportunityCount}</p>
-                    <p className="mt-1 text-xs text-slate-500">Opportunities</p>
-                  </div>
-                </div>
+        <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)_320px]">
+          <div className="space-y-4">
+            <Card className="p-5 sm:p-6 lg:sticky lg:top-24">
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Campus activity</p>
+              <h1 className="mt-1 text-3xl font-bold text-slate-900" style={{ fontFamily: "'Syne',sans-serif" }}>Feed</h1>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                Follow official university updates and opportunities from across Cambodia in one place.
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-2 lg:flex-col">
+                {FILTERS.map((option) => (
+                  <Pill key={option.value} active={filter === option.value} onClick={() => setFilter(option.value)}>
+                    {option.label}
+                  </Pill>
+                ))}
               </div>
 
-              <div className="flex flex-wrap gap-2">
-              {FILTERS.map((option) => (
-                <Pill key={option.value} active={filter === option.value} onClick={() => setFilter(option.value)}>
-                  {option.label}
-                </Pill>
-              ))}
-              </div>
-
-              <div>
+              <div className="mt-5">
                 <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Search the feed</label>
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search universities, updates, scholarships..."
-                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all focus:border-[#1B3A6B] focus:ring-2 focus:ring-[#1B3A6B]/10"
-              />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search universities, updates, scholarships..."
+                  className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all focus:border-[#1B3A6B] focus:ring-2 focus:ring-[#1B3A6B]/10"
+                />
               </div>
-            </div>
-          </Card>
-        </div>
+            </Card>
+          </div>
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <div className="space-y-4">
             {loading ? (
               <div className="flex justify-center py-20"><Spinner size="lg" /></div>
@@ -493,11 +508,15 @@ export default function FeedPage() {
                     </Card>
                   );
                 })}
+                {loadingMore ? (
+                  <div className="flex justify-center py-8"><Spinner /></div>
+                ) : null}
+                <div ref={loadMoreRef} className="h-1" />
               </div>
             )}
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
             <Card className="p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Trending now</p>
               <div className="mt-4 space-y-3">
@@ -531,14 +550,6 @@ export default function FeedPage() {
               </div>
             </Card>
 
-            <Card className="p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Why this feed</p>
-              <div className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-                <p>Follow official university posts without digging through separate school pages.</p>
-                <p>Spot scholarships and deadlines earlier with opportunities mixed into the same timeline.</p>
-                <p>Use the feed as a living campus pulse instead of a static news archive.</p>
-              </div>
-            </Card>
           </div>
         </div>
       </div>

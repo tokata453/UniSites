@@ -70,10 +70,33 @@ const attachInteractionMeta = async (items, userId = null) => {
   });
 };
 
+const getItemTimestamp = (item) =>
+  new Date(item.kind === 'news' ? (item.News?.published_at || item.News?.created_at) : item.Opportunity?.created_at);
+
+const getRankingScore = (item) => {
+  const createdAt = getItemTimestamp(item);
+  const ageHours = Math.max((Date.now() - createdAt.getTime()) / (1000 * 60 * 60), 1);
+  const views = item.kind === 'news'
+    ? Number(item.News?.views_count || 0)
+    : Number(item.Opportunity?.views_count || 0);
+  const popularityScore =
+    (Number(item.comment_count || 0) * 4) +
+    (Number(item.like_count || 0) * 2) +
+    Math.min(views / 20, 12);
+  const editorialBoost =
+    (item.kind === 'news' && item.News?.is_pinned ? 8 : 0) +
+    (item.kind === 'opportunity' && item.Opportunity?.is_featured ? 8 : 0);
+  const freshnessScore = 36 / Math.pow(ageHours + 2, 0.55);
+
+  return freshnessScore + popularityScore + editorialBoost;
+};
+
 const list = async (req, res) => {
   try {
-    const { limit = 24, kind = 'all', search = '' } = req.query;
+    const { page = 1, limit = 24, kind = 'all', search = '' } = req.query;
     const safeLimit = Math.min(Math.max(Number(limit) || 24, 1), 60);
+    const safePage = Math.max(Number(page) || 1, 1);
+    const offset = (safePage - 1) * safeLimit;
     const term = String(search || '').trim();
 
     const newsWhere = { is_published: true };
@@ -92,12 +115,14 @@ const list = async (req, res) => {
       ];
     }
 
-    const [newsItems, opportunityItems] = await Promise.all([
+    const fetchSize = safePage * safeLimit;
+
+    const [newsResult, opportunityResult] = await Promise.all([
       kind === 'opportunity'
-        ? []
-        : db.UniversityNews.findAll({
+        ? { count: 0, rows: [] }
+        : db.UniversityNews.findAndCountAll({
             where: newsWhere,
-            limit: safeLimit,
+            limit: fetchSize,
             order: [['is_pinned', 'DESC'], ['published_at', 'DESC'], ['created_at', 'DESC']],
             include: [
               { model: db.University, as: 'University', attributes: ['id', 'name', 'slug', 'logo_url', 'province'] },
@@ -105,10 +130,10 @@ const list = async (req, res) => {
             ],
           }),
       kind === 'news'
-        ? []
-        : db.Opportunity.findAll({
+        ? { count: 0, rows: [] }
+        : db.Opportunity.findAndCountAll({
             where: opportunityWhere,
-            limit: safeLimit,
+            limit: fetchSize,
             order: [['is_featured', 'DESC'], ['created_at', 'DESC']],
             include: [
               { model: db.OpportunityTag, as: 'Tags' },
@@ -117,6 +142,9 @@ const list = async (req, res) => {
             ],
           }),
     ]);
+
+    const newsItems = newsResult.rows || [];
+    const opportunityItems = opportunityResult.rows || [];
 
     const rawItems = [
       ...newsItems.map((item) => ({
@@ -131,12 +159,28 @@ const list = async (req, res) => {
         created_at: item.created_at,
         Opportunity: item,
       })),
-    ]
-      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-      .slice(0, safeLimit);
+    ];
 
-    const items = await attachInteractionMeta(rawItems, req.user?.id || null);
-    return success(res, { items });
+    const total = Number(newsResult.count || 0) + Number(opportunityResult.count || 0);
+    const rankedItems = await attachInteractionMeta(rawItems, req.user?.id || null);
+    rankedItems.sort((a, b) => {
+      const scoreDiff = getRankingScore(b) - getRankingScore(a);
+      if (Math.abs(scoreDiff) > 0.01) return scoreDiff;
+      return getItemTimestamp(b) - getItemTimestamp(a);
+    });
+
+    const items = rankedItems.slice(offset, offset + safeLimit);
+    return success(res, {
+      items,
+      meta: {
+        total,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit),
+        hasNext: offset + items.length < total,
+        hasPrev: safePage > 1,
+      },
+    });
   } catch (err) {
     return error(res, err.message, err.statusCode || 500);
   }

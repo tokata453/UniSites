@@ -1,11 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { universityApi, authApi } from '@/api';
 import { Spinner, Empty } from '@/components/common';
-import { coverUrl, logoUrl, galleryUrl, formatCurrency, formatDate } from '@/utils';
+import { coverUrl, logoUrl, galleryUrl, formatCurrency, formatDate, cloudinaryUrl } from '@/utils';
 import { useAuth, useToast } from '@/hooks';
 
 const TABS = ['Overview', 'Programs', 'Gallery', 'News', 'Events', 'FAQs', 'Reviews'];
+const GALLERY_SOURCE_FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'gallery', label: 'Uploaded' },
+  { value: 'news', label: 'News' },
+  { value: 'event', label: 'Events' },
+];
+const GALLERY_CATEGORY_LABELS = {
+  campus: 'Campus',
+  facilities: 'Facilities',
+  events: 'Events',
+  students: 'Students',
+  other: 'Other',
+};
 
 const TYPE_STYLES = {
   public:        { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8' },
@@ -47,6 +60,119 @@ const Stars = ({ n }) => (
   </span>
 );
 
+const DetailMediaCarousel = ({ images = [], title, imageIndex = 0, onPrev, onNext }) => {
+  if (!images.length) return null;
+
+  const currentIndex = Math.min(imageIndex, images.length - 1);
+  const currentImage = images[currentIndex];
+
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100">
+      <div className="flex min-h-[260px] items-center justify-center bg-[linear-gradient(180deg,#f8fafc_0%,#eef2f7_100%)]">
+        <img
+          src={coverUrl(currentImage) || currentImage}
+          alt={title || ''}
+          className="max-h-[560px] w-full object-contain"
+        />
+      </div>
+      {images.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={onPrev}
+            className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-slate-700 shadow-sm backdrop-blur transition-all hover:bg-white"
+            aria-label="Previous image"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            onClick={onNext}
+            className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-sm font-bold text-slate-700 shadow-sm backdrop-blur transition-all hover:bg-white"
+            aria-label="Next image"
+          >
+            ›
+          </button>
+          <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-white/90 px-3 py-1.5 shadow-sm backdrop-blur">
+            {images.map((_, index) => (
+              <span
+                key={index}
+                className={`h-1.5 w-1.5 rounded-full ${index === currentIndex ? 'bg-[#1B3A6B]' : 'bg-slate-300'}`}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+const GalleryFilterSelect = ({ value, onChange, options, placeholder = 'Select an option' }) => {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef(null);
+  const selected = options.find((option) => option.value === value);
+
+  useEffect(() => {
+    const handlePointerDown = (event) => {
+      if (!rootRef.current?.contains(event.target)) setOpen(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
+  const handleSelect = (nextValue) => {
+    onChange(nextValue);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={rootRef} className="relative w-full md:w-56">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-sm text-slate-700 outline-none transition-all focus:border-[#1B3A6B] focus:ring-2 focus:ring-[#1B3A6B]/10"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span>{selected?.label || placeholder}</span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 max-h-64 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl" role="listbox">
+          {options.map((option) => {
+            const active = option.value === value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => handleSelect(option.value)}
+                className={`w-full rounded-xl px-3 py-2 text-left text-sm transition-all ${
+                  active ? 'bg-blue-50 font-semibold text-[#1B3A6B]' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-800'
+                }`}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function UniversityDetail() {
   const { slug }            = useParams();
   const { isAuthenticated } = useAuth();
@@ -63,6 +189,11 @@ export default function UniversityDetail() {
   const [liveReviews, setLiveReviews] = useState([]);
   const [reviewError, setReviewError] = useState('');
   const [openFaculties, setOpenFaculties] = useState({});
+  const [newsImageIndexes, setNewsImageIndexes] = useState({});
+  const [eventImageIndexes, setEventImageIndexes] = useState({});
+  const [galleryFocusIndex, setGalleryFocusIndex] = useState(null);
+  const [galleryFilter, setGalleryFilter] = useState('all');
+  const [galleryCategoryFilter, setGalleryCategoryFilter] = useState('all');
   const [reviewForm, setReviewForm] = useState({
     rating: 0,
     content: '',
@@ -132,6 +263,30 @@ export default function UniversityDetail() {
     });
   }, [uni?.Faculties]);
 
+  useEffect(() => {
+    if (galleryFocusIndex === null) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setGalleryFocusIndex(null);
+        return;
+      }
+      if (event.key === 'ArrowLeft') {
+        setGalleryFocusIndex((prev) => (prev === null ? prev : (prev - 1 + activityGallery.length) % activityGallery.length));
+      }
+      if (event.key === 'ArrowRight') {
+        setGalleryFocusIndex((prev) => (prev === null ? prev : (prev + 1) % activityGallery.length));
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [galleryFocusIndex, uni]);
+
   const handleSave = async () => {
     if (!isAuthenticated) return;
     setSavingLoading(true);
@@ -147,6 +302,14 @@ export default function UniversityDetail() {
   const setReviewField = (key, value) => setReviewForm((prev) => ({ ...prev, [key]: value }));
   const toggleFaculty = (facultyId) =>
     setOpenFaculties((prev) => ({ ...prev, [facultyId]: !prev[facultyId] }));
+  const cycleMedia = (setIndexes, key, images, direction) => {
+    if (images.length <= 1) return;
+    setIndexes((prev) => {
+      const current = prev[key] ?? 0;
+      const next = (current + direction + images.length) % images.length;
+      return { ...prev, [key]: next };
+    });
+  };
 
   const handleReviewSubmit = async (event) => {
     event?.preventDefault();
@@ -209,6 +372,52 @@ export default function UniversityDetail() {
   const testimonials = (uni.Testimonials || []).filter((item) => item.is_approved);
   const programLanguages = Array.from(new Set(allPrograms.map((program) => program.language).filter(Boolean)));
   const approvedReviews = liveReviews.length > 0 ? liveReviews : (uni.Reviews || []).filter((review) => review.is_approved);
+  const activityGallery = [
+    ...(uni.Gallery || []).map((item) => ({
+      id: item.id,
+      url: item.public_id || item.url,
+      title: item.caption || 'Gallery image',
+      kind: 'Gallery',
+      source: 'gallery',
+      uploadCategory: item.category || 'other',
+    })),
+    ...(uni.News || []).flatMap((item) => {
+      const images = Array.isArray(item.image_urls) && item.image_urls.length
+        ? item.image_urls
+        : item.cover_url
+        ? [item.cover_url]
+        : [];
+      return images.map((image, index) => ({
+        id: `news-${item.id}-${index}`,
+        url: image,
+        title: item.title,
+        kind: 'News',
+        source: 'news',
+      }));
+    }),
+    ...(uni.Events || []).flatMap((item) => {
+      const images = Array.isArray(item.image_urls) && item.image_urls.length
+        ? item.image_urls
+        : item.cover_url
+        ? [item.cover_url]
+        : [];
+      return images.map((image, index) => ({
+        id: `event-${item.id}-${index}`,
+        url: image,
+        title: item.title,
+        kind: 'Event',
+        source: 'event',
+      }));
+    }),
+  ];
+  const uploadedGalleryCategoryOptions = [
+    { value: 'all', label: 'All uploaded' },
+    ...Object.entries(GALLERY_CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
+  ];
+  const filteredActivityGallery = activityGallery.filter((item) => galleryFilter === 'all' || item.source === galleryFilter);
+  const finalGalleryItems = filteredActivityGallery.filter((item) =>
+    galleryCategoryFilter === 'all' || (item.source === 'gallery' && item.uploadCategory === galleryCategoryFilter)
+  );
   const reviewCount = approvedReviews.length;
   const reviewAverage = reviewCount
     ? approvedReviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviewCount
@@ -550,20 +759,66 @@ export default function UniversityDetail() {
           {/* ── Gallery ── */}
           {tab === 'Gallery' && (
             <>
-              {(uni.Gallery || []).length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                  {uni.Gallery.map((img) => (
-                    <div key={img.id} className="aspect-video rounded-2xl overflow-hidden bg-slate-100 shadow-sm group cursor-pointer">
+              <div className="mb-4 flex flex-wrap gap-2">
+                {GALLERY_SOURCE_FILTERS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setGalleryFilter(option.value);
+                      if (option.value !== 'all' && option.value !== 'gallery') setGalleryCategoryFilter('all');
+                      setGalleryFocusIndex(null);
+                    }}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
+                      galleryFilter === option.value
+                        ? 'border border-[#1B3A6B] bg-[#1B3A6B] text-white'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              {(galleryFilter === 'all' || galleryFilter === 'gallery') && uploadedGalleryCategoryOptions.length > 1 ? (
+                <div className="mb-4">
+                  <GalleryFilterSelect
+                    value={galleryCategoryFilter}
+                    onChange={(nextValue) => {
+                      setGalleryCategoryFilter(nextValue);
+                      setGalleryFocusIndex(null);
+                    }}
+                    options={uploadedGalleryCategoryOptions}
+                  />
+                </div>
+              ) : null}
+              {finalGalleryItems.length > 0 ? (
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 lg:grid-cols-4">
+                  {finalGalleryItems.map((img, index) => (
+                    <button
+                      key={img.id}
+                      type="button"
+                      onClick={() => setGalleryFocusIndex(index)}
+                      className="group relative aspect-square overflow-hidden bg-slate-100 text-left shadow-sm"
+                    >
                       <img
-                        src={galleryUrl(img.public_id || img.url)}
-                        alt={img.caption}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        src={cloudinaryUrl(img.url, 'w_1200,h_1200,c_fit,q_auto,f_auto') || img.url}
+                        alt={img.title}
+                        className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
-                    </div>
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/60 via-slate-950/10 to-transparent px-3 py-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                        <p className="text-xs font-medium leading-5 text-white line-clamp-2">{img.title}</p>
+                      </div>
+                    </button>
                   ))}
                 </div>
               ) : (
-                <Empty title="No gallery images yet." />
+                <Empty
+                  title={
+                    galleryFilter === 'all'
+                      ? 'No gallery images yet.'
+                      : `No ${GALLERY_SOURCE_FILTERS.find((item) => item.value === galleryFilter)?.label.toLowerCase()} images yet.`
+                  }
+                />
               )}
             </>
           )}
@@ -573,19 +828,48 @@ export default function UniversityDetail() {
             <div className="space-y-3">
               {(uni.News || []).length > 0 ? (
                 uni.News.map((item) => (
-                  <Card key={item.id} className="p-4 hover:shadow-md transition-all cursor-pointer">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-slate-800 mb-1">{item.title}</p>
-                        {item.excerpt && <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{item.excerpt}</p>}
-                        <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          {item.category && <Badge color="blue">{item.category}</Badge>}
-                          {item.published_at && <span className="text-xs text-slate-400">{new Date(item.published_at).toLocaleDateString()}</span>}
-                          {item.is_pinned && <Badge color="orange">📌 Pinned</Badge>}
-                        </div>
-                      </div>
-                      <span className="text-xs text-slate-400 shrink-0">👁 {item.views_count || 0}</span>
-                    </div>
+                  <Card key={item.id} className="p-4 md:p-5">
+                    {(() => {
+                      const images = Array.isArray(item.image_urls) && item.image_urls.length
+                        ? item.image_urls
+                        : item.cover_url
+                        ? [item.cover_url]
+                        : [];
+                      const itemKey = `news:${item.id}`;
+                      return (
+                        <>
+                          {images.length > 0 && (
+                            <div className="mb-4">
+                              <DetailMediaCarousel
+                                images={images}
+                                title={item.title}
+                                imageIndex={newsImageIndexes[itemKey] ?? 0}
+                                onPrev={() => cycleMedia(setNewsImageIndexes, itemKey, images, -1)}
+                                onNext={() => cycleMedia(setNewsImageIndexes, itemKey, images, 1)}
+                              />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-xl font-semibold leading-snug text-slate-900">{item.title}</p>
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                              {item.category && <Badge color="blue">{item.category}</Badge>}
+                              {item.is_pinned && <Badge color="orange">Pinned</Badge>}
+                              {item.published_at && <span className="text-xs text-slate-400">{formatDate(item.published_at)}</span>}
+                            </div>
+                          </div>
+                          {(item.excerpt || item.content) && (
+                            <div className="mt-4 space-y-3">
+                              {item.excerpt && (
+                                <p className="text-sm font-medium leading-7 text-slate-700">{item.excerpt}</p>
+                              )}
+                              {item.content && (
+                                <p className="text-sm leading-7 text-slate-600 whitespace-pre-line">{item.content}</p>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
                   </Card>
                 ))
               ) : (
@@ -599,27 +883,58 @@ export default function UniversityDetail() {
             <div className="space-y-3">
               {(uni.Events || []).length > 0 ? (
                 uni.Events.map((ev) => (
-                  <Card key={ev.id} className="p-4 hover:shadow-md transition-all">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <p className="text-sm font-bold text-slate-800 mb-1">{ev.title}</p>
-                        {ev.description && <p className="text-xs text-slate-500 line-clamp-2">{ev.description}</p>}
-                        <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          {ev.type && <Badge color="purple">{ev.type.replace('_', ' ')}</Badge>}
-                          {ev.event_date && <span className="text-xs text-slate-500">📅 {new Date(ev.event_date).toLocaleDateString()}</span>}
-                          {ev.location && <span className="text-xs text-slate-500">📍 {ev.location}</span>}
-                          {ev.is_online && <Badge color="green">Online</Badge>}
-                        </div>
-                        {ev.registration_url && (
-                          <a href={ev.registration_url} target="_blank" rel="noreferrer"
-                            className="inline-block mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg text-white hover:opacity-90 transition-all"
-                            style={{ background: '#1B3A6B' }}>
-                            Register →
-                          </a>
-                        )}
-                      </div>
-                      {ev.is_featured && <Badge color="yellow">⭐ Featured</Badge>}
-                    </div>
+                  <Card key={ev.id} className="p-4 md:p-5">
+                    {(() => {
+                      const images = Array.isArray(ev.image_urls) && ev.image_urls.length
+                        ? ev.image_urls
+                        : ev.cover_url
+                        ? [ev.cover_url]
+                        : [];
+                      const itemKey = `event:${ev.id}`;
+                      return (
+                        <>
+                          {images.length > 0 && (
+                            <div className="mb-4">
+                              <DetailMediaCarousel
+                                images={images}
+                                title={ev.title}
+                                imageIndex={eventImageIndexes[itemKey] ?? 0}
+                                onPrev={() => cycleMedia(setEventImageIndexes, itemKey, images, -1)}
+                                onNext={() => cycleMedia(setEventImageIndexes, itemKey, images, 1)}
+                              />
+                            </div>
+                          )}
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xl font-semibold leading-snug text-slate-900">{ev.title}</p>
+                              <div className="mt-3 flex flex-wrap items-center gap-2">
+                                {ev.type && <Badge color="purple">{ev.type.replace('_', ' ')}</Badge>}
+                                {ev.is_online && <Badge color="green">Online</Badge>}
+                                {ev.is_featured && <Badge color="yellow">Featured</Badge>}
+                              </div>
+                              <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+                                {ev.event_date && <span>📅 {formatDate(ev.event_date)}</span>}
+                                {ev.location && <span>📍 {ev.location}</span>}
+                              </div>
+                            </div>
+                          </div>
+                          {ev.description && (
+                            <p className="mt-4 text-sm leading-7 text-slate-600 whitespace-pre-line">{ev.description}</p>
+                          )}
+                          {ev.registration_url && (
+                            <a
+                              href={ev.registration_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-block mt-4 text-xs font-semibold px-3 py-1.5 rounded-lg text-white hover:opacity-90 transition-all"
+                              style={{ background: '#1B3A6B' }}
+                            >
+                              Register →
+                            </a>
+                          )}
+                        </>
+                      );
+                    })()}
                   </Card>
                 ))
               ) : (
@@ -834,6 +1149,69 @@ export default function UniversityDetail() {
 
         </div>
       </div>
+
+      {galleryFocusIndex !== null && finalGalleryItems[galleryFocusIndex] ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/94 px-4 py-6 backdrop-blur-sm" onClick={() => setGalleryFocusIndex(null)}>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(15,23,42,0.15)_0%,rgba(15,23,42,0.72)_48%,rgba(2,6,23,0.96)_100%)]" />
+          <button
+            type="button"
+            onClick={() => setGalleryFocusIndex(null)}
+            className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-2xl text-white shadow-lg backdrop-blur transition-all hover:bg-white/22"
+            aria-label="Close gallery focus mode"
+          >
+            ×
+          </button>
+
+          {finalGalleryItems.length > 1 ? (
+            <>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setGalleryFocusIndex((prev) => (prev - 1 + finalGalleryItems.length) % finalGalleryItems.length);
+                }}
+                className="absolute left-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/12 text-3xl text-white shadow-lg backdrop-blur transition-all hover:bg-white/22"
+                aria-label="Previous image"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setGalleryFocusIndex((prev) => (prev + 1) % finalGalleryItems.length);
+                }}
+                className="absolute right-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/12 text-3xl text-white shadow-lg backdrop-blur transition-all hover:bg-white/22"
+                aria-label="Next image"
+              >
+                ›
+              </button>
+            </>
+          ) : null}
+
+          <div className="relative z-10 max-h-full max-w-6xl" onClick={(event) => event.stopPropagation()}>
+            <img
+              src={cloudinaryUrl(finalGalleryItems[galleryFocusIndex].url, 'w_1800,h_1800,c_fit,q_auto,f_auto') || finalGalleryItems[galleryFocusIndex].url}
+              alt={finalGalleryItems[galleryFocusIndex].title}
+              className="max-h-[78vh] w-auto max-w-full object-contain shadow-[0_30px_80px_rgba(0,0,0,0.45)]"
+            />
+            <div className="mt-4 flex items-center justify-between gap-4 rounded-2xl bg-white/10 px-4 py-3 text-sm text-white/90 backdrop-blur-md">
+              <div className="min-w-0 flex-1">
+                {finalGalleryItems[galleryFocusIndex].title ? (
+                  <div className="truncate">{finalGalleryItems[galleryFocusIndex].title}</div>
+                ) : (
+                  <div>Image {galleryFocusIndex + 1}</div>
+                )}
+              </div>
+              {finalGalleryItems.length > 1 ? (
+                <div className="shrink-0 text-xs text-white/70">
+                  {galleryFocusIndex + 1} / {finalGalleryItems.length}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { universityApi, uploadApi, opportunityApi, majorApi } from '@/api';
 import { Spinner } from '@/components/common';
 import { useToast } from '@/hooks';
-import { formatCurrency, formatDate, galleryUrl, logoUrl, coverUrl, optimizeImageFile } from '@/utils';
+import { formatCurrency, formatDate, galleryUrl, logoUrl, coverUrl, optimizeImageFile, cloudinaryUrl } from '@/utils';
 
 const TYPE_OPTIONS = [
   { value: 'public', label: 'Public' },
@@ -48,6 +48,12 @@ const GALLERY_OPTIONS = [
   { value: 'events', label: 'Events' },
   { value: 'students', label: 'Students' },
   { value: 'other', label: 'Other' },
+];
+const GALLERY_SOURCE_FILTERS = [
+  { value: 'all', label: 'All' },
+  { value: 'gallery', label: 'Uploaded' },
+  { value: 'news', label: 'News' },
+  { value: 'event', label: 'Events' },
 ];
 
 const MAX_UPLOAD_IMAGE_BYTES = 20 * 1024 * 1024;
@@ -1007,12 +1013,59 @@ export function OwnerGallery() {
   const [caption, setCaption] = useState('');
   const [category, setCategory] = useState('campus');
   const [uploading, setUploading] = useState(false);
+  const [focusIndex, setFocusIndex] = useState(null);
+  const [galleryFilter, setGalleryFilter] = useState('all');
+  const [galleryCategoryFilter, setGalleryCategoryFilter] = useState('all');
 
   const loadGallery = useCallback(async (uniId) => {
     setGalleryLoading(true);
     try {
-      const res = await universityApi.getGallery(uniId);
-      setGallery(res.data.gallery || []);
+      const [galleryRes, newsRes, eventRes] = await Promise.all([
+        universityApi.getGallery(uniId).catch(() => ({ data: { gallery: [] } })),
+        universityApi.getNews(uniId).catch(() => ({ data: { data: [] } })),
+        universityApi.getEvents(uniId).catch(() => ({ data: { data: [] } })),
+      ]);
+
+      const activityGallery = [
+        ...(galleryRes.data.gallery || []).map((item) => ({
+          id: item.id,
+          url: item.public_id || item.url,
+          caption: item.caption || 'Gallery image',
+          category: item.category || 'gallery',
+          source: 'gallery',
+          uploadCategory: item.category || 'other',
+        })),
+        ...(newsRes.data.data || []).flatMap((item) => {
+          const images = Array.isArray(item.image_urls) && item.image_urls.length
+            ? item.image_urls
+            : item.cover_url
+            ? [item.cover_url]
+            : [];
+          return images.map((image, index) => ({
+            id: `news-${item.id}-${index}`,
+            url: image,
+            caption: item.title || item.excerpt || 'News image',
+            category: 'news',
+            source: 'news',
+          }));
+        }),
+        ...(eventRes.data.data || []).flatMap((item) => {
+          const images = Array.isArray(item.image_urls) && item.image_urls.length
+            ? item.image_urls
+            : item.cover_url
+            ? [item.cover_url]
+            : [];
+          return images.map((image, index) => ({
+            id: `event-${item.id}-${index}`,
+            url: image,
+            caption: item.title || item.description || 'Event image',
+            category: 'event',
+            source: 'event',
+          }));
+        }),
+      ];
+
+      setGallery(activityGallery);
     } catch {
       setGallery([]);
     } finally {
@@ -1024,17 +1077,59 @@ export function OwnerGallery() {
     if (university?.id) loadGallery(university.id);
   }, [loadGallery, university?.id]);
 
+  useEffect(() => {
+    if (focusIndex === null) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setFocusIndex(null);
+        return;
+      }
+      if (event.key === 'ArrowLeft') {
+        setFocusIndex((prev) => (prev === null ? prev : (prev - 1 + gallery.length) % gallery.length));
+      }
+      if (event.key === 'ArrowRight') {
+        setFocusIndex((prev) => (prev === null ? prev : (prev + 1) % gallery.length));
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [focusIndex, gallery.length]);
+  const uploadedGalleryCategoryOptions = [
+    { value: 'all', label: 'All uploaded' },
+    ...GALLERY_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
+  ];
+  const filteredGallery = gallery.filter((item) =>
+    (galleryFilter === 'all' || item.source === galleryFilter) &&
+    (galleryCategoryFilter === 'all' || (item.source === 'gallery' && item.uploadCategory === galleryCategoryFilter))
+  );
+
   const handleUpload = async () => {
     if (!university?.id || files.length === 0) return;
-    const formData = new FormData();
-    files.forEach((file) => {
-      formData.append('images', file);
-      formData.append('captions', caption);
-    });
-    formData.append('category', category);
-
     setUploading(true);
     try {
+      const preparedFiles = await Promise.all(files.map((file) => optimizeImageFile(file)));
+      const validFiles = preparedFiles.filter((file) => file.size <= MAX_UPLOAD_IMAGE_BYTES);
+      const oversizedFiles = preparedFiles.filter((file) => file.size > MAX_UPLOAD_IMAGE_BYTES);
+
+      if (oversizedFiles.length > 0) {
+        error(`${oversizedFiles.length} image${oversizedFiles.length > 1 ? 's are' : ' is'} over 20MB even after compression and was skipped`);
+      }
+
+      if (!validFiles.length) return;
+
+      const formData = new FormData();
+      validFiles.forEach((file) => {
+        formData.append('images', file);
+        formData.append('captions', caption);
+      });
+      formData.append('category', category);
+
       await universityApi.uploadGallery(university.id, formData);
       success('Gallery updated');
       setFiles([]);
@@ -1089,27 +1184,135 @@ export function OwnerGallery() {
           {galleryLoading ? (
             <LoadingBlock />
           ) : gallery.length === 0 ? (
-            <EmptyState title="No gallery images yet" description="Upload a few campus and student-life photos to make your page more convincing." />
+            <EmptyState title="No gallery images yet" description="Add images to your news or events posts and they will appear here automatically." />
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {gallery.map((item) => (
-                <div key={item.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
-                  <div className="aspect-video bg-slate-100">
-                    <img src={galleryUrl(item.public_id || item.url)} alt={item.caption || 'Gallery image'} className="h-full w-full object-cover" />
-                  </div>
-                  <div className="space-y-2 p-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <StatusPill tone="blue">{item.category || 'other'}</StatusPill>
-                      <button type="button" onClick={() => handleDelete(item.id)} className={dangerBtn}>Delete</button>
-                    </div>
-                    <p className="text-sm text-slate-600">{item.caption || 'No caption provided'}</p>
-                  </div>
+            <>
+              <div className="mb-4 flex flex-wrap gap-2">
+                {GALLERY_SOURCE_FILTERS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => {
+                      setGalleryFilter(option.value);
+                      if (option.value !== 'all' && option.value !== 'gallery') setGalleryCategoryFilter('all');
+                      setFocusIndex(null);
+                    }}
+                    className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-all ${
+                      galleryFilter === option.value
+                        ? 'border border-[#1B3A6B] bg-[#1B3A6B] text-white'
+                        : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              {(galleryFilter === 'all' || galleryFilter === 'gallery') && uploadedGalleryCategoryOptions.length > 1 ? (
+                <div className="mb-4 max-w-xs">
+                  <SelectInput
+                    value={galleryCategoryFilter}
+                    onChange={(e) => {
+                      setGalleryCategoryFilter(e.target.value);
+                      setFocusIndex(null);
+                    }}
+                    options={uploadedGalleryCategoryOptions}
+                    placeholder="Filter uploaded images"
+                  />
                 </div>
+              ) : null}
+              {filteredGallery.length === 0 ? (
+                <EmptyState
+                  title={
+                    galleryFilter === 'all'
+                      ? 'No gallery images yet'
+                      : `No ${GALLERY_SOURCE_FILTERS.find((item) => item.value === galleryFilter)?.label.toLowerCase()} images yet`
+                  }
+                  description="Try another gallery filter or add more images."
+                />
+              ) : (
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4">
+              {filteredGallery.map((item, index) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setFocusIndex(index)}
+                  className="group relative aspect-square overflow-hidden bg-slate-100 text-left shadow-sm"
+                >
+                  <img
+                    src={cloudinaryUrl(item.url, 'w_1200,h_1200,c_fit,q_auto,f_auto') || item.url}
+                    alt={item.caption || 'Gallery image'}
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/60 via-slate-950/10 to-transparent px-3 py-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                    <p className="text-xs font-medium leading-5 text-white line-clamp-2">{item.caption || 'Gallery image'}</p>
+                  </div>
+                </button>
               ))}
-            </div>
+              </div>
+              )}
+            </>
           )}
         </Panel>
       </div>
+
+      {focusIndex !== null && filteredGallery[focusIndex] ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/94 px-4 py-6 backdrop-blur-sm" onClick={() => setFocusIndex(null)}>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(15,23,42,0.15)_0%,rgba(15,23,42,0.72)_48%,rgba(2,6,23,0.96)_100%)]" />
+          <button
+            type="button"
+            onClick={() => setFocusIndex(null)}
+            className="absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/12 text-2xl text-white shadow-lg backdrop-blur transition-all hover:bg-white/22"
+            aria-label="Close gallery focus mode"
+          >
+            ×
+          </button>
+
+          {filteredGallery.length > 1 ? (
+            <>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setFocusIndex((prev) => (prev - 1 + filteredGallery.length) % filteredGallery.length);
+                }}
+                className="absolute left-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/12 text-3xl text-white shadow-lg backdrop-blur transition-all hover:bg-white/22"
+                aria-label="Previous image"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setFocusIndex((prev) => (prev + 1) % filteredGallery.length);
+                }}
+                className="absolute right-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/12 text-3xl text-white shadow-lg backdrop-blur transition-all hover:bg-white/22"
+                aria-label="Next image"
+              >
+                ›
+              </button>
+            </>
+          ) : null}
+
+          <div className="relative z-10 max-h-full max-w-6xl" onClick={(event) => event.stopPropagation()}>
+            <img
+              src={cloudinaryUrl(filteredGallery[focusIndex].url, 'w_1800,h_1800,c_fit,q_auto,f_auto') || filteredGallery[focusIndex].url}
+              alt={filteredGallery[focusIndex].caption || 'Gallery image'}
+              className="max-h-[78vh] w-auto max-w-full object-contain shadow-[0_30px_80px_rgba(0,0,0,0.45)]"
+            />
+            <div className="mt-4 flex items-center justify-between gap-4 rounded-2xl bg-white/10 px-4 py-3 text-sm text-white/90 backdrop-blur-md">
+              <div className="min-w-0 flex-1">
+                <div className="truncate">{filteredGallery[focusIndex].caption || 'Gallery image'}</div>
+              </div>
+              {filteredGallery.length > 1 ? (
+                <div className="shrink-0 text-xs text-white/70">
+                  {focusIndex + 1} / {filteredGallery.length}
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      ) : null}
     </PageSection>
   );
 }
