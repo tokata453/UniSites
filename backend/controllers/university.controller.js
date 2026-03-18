@@ -70,35 +70,109 @@ const getBySlug = async (req, res) => {
     const university = await db.University.findOne({
       where: { slug: req.params.slug, is_published: true },
       include: [
-        { model: db.UniversityGallery,    as: 'Gallery',             order: [['sort_order', 'ASC']] },
-        { model: db.Faculty,              as: 'Faculties',            include: [{ model: db.Program, as: 'Programs' }] },
-        { model: db.AdmissionRequirement, as: 'AdmissionRequirements' },
-        { model: db.CampusFacility,       as: 'CampusFacilities' },
-        { model: db.UniversityNews,       as: 'News',       where: { is_published: true }, required: false, limit: 6 },
-        { model: db.UniversityEvent,      as: 'Events',     where: { is_published: true }, required: false, limit: 6 },
-        { model: db.UniversityTestimonial,as: 'Testimonials',where: { is_approved: true },required: false, limit: 6 },
-        { model: db.UniversityFAQ,        as: 'FAQs',       where: { is_published: true }, required: false },
-        { model: db.UniversityContact,    as: 'Contact',    required: false },
-        { model: db.UniversitySource,     as: 'Sources',    required: false, attributes: ['id', 'source_name', 'source_type', 'source_url', 'confidence_score', 'import_status', 'last_verified_at', 'created_at', 'updated_at'] },
         { model: db.User,                 as: 'Owner',      attributes: ['id', 'name', 'avatar_url'] },
-        {
-          model: db.Review, as: 'Reviews',
-          where: { is_approved: true }, required: false, limit: 10,
-          include: [{ model: db.User, as: 'Author', attributes: ['id', 'name', 'avatar_url'] }],
-        },
       ],
     });
     if (!university) return notFound(res, 'University not found');
 
-    await university.increment('views_count');
+    const [
+      gallery,
+      faculties,
+      admissionRequirements,
+      campusFacilities,
+      news,
+      events,
+      testimonials,
+      faqs,
+      contact,
+      sources,
+      reviews,
+    ] = await Promise.all([
+      db.UniversityGallery.findAll({
+        where: { university_id: university.id },
+        order: [['sort_order', 'ASC'], ['created_at', 'ASC']],
+      }),
+      db.Faculty.findAll({
+        where: { university_id: university.id },
+        order: [['sort_order', 'ASC'], ['name', 'ASC']],
+        include: [{
+          model: db.Program,
+          as: 'Programs',
+          required: false,
+          order: [['name', 'ASC']],
+        }],
+      }),
+      db.AdmissionRequirement.findAll({
+        where: { university_id: university.id },
+        order: [['created_at', 'ASC']],
+      }),
+      db.CampusFacility.findAll({
+        where: { university_id: university.id },
+        order: [['category', 'ASC'], ['created_at', 'ASC']],
+      }),
+      db.UniversityNews.findAll({
+        where: { university_id: university.id, is_published: true },
+        limit: 6,
+        order: [['published_at', 'DESC'], ['created_at', 'DESC']],
+      }),
+      db.UniversityEvent.findAll({
+        where: { university_id: university.id, is_published: true },
+        limit: 6,
+        order: [['event_date', 'ASC']],
+      }),
+      db.UniversityTestimonial.findAll({
+        where: { university_id: university.id, is_approved: true },
+        limit: 6,
+        order: [['created_at', 'DESC']],
+      }),
+      db.UniversityFAQ.findAll({
+        where: { university_id: university.id, is_published: true },
+        order: [['created_at', 'ASC']],
+      }),
+      db.UniversityContact.findOne({
+        where: { university_id: university.id },
+      }),
+      db.UniversitySource.findAll({
+        where: { university_id: university.id },
+        attributes: ['id', 'source_name', 'source_type', 'source_url', 'confidence_score', 'import_status', 'last_verified_at', 'created_at', 'updated_at'],
+        order: [['created_at', 'DESC']],
+      }),
+      db.Review.findAll({
+        where: { university_id: university.id, is_approved: true },
+        limit: 10,
+        order: [['created_at', 'DESC']],
+        include: [{ model: db.User, as: 'Author', attributes: ['id', 'name', 'avatar_url'] }],
+      }),
+    ]);
 
-    const [analytics] = await db.UniversityAnalytics.findOrCreate({
-      where: { university_id: university.id },
-      defaults: { university_id: university.id },
+    const universityJson = university.toJSON();
+    universityJson.Gallery = gallery;
+    universityJson.Faculties = faculties;
+    universityJson.AdmissionRequirements = admissionRequirements;
+    universityJson.CampusFacilities = campusFacilities;
+    universityJson.News = news;
+    universityJson.Events = events;
+    universityJson.Testimonials = testimonials;
+    universityJson.FAQs = faqs;
+    universityJson.Contact = contact;
+    universityJson.Sources = sources;
+    universityJson.Reviews = reviews;
+
+    success(res, { university: universityJson });
+
+    Promise.resolve().then(async () => {
+      await university.increment('views_count');
+
+      const [analytics] = await db.UniversityAnalytics.findOrCreate({
+        where: { university_id: university.id },
+        defaults: { university_id: university.id },
+      });
+      await analytics.increment(['total_views', 'monthly_views', 'weekly_views', 'daily_views']);
+    }).catch((trackingErr) => {
+      console.error('[University][getBySlug] Failed to update analytics:', trackingErr.message);
     });
-    await analytics.increment(['total_views', 'monthly_views', 'weekly_views', 'daily_views']);
 
-    return success(res, { university });
+    return;
   } catch (err) {
     return error(res, err.message, 500);
   }
