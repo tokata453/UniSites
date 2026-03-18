@@ -143,6 +143,27 @@ exports.getUniversities = async (req, res) => {
   } catch (e) { serverError(res, e.message); }
 };
 
+exports.getUniversitySources = async (req, res) => {
+  try {
+    if (!isAdmin(req, res)) return;
+    const university = await db.University.findByPk(req.params.id, {
+      include: [
+        {
+          model: db.UniversityContact,
+          as: 'Contact',
+          required: false,
+        },
+      ],
+    });
+    if (!university) return notFound(res, 'University not found');
+    const sources = await db.UniversitySource.findAll({
+      where: { university_id: university.id },
+      order: [['updated_at', 'DESC']],
+    });
+    return success(res, { university, sources });
+  } catch (e) { serverError(res, e.message); }
+};
+
 exports.updateUniversity = async (req, res) => {
   try {
     if (!isAdmin(req, res)) return;

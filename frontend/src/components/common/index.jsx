@@ -118,17 +118,21 @@ export const Pagination = ({ page, totalPages, onNext, onPrev, onPage }) => {
   return (
     <div className="flex items-center justify-center gap-2 mt-8">
       <button onClick={onPrev} disabled={page === 1}
-        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-slate-400 hover:bg-white/10 disabled:opacity-30 transition-all">
+        className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 transition-all shadow-sm">
         ← Prev
       </button>
       {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => i + 1).map((p) => (
         <button key={p} onClick={() => onPage?.(p)}
-          className={`w-9 h-9 rounded-lg text-sm font-medium transition-all border ${p === page ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'}`}>
+          className={`w-9 h-9 rounded-lg text-sm font-medium transition-all border shadow-sm ${
+            p === page
+              ? 'bg-[#1B3A6B] border-[#1B3A6B] text-white'
+              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+          }`}>
           {p}
         </button>
       ))}
       <button onClick={onNext} disabled={page === totalPages}
-        className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-slate-400 hover:bg-white/10 disabled:opacity-30 transition-all">
+        className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 transition-all shadow-sm">
         Next →
       </button>
     </div>

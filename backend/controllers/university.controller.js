@@ -79,6 +79,7 @@ const getBySlug = async (req, res) => {
         { model: db.UniversityTestimonial,as: 'Testimonials',where: { is_approved: true },required: false, limit: 6 },
         { model: db.UniversityFAQ,        as: 'FAQs',       where: { is_published: true }, required: false },
         { model: db.UniversityContact,    as: 'Contact',    required: false },
+        { model: db.UniversitySource,     as: 'Sources',    required: false, attributes: ['id', 'source_name', 'source_type', 'source_url', 'confidence_score', 'import_status', 'last_verified_at', 'created_at', 'updated_at'] },
         { model: db.User,                 as: 'Owner',      attributes: ['id', 'name', 'avatar_url'] },
         {
           model: db.Review, as: 'Reviews',

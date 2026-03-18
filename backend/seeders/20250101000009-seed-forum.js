@@ -177,6 +177,41 @@ module.exports = {
       },
     ];
 
+    const threadSlugs = threads.map((thread) => thread.slug);
+    const existingThreads = await queryInterface.sequelize.query(
+      `SELECT id FROM forum_threads WHERE slug = ANY(ARRAY[:threadSlugs])`,
+      {
+        replacements: { threadSlugs },
+        type: queryInterface.sequelize.QueryTypes.SELECT,
+      },
+    );
+    const existingThreadIds = existingThreads.map((thread) => thread.id);
+
+    if (existingThreadIds.length > 0) {
+      const existingReplies = await queryInterface.sequelize.query(
+        `SELECT id FROM forum_replies WHERE thread_id = ANY(ARRAY[:threadIds]::uuid[])`,
+        {
+          replacements: { threadIds: existingThreadIds },
+          type: queryInterface.sequelize.QueryTypes.SELECT,
+        },
+      );
+      const existingReplyIds = existingReplies.map((reply) => reply.id);
+
+      if (existingReplyIds.length > 0) {
+        await queryInterface.bulkDelete("forum_likes", {
+          reply_id: existingReplyIds,
+        });
+      }
+
+      await queryInterface.bulkDelete("forum_replies", {
+        thread_id: existingThreadIds,
+      });
+
+      await queryInterface.bulkDelete("forum_threads", {
+        id: existingThreadIds,
+      });
+    }
+
     await queryInterface.bulkInsert("forum_threads", threads);
 
     // Fetch inserted thread IDs
@@ -329,8 +364,16 @@ module.exports = {
 
     // ── ForumLikes (a few likes on replies) ───────────────────────────────────
     const insertedReplies = await queryInterface.sequelize.query(
-      `SELECT id FROM forum_replies LIMIT 5`,
-      { type: queryInterface.sequelize.QueryTypes.SELECT },
+      `SELECT fr.id
+       FROM forum_replies fr
+       JOIN forum_threads ft ON ft.id = fr.thread_id
+       WHERE ft.slug = ANY(ARRAY[:threadSlugs])
+       ORDER BY fr.created_at ASC
+       LIMIT 5`,
+      {
+        replacements: { threadSlugs },
+        type: queryInterface.sequelize.QueryTypes.SELECT,
+      },
     );
     const likeUsers = [student1, student2, student3].filter(Boolean);
     const likes = [];

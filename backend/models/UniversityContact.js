@@ -25,6 +25,15 @@ module.exports = (sequelize, DataTypes) => {
     admission_phone: {
       type: DataTypes.STRING(50),
     },
+    admissions_url: {
+      type: DataTypes.TEXT,
+    },
+    programs_url: {
+      type: DataTypes.TEXT,
+    },
+    about_url: {
+      type: DataTypes.TEXT,
+    },
     general_email: {
       type: DataTypes.STRING(255),
     },

@@ -1,0 +1,1074 @@
+[
+  {
+    "slug": "royal-university-of-phnom-penh",
+    "name": "Royal University of Phnom Penh",
+    "name_km": "សកលវិទ្យាល័យភូមិន្ទភ្នំពេញ",
+    "type": "public",
+    "province": "Phnom Penh",
+    "location": "Russian Federation Blvd, Phnom Penh",
+    "address": "Russian Federation Blvd (110), Phnom Penh, Cambodia",
+    "website_url": "https://www.rupp.edu.kh",
+    "email": "info@rupp.edu.kh",
+    "phone": "+855 23 880 116",
+    "facebook_url": "https://www.facebook.com/rupp.edu.kh",
+    "founded_year": 1960,
+    "source": {
+      "source_name": "Official university website",
+      "source_type": "official_website",
+      "source_url": "https://www.rupp.edu.kh",
+      "external_id": "rupp.edu.kh",
+      "confidence_score": 100,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "institute-of-technology-of-cambodia",
+    "name": "Institute of Technology of Cambodia",
+    "name_km": "វិទ្យាស្ថានបច្ចេកទេសកម្ពុជា",
+    "type": "public",
+    "province": "Phnom Penh",
+    "location": "Russian Federation Blvd, Phnom Penh",
+    "address": "Russian Federation Blvd (110), Phnom Penh, Cambodia",
+    "website_url": "https://www.itc.edu.kh",
+    "email": "info@itc.edu.kh",
+    "phone": "+855 23 880 370",
+    "facebook_url": "https://www.facebook.com/itc.edu.kh",
+    "founded_year": 1964,
+    "source": {
+      "source_name": "Official university website",
+      "source_type": "official_website",
+      "source_url": "https://www.itc.edu.kh",
+      "external_id": "itc.edu.kh",
+      "confidence_score": 100,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "norton-university",
+    "name": "Norton University",
+    "name_km": "សកលវិទ្យាល័យណតុន",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Tonle Bassac, Phnom Penh",
+    "address": "No. 55, Street 1986, Phnom Penh, Cambodia",
+    "website_url": "https://www.norton.edu.kh",
+    "email": "info@norton.edu.kh",
+    "phone": "+855 23 987 701",
+    "facebook_url": "https://www.facebook.com/NortonUniversityCambodia",
+    "source": {
+      "source_name": "Official university website",
+      "source_type": "official_website",
+      "source_url": "https://www.norton.edu.kh",
+      "external_id": "norton.edu.kh",
+      "confidence_score": 95,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "paññāsāstra-university-of-cambodia",
+    "name": "Pannasastra University of Cambodia",
+    "name_km": "សកលវិទ្យាល័យបញ្ញាសាស្រ្តកម្ពុជា",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Sothearos Blvd, Phnom Penh",
+    "address": "No. 184, Preah Norodom Blvd, Phnom Penh, Cambodia",
+    "website_url": "https://www.puc.edu.kh",
+    "email": "info@puc.edu.kh",
+    "phone": "+855 23 990 153",
+    "facebook_url": "https://www.facebook.com/PUCambodia",
+    "source": {
+      "source_name": "Official university website",
+      "source_type": "official_website",
+      "source_url": "https://www.puc.edu.kh",
+      "external_id": "puc.edu.kh",
+      "confidence_score": 95,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "american-university-of-phnom-penh",
+    "name": "American University of Phnom Penh",
+    "name_km": "សកលវិទ្យាល័យអាមេរិកភ្នំពេញ",
+    "type": "international",
+    "province": "Phnom Penh",
+    "location": "Sothearos Blvd, Phnom Penh",
+    "address": "No. 278H, Street 201R, Kroalkor Village, Unnamed Road, Phnom Penh, Cambodia",
+    "website_url": "https://www.aupp.edu.kh",
+    "email": "info@aupp.edu.kh",
+    "phone": "+855 23 990 023",
+    "facebook_url": "https://www.facebook.com/AUPPCambodia",
+    "founded_year": 2013,
+    "source": {
+      "source_name": "Official university website",
+      "source_type": "official_website",
+      "source_url": "https://www.aupp.edu.kh",
+      "external_id": "aupp.edu.kh",
+      "confidence_score": 100,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "university-of-cambodia",
+    "name": "The University of Cambodia",
+    "name_km": "សាកលវិទ្យាល័យកម្ពុជា",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Northbridge Road, Sen Sok, Phnom Penh",
+    "address": "Northbridge Road, Sangkat Toek Thla, Khan Sen Sok, Phnom Penh 12000, Cambodia",
+    "website_url": "https://www.uc.edu.kh",
+    "email": "info@uc.edu.kh",
+    "phone": "+855 23 993 274",
+    "facebook_url": "https://www.facebook.com/universityofcambodia",
+    "founded_year": 2003,
+    "sources": [
+      {
+        "source_name": "Official university website",
+        "source_type": "official_website",
+        "source_url": "https://www.uc.edu.kh",
+        "external_id": "uc.edu.kh",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official university contact page",
+        "source_type": "contact_page",
+        "source_url": "https://graduatestudies.uc.edu.kh/ucm-Contact%20Us-8",
+        "external_id": "uc-contact",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "national-university-of-management",
+    "name": "National University of Management",
+    "name_km": "សាកលវិទ្យាល័យជាតិគ្រប់គ្រង",
+    "type": "public",
+    "province": "Phnom Penh",
+    "location": "Veal Sbov Campus, Phnom Penh",
+    "address": "Veal Sbov Campus, Khan Chbar Ampov, Phnom Penh, Cambodia",
+    "website_url": "https://www.num.edu.kh",
+    "email": "info.researchcenter@num.edu.kh",
+    "phone": "+855 77 396 588",
+    "founded_year": 1983,
+    "sources": [
+      {
+        "source_name": "Official university website",
+        "source_type": "official_website",
+        "source_url": "https://www.num.edu.kh",
+        "external_id": "num.edu.kh",
+        "confidence_score": 95,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official university research center page",
+        "source_type": "research_center",
+        "source_url": "https://ceri.num.edu.kh/",
+        "external_id": "num-ceri",
+        "confidence_score": 90,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "royal-university-of-law-and-economics",
+    "name": "Royal University of Law and Economics",
+    "name_km": "សាកលវិទ្យាល័យភូមិន្ទនីតិសាស្ត្រ និង វិទ្យាសាស្ត្រសេដ្ឋកិច្ច",
+    "type": "public",
+    "province": "Phnom Penh",
+    "location": "Monivong Blvd, Chamkarmon, Phnom Penh",
+    "address": "Monivong Blvd, Tonle Bassac, Chamkarmon, Phnom Penh, Cambodia",
+    "website_url": "https://www.rule.edu.kh",
+    "email": "info@rule.edu.kh",
+    "phone": "+855 23 214 703",
+    "founded_year": 1949,
+    "sources": [
+      {
+        "source_name": "Official university website",
+        "source_type": "official_website",
+        "source_url": "https://www.rule.edu.kh",
+        "external_id": "rule.edu.kh",
+        "confidence_score": 95,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official ELBBL program site",
+        "source_type": "faculty_page",
+        "source_url": "https://elbbl.rule.edu.kh/en/science-po-france/",
+        "external_id": "rule-elbbl",
+        "confidence_score": 85,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "camtech-university",
+    "name": "Cambodia University of Technology and Science",
+    "name_km": "សាកលវិទ្យាល័យបច្ចេកវិទ្យា និង វិទ្យាសាស្ត្រកម្ពុជា",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Chroy Chongvar Satellite City, Phnom Penh",
+    "address": "CamTech Street, Chroy Chongvar Satellite City, Sangkat Prektasek, Khan Chroy Chongvar, Phnom Penh, Cambodia",
+    "website_url": "https://camtech.edu.kh",
+    "email": "info@camtech.edu.kh",
+    "phone": "+855 78 21 21 81",
+    "linkedin_url": "https://www.linkedin.com/school/camtech-university/",
+    "founded_year": 2018,
+    "sources": [
+      {
+        "source_name": "Official university website",
+        "source_type": "official_website",
+        "source_url": "https://camtech.edu.kh",
+        "external_id": "camtech.edu.kh",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official university services page",
+        "source_type": "student_services",
+        "source_url": "https://camtech.edu.kh/theme-i-services-support/",
+        "external_id": "camtech-services",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "national-university-of-battambang",
+    "name": "National University of Battambang",
+    "name_km": "សាកលវិទ្យាល័យជាតិបាត់ដំបង",
+    "type": "public",
+    "province": "Battambang",
+    "location": "Battambang",
+    "website_url": "https://nubb.edu.kh/en/",
+    "founded_year": 2007,
+    "source": {
+      "source_name": "Official university website",
+      "source_type": "official_website",
+      "source_url": "https://nubb.edu.kh/en/",
+      "external_id": "nubb.edu.kh",
+      "confidence_score": 95,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "paragon-international-university",
+    "name": "Paragon International University",
+    "type": "international",
+    "province": "Phnom Penh",
+    "location": "Tuol Kork, Phnom Penh",
+    "address": "No. 8, Street 315, Boeng Kak 1, Tuol Kork, Phnom Penh 12151, Cambodia",
+    "website_url": "https://paragoniu.edu.kh",
+    "email": "info@paragoniu.edu.kh",
+    "phone": "+855 23 996 111",
+    "founded_year": 2010,
+    "source": {
+      "source_name": "Official accreditation page",
+      "source_type": "official_website",
+      "source_url": "https://paragoniu.edu.kh/about-us/accreditation/",
+      "external_id": "paragoniu.edu.kh",
+      "confidence_score": 100,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "beltei-international-university",
+    "name": "BELTEI International University",
+    "name_km": "សាកលវិទ្យាល័យ ប៊ែលធី អន្តរជាតិ",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Phnom Penh",
+    "address": "Campus 1: #21, Street, Sangkat Boeung KengKang III, Khan Boeung KengKang, Phnom Penh; Campus 2: #151, National Road No. 3, Sangkat Chom Chao II, Khan Posenchey, Phnom Penh, Cambodia",
+    "website_url": "https://beltei.edu.kh/biu",
+    "email": "biu.admin@beltei.edu.kh",
+    "source": {
+      "source_name": "Official university website",
+      "source_type": "official_website",
+      "source_url": "https://beltei.edu.kh/biu",
+      "external_id": "beltei.edu.kh/biu",
+      "confidence_score": 95,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "cambodian-mekong-university",
+    "name": "Cambodian Mekong University",
+    "name_km": "សាកលវិទ្យាល័យមេគង្គកម្ពុជា",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Street 271, Sen Sok, Phnom Penh",
+    "address": "#9B, Street 271, Sangkat Tek Thla, Khan Sen Sok, Phnom Penh 12102, Cambodia",
+    "website_url": "https://mekong.edu.kh",
+    "phone": "+855 92 29 77 22",
+    "founded_year": 2003,
+    "sources": [
+      {
+        "source_name": "Official university website",
+        "source_type": "official_website",
+        "source_url": "https://mekong.edu.kh/",
+        "external_id": "mekong.edu.kh",
+        "confidence_score": 95,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official contact page",
+        "source_type": "contact_page",
+        "source_url": "https://mekong.edu.kh/contact-us/",
+        "external_id": "cmu-contact",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "build-bright-university",
+    "name": "Build Bright University",
+    "name_km": "សាកលវិទ្យាល័យបៀលប្រាយ",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Phnom Penh Thmey, Sen Sok, Phnom Penh",
+    "address": "Corner Street 1003 & 1988 and Corner Street 1003 & 1992, Sangkat Phnom Penh Thmey, Khan Sen Sok, Phnom Penh, Cambodia",
+    "website_url": "https://bbu.edu.kh",
+    "email": "info@bbu.edu.kh",
+    "phone": "+855 23 987 700",
+    "founded_year": 2002,
+    "sources": [
+      {
+        "source_name": "Official university website",
+        "source_type": "official_website",
+        "source_url": "https://bbu.edu.kh/",
+        "external_id": "bbu.edu.kh",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official Phnom Penh campus page",
+        "source_type": "campus_page",
+        "source_url": "https://bbu.edu.kh/campus/pp/",
+        "external_id": "bbu-pp-campus",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "western-university",
+    "name": "Western University",
+    "name_km": "សាកលវិទ្យាល័យវេស្ទើន",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Boeng Kork II, Toul Kork, Phnom Penh",
+    "address": "No 145, Street 608 Corner Street 313, Sangkat Boeng Kork II, Khan Toul Kork, Phnom Penh, Cambodia",
+    "website_url": "https://westernuniversity.edu.kh",
+    "email": "info_wu@westernuniversity.edu.kh",
+    "phone": "+855 96 8000 111",
+    "founded_year": 2003,
+    "sources": [
+      {
+        "source_name": "Official contact and location page",
+        "source_type": "contact_page",
+        "source_url": "https://westernuniversity.edu.kh/content2pages/6?contact-and-located=",
+        "external_id": "western-contact",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official vision and mission page",
+        "source_type": "about_page",
+        "source_url": "https://westernuniversity.edu.kh/content2pages/2?vision-mission-and-value=",
+        "external_id": "western-about",
+        "confidence_score": 95,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "university-of-health-sciences",
+    "name": "University of Health Sciences",
+    "name_km": "សាកលវិទ្យាល័យវិទ្យាសាស្ត្រសុខាភិបាល",
+    "type": "public",
+    "province": "Phnom Penh",
+    "location": "Monivong Blvd, Daun Penh, Phnom Penh",
+    "address": "No. 73, Preah Monivong Blvd, Sangkat Sras Chak, Khan Daun Penh, Phnom Penh, Cambodia",
+    "website_url": "https://uhs.edu.kh",
+    "email": "info@uhs.edu.kh",
+    "phone": "+855 23 430 559",
+    "sources": [
+      {
+        "source_name": "Official university website",
+        "source_type": "official_website",
+        "source_url": "https://uhs.edu.kh/",
+        "external_id": "uhs.edu.kh",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official academic page",
+        "source_type": "academic_page",
+        "source_url": "https://www.uhs.edu.kh/academic/",
+        "external_id": "uhs-academic",
+        "confidence_score": 95,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "international-university",
+    "name": "International University",
+    "name_km": "សាកលវិទ្យាល័យអន្តរជាតិ",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Phnom Penh Thmey, Sen Sok, Phnom Penh",
+    "address": "Buildings No. 89 to 95, Street 1984 corner 1011, Sangkat Phnom Penh Thmey, Khan Sen Sok, Phnom Penh, Cambodia",
+    "website_url": "https://www.iu.edu.kh",
+    "phone": "+855 17 48 48 09",
+    "sources": [
+      {
+        "source_name": "Official admission portal",
+        "source_type": "admission_portal",
+        "source_url": "https://admission.iu.edu.kh/",
+        "external_id": "iu-admission",
+        "confidence_score": 90,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "university-of-management-and-economics",
+    "name": "University of Management and Economics",
+    "name_km": "សាកលវិទ្យាល័យគ្រប់គ្រង និងសេដ្ឋកិច្ច",
+    "type": "private",
+    "province": "Battambang",
+    "location": "Battambang City, Battambang",
+    "address": "#74, Prek Preah Sdach, Battambang City, Battambang Province, Cambodia",
+    "website_url": "https://www.ume.edu.kh",
+    "email": "infor@ume.edu.kh",
+    "phone": "+855 53 952 160",
+    "founded_year": 1998,
+    "sources": [
+      {
+        "source_name": "Official history page",
+        "source_type": "about_page",
+        "source_url": "https://www.ume.edu.kh/UME%20History%20English.php",
+        "external_id": "ume-history",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official Khmer university portal",
+        "source_type": "official_website",
+        "source_url": "https://umeuniversity.ume.edu.kh/",
+        "external_id": "ume-main",
+        "confidence_score": 95,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "national-institute-of-business",
+    "name": "National Institute of Business",
+    "name_km": "វិទ្យាស្ថានជាតិពាណិជ្ជសាស្រ្ដ",
+    "type": "public",
+    "province": "Phnom Penh",
+    "location": "Phnom Penh",
+    "website_url": "https://www.nib.edu.kh",
+    "phone": "+855 12 606 572",
+    "founded_year": 1979,
+    "sources": [
+      {
+        "source_name": "Official history page",
+        "source_type": "about_page",
+        "source_url": "https://www.nib.edu.kh/en/history.php",
+        "external_id": "nib-history",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official contact page",
+        "source_type": "contact_page",
+        "source_url": "https://www.nib.edu.kh/contact",
+        "external_id": "nib-contact",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "angkor-university",
+    "name": "Angkor University",
+    "type": "private",
+    "province": "Siem Reap",
+    "location": "Khnar Village, Siem Reap City",
+    "address": "P.O. Box 171206, Borey Seang Nam, Khnar Village, Sangkat Chhreav, Siem Reap City, Siem Reap Province, Cambodia",
+    "website_url": "https://www.angkor.edu.kh",
+    "email": "info@angkor.edu.kh",
+    "phone": "+855 17 671 825",
+    "founded_year": 2004,
+    "sources": [
+      {
+        "source_name": "Official university website",
+        "source_type": "official_website",
+        "source_url": "https://www.angkor.edu.kh/",
+        "external_id": "angkor.edu.kh",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official history and accreditation page",
+        "source_type": "about_page",
+        "source_url": "https://www.angkor.edu.kh/history-and-accreditation",
+        "external_id": "angkor-history",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official scholarship and admission page",
+        "source_type": "admission_page",
+        "source_url": "https://angkor.edu.kh/index.php/pages/collaboration/pages/academics/pages/other/apply_scholarship.php",
+        "external_id": "angkor-admission",
+        "confidence_score": 95,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "vanda-university",
+    "name": "VANDA University",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Mao Tse Toung Blvd, Boeung Keng Kang, Phnom Penh",
+    "address": "216-218 Mao Tse Toung Blvd, Sangkat Tumnub Toek, Khan Boeung Keng Kang, Phnom Penh, Cambodia",
+    "website_url": "https://vanda.edu.kh",
+    "email": "info@vanda.edu.kh",
+    "phone": "+855 89 779 773",
+    "founded_year": 2001,
+    "sources": [
+      {
+        "source_name": "Official university website",
+        "source_type": "official_website",
+        "source_url": "https://vanda.edu.kh/",
+        "external_id": "vanda.edu.kh",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official about page",
+        "source_type": "about_page",
+        "source_url": "https://vanda.edu.kh/about-us/",
+        "external_id": "vanda-about",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official branch page",
+        "source_type": "contact_page",
+        "source_url": "https://vanda.edu.kh/branch/",
+        "external_id": "vanda-branches",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "national-institute-of-education",
+    "name": "National Institute of Education",
+    "name_km": "វិទ្យាស្ថានជាតិអប់រំ",
+    "type": "public",
+    "province": "Phnom Penh",
+    "location": "Preah Norodom Blvd, Daun Penh, Phnom Penh",
+    "address": "No. 123, Preah Norodom Boulevard, Sangkat Chatomuk, Daun Penh District, Phnom Penh, Cambodia",
+    "website_url": "https://nie.edu.kh/en/",
+    "email": "info@nie.edu.kh",
+    "phone": "+855 23 238 816",
+    "sources": [
+      {
+        "source_name": "Official university website",
+        "source_type": "official_website",
+        "source_url": "https://nie.edu.kh/en/",
+        "external_id": "nie.edu.kh",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official contact page",
+        "source_type": "contact_page",
+        "source_url": "https://nie.edu.kh/en/contact/",
+        "external_id": "nie-contact",
+        "confidence_score": 100,
+        "last_verified_at": "2026-03-18"
+      },
+      {
+        "source_name": "Official courses page",
+        "source_type": "academic_page",
+        "source_url": "https://nie.edu.kh/en/department-of-pedagogy-courses/",
+        "external_id": "nie-courses",
+        "confidence_score": 95,
+        "last_verified_at": "2026-03-18"
+      }
+    ]
+  },
+  {
+    "slug": "royal-university-of-agriculture",
+    "name": "Royal University of Agriculture",
+    "name_km": "សាកលវិទ្យាល័យភូមិន្ទកសិកម្ម",
+    "type": "public",
+    "province": "Phnom Penh",
+    "location": "Dangkor, Phnom Penh",
+    "address": "Chamkar Daung, Dangkor District, Phnom Penh, Cambodia",
+    "website_url": "https://www.rua.edu.kh",
+    "email": "info@rua.edu.kh",
+    "phone": "+855 11 967 877",
+    "founded_year": 1964,
+    "source": {
+      "source_name": "Official university website",
+      "source_type": "official_website",
+      "source_url": "https://www.rua.edu.kh",
+      "external_id": "rua.edu.kh",
+      "confidence_score": 100,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "royal-university-of-fine-arts",
+    "name": "Royal University of Fine Arts",
+    "name_km": "សាកលវិទ្យាល័យភូមិន្ទវិចិត្រសិល្បៈ",
+    "type": "public",
+    "province": "Phnom Penh",
+    "website_url": "https://rufa.edu.kh",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/royal-university-of-fine-arts/",
+      "external_id": "unirank-rufa",
+      "confidence_score": 85,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "university-of-puthisastra",
+    "name": "University of Puthisastra",
+    "type": "private",
+    "province": "Phnom Penh",
+    "website_url": "https://www.puthisastra.edu.kh",
+    "founded_year": 2007,
+    "source": {
+      "source_name": "Official university annual report",
+      "source_type": "official_document",
+      "source_url": "https://www.puthisastra.edu.kh/wp-content/uploads/2025/06/UP-Annual-Report-2024.pdf",
+      "external_id": "up-annual-report",
+      "confidence_score": 95,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "royal-academy-of-cambodia",
+    "name": "Royal Academy of Cambodia",
+    "name_km": "រាជបណ្ឌិត្យសភាកម្ពុជា",
+    "type": "public",
+    "province": "Phnom Penh",
+    "website_url": "https://rac.gov.kh",
+    "source": {
+      "source_name": "Official institution about page",
+      "source_type": "official_website",
+      "source_url": "https://rac.gov.kh/views2/about",
+      "external_id": "rac-about",
+      "confidence_score": 100,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "national-polytechnic-institute-of-cambodia",
+    "name": "National Polytechnic Institute of Cambodia",
+    "name_km": "វិទ្យាស្ថានជាតិពហុបច្ចេកទេសកម្ពុជា",
+    "type": "public",
+    "province": "Phnom Penh",
+    "location": "Samraong Kraom, Por Senchey, Phnom Penh",
+    "address": "Prey Popel Village, Samraong Kraom, Por Senchey, Phnom Penh, Cambodia",
+    "website_url": "https://npic.edu.kh",
+    "phone": "+855 12 42 9297",
+    "source": {
+      "source_name": "Official publication portal",
+      "source_type": "official_website",
+      "source_url": "https://publication.npic.edu.kh/en/home/",
+      "external_id": "npic-publication",
+      "confidence_score": 95,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "camed-business-school",
+    "name": "CamEd Business School",
+    "type": "private",
+    "province": "Phnom Penh",
+    "website_url": "https://www.camed.edu.kh",
+    "source": {
+      "source_name": "Official university website",
+      "source_type": "official_website",
+      "source_url": "https://www.camed.edu.kh",
+      "external_id": "camed.edu.kh",
+      "confidence_score": 95,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "asia-euro-university",
+    "name": "Asia Euro University",
+    "name_km": "សាកលវិទ្យាល័យអាស៊ីអឺរ៉ុប",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Kampuchea Krom Blvd, Toul Kork, Phnom Penh",
+    "address": "#826, Kampuchea Krom Blvd, Teuk Laak I, Khan Toul Kork, Phnom Penh 12156, Cambodia",
+    "website_url": "https://www.aeu.edu.kh",
+    "email": "info@aeu.edu.kh",
+    "phone": "+855 89 292 168",
+    "source": {
+      "source_name": "Official university website",
+      "source_type": "official_website",
+      "source_url": "https://www.aeu.edu.kh",
+      "external_id": "aeu.edu.kh",
+      "confidence_score": 100,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "svay-rieng-university",
+    "name": "Svay Rieng University",
+    "type": "public",
+    "province": "Svay Rieng",
+    "website_url": "https://www.svru.edu.kh",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/svay-rieng-university/",
+      "external_id": "unirank-svru",
+      "confidence_score": 80,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "phnom-penh-international-university",
+    "name": "Phnom Penh International University",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Street 169, Phnom Penh",
+    "address": "No. 36, Street 169, Phnom Penh, Cambodia",
+    "website_url": "https://www.ppiu.edu.kh",
+    "phone": "+855 23 999 908",
+    "source": {
+      "source_name": "Official university page",
+      "source_type": "official_website",
+      "source_url": "https://www.ppiu.edu.kh/public/index/page/view/7392589940736",
+      "external_id": "ppiu-about",
+      "confidence_score": 95,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "iic-university-of-technology",
+    "name": "IIC University of Technology",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Prek Aeng, Chbar Ampov, Phnom Penh",
+    "address": "Bldg No. 069, Concrete Road along National Road No. 1, Phum Ta Prum, Sangkat Prek Aeng, Khan Chbar Ampov, Phnom Penh 121206, Cambodia",
+    "website_url": "https://www.iic.edu.kh",
+    "email": "info@iic.edu.kh",
+    "phone": "+855 23 425 148",
+    "founded_year": 2008,
+    "source": {
+      "source_name": "Official university website",
+      "source_type": "official_website",
+      "source_url": "https://www.iic.edu.kh",
+      "external_id": "iic.edu.kh",
+      "confidence_score": 100,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "national-meanchey-university",
+    "name": "National Meanchey University",
+    "type": "public",
+    "province": "Banteay Meanchey",
+    "location": "Sisophon",
+    "website_url": "https://www.nmu.edu.kh",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/national-meanchey-university/",
+      "external_id": "unirank-nmu",
+      "confidence_score": 80,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "national-university-of-cheasim-kamchaymear",
+    "name": "National University of CheaSim Kamchaymear",
+    "type": "public",
+    "province": "Prey Veng",
+    "location": "Kamchaymear District, Prey Veng",
+    "address": "National Road 8, Thnal Keng Village, Smoang Cheung Commune, Kamchaymear District, Prey Veng Province, Cambodia",
+    "website_url": "https://nuck.edu.kh",
+    "email": "info@nuck.edu.kh",
+    "phone": "+855 97 828 1168",
+    "founded_year": 1993,
+    "source": {
+      "source_name": "Official university about page",
+      "source_type": "official_website",
+      "source_url": "https://nuck.edu.kh/public/about/",
+      "external_id": "nuck-about",
+      "confidence_score": 100,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "university-of-southeast-asia",
+    "name": "University of Southeast Asia",
+    "type": "private",
+    "province": "Siem Reap",
+    "location": "Wat Bo Village, Siem Reap",
+    "address": "Wat Bo Village, Sangkat Salakamroek, Siem Reap Municipality, Cambodia",
+    "website_url": "https://www.usea.edu.kh",
+    "email": "info@usea.edu.kh",
+    "phone": "+855 63 900 090",
+    "source": {
+      "source_name": "Official academic page",
+      "source_type": "official_website",
+      "source_url": "https://www.usea.edu.kh/en/BachelorDegree/bachelor-civil-engineering.php",
+      "external_id": "usea-academic",
+      "confidence_score": 95,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "human-resource-university",
+    "name": "Human Resource University",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Street 163, Olympic, Phnom Penh",
+    "address": "Building 17, Street 163, Sangkat Olympic, Khan Boeng Keng Kang, Phnom Penh, Cambodia",
+    "website_url": "https://hru.edu.kh",
+    "email": "info@hru.edu.kh",
+    "phone": "+855 23 987 826",
+    "founded_year": 2005,
+    "source": {
+      "source_name": "Official university about page",
+      "source_type": "official_website",
+      "source_url": "https://hru.edu.kh/en/about-hru/",
+      "external_id": "hru-about",
+      "confidence_score": 100,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "panha-chiet-university",
+    "name": "Panha Chiet University",
+    "type": "private",
+    "province": "Phnom Penh",
+    "location": "Street 253, Toul Kork, Phnom Penh",
+    "address": "#13, Street 253, Sangkat Teuk Laak 3, Khan Toul Kork, Phnom Penh, Cambodia",
+    "website_url": "https://www.pcu.edu.kh",
+    "phone": "+855 16 667 698",
+    "source": {
+      "source_name": "Official university website",
+      "source_type": "official_website",
+      "source_url": "https://www.pcu.edu.kh",
+      "external_id": "pcu.edu.kh",
+      "confidence_score": 100,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "preah-sihanouk-raja-buddhist-university",
+    "name": "Preah Sihanouk Raja Buddhist University",
+    "type": "public",
+    "province": "Phnom Penh",
+    "website_url": "https://www.psb.edu.kh",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/preah-sihanouk-raja-buddhist-university/",
+      "external_id": "unirank-psb",
+      "confidence_score": 80,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "dewey-international-university",
+    "name": "Dewey International University",
+    "type": "private",
+    "province": "Battambang",
+    "website_url": "https://www.diu.edu.kh",
+    "source": {
+      "source_name": "Official contact portal",
+      "source_type": "contact_page",
+      "source_url": "https://www.contact.diu.edu.kh/",
+      "external_id": "diu-contact",
+      "confidence_score": 90,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "cambodia-university-for-specialties",
+    "name": "Cambodia University for Specialties",
+    "type": "private",
+    "province": "Phnom Penh",
+    "website_url": "https://www.cus.edu.kh",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/cambodia-university-for-specialties/",
+      "external_id": "unirank-cus",
+      "confidence_score": 75,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "east-asia-management-university",
+    "name": "East Asia Management University",
+    "type": "private",
+    "province": "Phnom Penh",
+    "website_url": "https://www.eamu.edu.kh",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/east-asia-management-university/",
+      "external_id": "unirank-eamu",
+      "confidence_score": 75,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "prek-leap-national-institute-of-agriculture",
+    "name": "Prek Leap National Institute of Agriculture",
+    "type": "public",
+    "province": "Phnom Penh",
+    "website_url": "https://www.plnia.edu.kh",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/prek-leap-national-institute-of-agriculture/",
+      "external_id": "unirank-plnia",
+      "confidence_score": 75,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "chenla-university",
+    "name": "Chenla University",
+    "type": "private",
+    "province": "Phnom Penh",
+    "website_url": "https://www.chenla.edu.kh",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/chenla-university/",
+      "external_id": "unirank-chenla",
+      "confidence_score": 75,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "economics-and-finance-institute",
+    "name": "Economics and Finance Institute",
+    "type": "public",
+    "province": "Phnom Penh",
+    "website_url": "https://efi.mef.gov.kh",
+    "source": {
+      "source_name": "Official institute site",
+      "source_type": "official_website",
+      "source_url": "https://efi.mef.gov.kh",
+      "external_id": "efi-mof",
+      "confidence_score": 90,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "khemarak-university",
+    "name": "Khemarak University",
+    "type": "private",
+    "province": "Phnom Penh",
+    "website_url": "https://www.khemarak.edu.kh",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/khemarak-university/",
+      "external_id": "unirank-khemarak",
+      "confidence_score": 75,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "kampong-cham-national-institute-of-agriculture",
+    "name": "Kampong Cham National Institute of Agriculture",
+    "type": "public",
+    "province": "Kampong Cham",
+    "website_url": "https://www.kcnia.edu.kh",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/kampong-cham-national-institute-of-agriculture/",
+      "external_id": "unirank-kcnia",
+      "confidence_score": 75,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "limkokwing-university-of-creative-technology-cambodia",
+    "name": "Limkokwing University of Creative Technology Cambodia",
+    "type": "private",
+    "province": "Phnom Penh",
+    "website_url": "https://www.limkokwing.net/cambodia/",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/limkokwing-university-of-creative-technology-cambodia/",
+      "external_id": "unirank-limkokwing-kh",
+      "confidence_score": 75,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "angkor-khemara-university",
+    "name": "Angkor Khemara University",
+    "type": "private",
+    "province": "Kampot",
+    "website_url": "https://www.aku.edu.kh",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/angkor-khemara-university/",
+      "external_id": "unirank-aku",
+      "confidence_score": 75,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "ecole-royale-dadministration",
+    "name": "Ecole Royale d'Administration",
+    "type": "public",
+    "province": "Phnom Penh",
+    "website_url": "https://era.gov.kh",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/ecole-royale-d-administration/",
+      "external_id": "unirank-era",
+      "confidence_score": 70,
+      "last_verified_at": "2026-03-18"
+    }
+  },
+  {
+    "slug": "life-university-cambodia",
+    "name": "Life University Cambodia",
+    "type": "private",
+    "province": "Preah Sihanouk",
+    "website_url": "https://lifeuniversity.edu.kh",
+    "source": {
+      "source_name": "uniRank institution profile",
+      "source_type": "profile_page",
+      "source_url": "https://www.unirank.org/kh/uni/life-university-cambodia/",
+      "external_id": "unirank-luc",
+      "confidence_score": 70,
+      "last_verified_at": "2026-03-18"
+    }
+  }
+]

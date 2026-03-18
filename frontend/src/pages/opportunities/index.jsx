@@ -43,8 +43,9 @@ export function OpportunitiesPage() {
   const [page,    setPage]    = useState(1);
   const [total,   setTotal]   = useState(0);
   const [filters, setFilters] = useState({ type: '', search: '' });
+  const [showAll, setShowAll] = useState(false);
 
-  const limit      = 12;
+  const limit      = showAll ? 1000 : 12;
   const totalPages = Math.ceil(total / limit);
   const sf = (k) => (v) => { setFilters((p) => ({ ...p, [k]: v })); setPage(1); };
 
@@ -52,17 +53,20 @@ export function OpportunitiesPage() {
     (async () => {
       setLoading(true);
       try {
-        const params = { page, limit, ...filters };
+        const params = { page: showAll ? 1 : page, limit, ...filters };
         if (!params.type)   delete params.type;
         if (!params.search) delete params.search;
         const res = await opportunityApi.list(params);
         setOpportunities(res.data.data || []);
-        setTotal(res.data.total || 0);
+        setTotal(res.data.meta?.total || res.data.total || 0);
+      } catch {
+        setOpportunities([]);
+        setTotal(0);
       } finally {
         setLoading(false);
       }
     })();
-  }, [filters, page]);
+  }, [filters, page, showAll]);
 
   return (
     <div className="bg-slate-50 min-h-screen">
@@ -76,6 +80,34 @@ export function OpportunitiesPage() {
           <p className="text-slate-500 text-sm">
             {loading ? 'Loading...' : `${total} opportunities available`}
           </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setShowAll(false);
+                setPage(1);
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+              style={!showAll
+                ? { background: '#1B3A6B', color: '#fff', border: '1px solid #1B3A6B' }
+                : { background: '#fff', color: '#64748b', border: '1px solid #e2e8f0' }}
+            >
+              Paginated view
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowAll(true);
+                setPage(1);
+              }}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+              style={showAll
+                ? { background: '#1B3A6B', color: '#fff', border: '1px solid #1B3A6B' }
+                : { background: '#fff', color: '#64748b', border: '1px solid #e2e8f0' }}
+            >
+              Show all
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -198,12 +230,14 @@ export function OpportunitiesPage() {
               })}
             </div>
 
-            <div className="mt-8">
-              <Pagination page={page} totalPages={totalPages}
-                onNext={() => setPage((p) => p + 1)}
-                onPrev={() => setPage((p) => p - 1)}
-                onPage={setPage} />
-            </div>
+            {!showAll && (
+              <div className="mt-8">
+                <Pagination page={page} totalPages={totalPages}
+                  onNext={() => setPage((p) => p + 1)}
+                  onPrev={() => setPage((p) => p - 1)}
+                  onPage={setPage} />
+              </div>
+            )}
           </>
         )}
       </div>

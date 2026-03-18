@@ -16,7 +16,11 @@ module.exports = {
     const norton = uniMap["norton-university"];
     const puc = uniMap["paññasastra-university-of-cambodia"];
     const aupp = uniMap["american-university-of-phnom-penh"];
-    const allIds = [rupp, itc, norton, puc, aupp].filter(Boolean);
+    const uc = uniMap["university-of-cambodia"];
+    const num = uniMap["national-university-of-management"];
+    const rule = uniMap["royal-university-of-law-and-economics"];
+    const camtech = uniMap["camtech-university"];
+    const allIds = [rupp, itc, norton, puc, aupp, uc, num, rule, camtech].filter(Boolean);
 
     // ── UniversityContact ─────────────────────────────────────────────────────
     const contacts = [
@@ -77,6 +81,54 @@ module.exports = {
         general_phone: "+855 23 969 248",
         facebook_page: "https://facebook.com/AUPPCambodia",
         office_hours: "Mon-Fri 8:00am - 5:30pm",
+        created_at: now,
+        updated_at: now,
+      },
+      {
+        id: randomUUID(),
+        university_id: uc,
+        admission_email: "admissions@uc.edu.kh",
+        admission_phone: "+855 23 993 274",
+        general_email: "info@uc.edu.kh",
+        general_phone: "+855 23 993 274",
+        facebook_page: "https://facebook.com/universityofcambodia",
+        office_hours: "Mon-Fri 8:00am - 5:00pm",
+        created_at: now,
+        updated_at: now,
+      },
+      {
+        id: randomUUID(),
+        university_id: num,
+        admission_email: "info.numdigital@num.edu.kh",
+        admission_phone: "+855 12 549 961",
+        general_email: "info.numdigital@num.edu.kh",
+        general_phone: "+855 12 549 961",
+        facebook_page: null,
+        office_hours: "Mon-Fri 7:30am - 5:00pm",
+        created_at: now,
+        updated_at: now,
+      },
+      {
+        id: randomUUID(),
+        university_id: rule,
+        admission_email: "info@rule.edu.kh",
+        admission_phone: "+855 23 214 703",
+        general_email: "info@rule.edu.kh",
+        general_phone: "+855 23 214 703",
+        facebook_page: null,
+        office_hours: "Mon-Fri 7:30am - 5:00pm",
+        created_at: now,
+        updated_at: now,
+      },
+      {
+        id: randomUUID(),
+        university_id: camtech,
+        admission_email: "info@camtech.edu.kh",
+        admission_phone: "+855 78 21 21 81",
+        general_email: "info@camtech.edu.kh",
+        general_phone: "+855 78 21 21 81",
+        facebook_page: null,
+        office_hours: "Mon-Sat 8:00am - 5:00pm",
         created_at: now,
         updated_at: now,
       },

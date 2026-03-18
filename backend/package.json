@@ -8,7 +8,10 @@
     "start": "node server.js",
     "db:migrate": "dotenv -e .env -- npx sequelize-cli db:migrate",
     "db:reset": "node utils/db-reset.js",
-    "db:seed": "dotenv -e .env -- npx sequelize-cli db:seed:all"
+    "db:seed": "dotenv -e .env -- npx sequelize-cli db:seed:all",
+    "import:universities": "dotenv -e .env -- node scripts/import-cambodia-universities.js",
+    "enrich:universities": "dotenv -e .env -- node scripts/enrich-university-sources.js",
+    "refresh:universities": "dotenv -e .env -- node scripts/import-cambodia-universities.js && dotenv -e .env -- node scripts/enrich-university-sources.js"
   },
   "author": "Panhaseth SUY",
   "license": "ISC",

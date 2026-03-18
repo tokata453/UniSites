@@ -147,7 +147,7 @@ export function MajorsPage() {
   const [stemOnly, setStemOnly] = useState(false);
 
   useEffect(() => {
-    Promise.all([majorApi.list(), majorApi.getFeatured()])
+    Promise.all([majorApi.list({ page: 1, limit: 1000 }), majorApi.getFeatured()])
       .then(([all, feat]) => {
         setMajors(all.data?.majors   || all.data?.data   || []);
         setFeatured(feat.data?.majors || feat.data?.data || []);

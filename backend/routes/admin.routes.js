@@ -15,6 +15,7 @@ router.delete('/users/:id',             ctrl.deleteUser);
 
 // Universities
 router.get('/universities',             ctrl.getUniversities);
+router.get('/universities/:id/sources', ctrl.getUniversitySources);
 router.post('/universities',            ctrl.createUniversity);
 router.put('/universities/:id',         ctrl.updateUniversity);
 router.delete('/universities/:id',      ctrl.deleteUniversity);

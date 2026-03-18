@@ -66,6 +66,7 @@ export default function UniversityList() {
   const [loading, setLoading]           = useState(true);
   const [total,   setTotal]             = useState(0);
   const [page,    setPage]              = useState(1);
+  const [showAll, setShowAll]           = useState(searchParams.get('view') === 'all');
   const [typeOpen, setTypeOpen]         = useState(false);
   const [provinceOpen, setProvinceOpen] = useState(false);
   const [sortOpen, setSortOpen]         = useState(false);
@@ -84,7 +85,7 @@ export default function UniversityList() {
     sort:                  searchParams.get('sort') || 'rating_avg-DESC',
   });
 
-  const limit      = 12;
+  const limit      = showAll ? 1000 : 12;
   const totalPages = Math.ceil(total / limit);
   const setFilter  = (k) => (v) => { setFilters((p) => ({ ...p, [k]: v })); setPage(1); };
   const selectedTypeLabel = useMemo(() => {
@@ -105,7 +106,7 @@ export default function UniversityList() {
       setLoading(true);
       try {
         const [sort, order] = (filters.sort || 'rating_avg-DESC').split('-');
-        const params = { page, limit, ...filters, sort, order };
+        const params = { page: showAll ? 1 : page, limit, ...filters, sort, order };
         if (!params.type)                  delete params.type;
         if (!params.province)              delete params.province;
         if (!params.scholarship_available) delete params.scholarship_available;
@@ -116,15 +117,16 @@ export default function UniversityList() {
         delete params.sort;
         const res = await universityApi.list(params);
         setUniversities(res.data.data || []);
-        setTotal(res.data.total || 0);
+        setTotal(res.data.meta?.total || res.data.total || 0);
       } catch {
         setUniversities([]);
+        setTotal(0);
       } finally {
         setLoading(false);
       }
     };
     fetch();
-  }, [filters, page]);
+  }, [filters, page, showAll]);
 
   useEffect(() => {
     const params = {};
@@ -136,9 +138,10 @@ export default function UniversityList() {
     if (filters.tuition_min) params.tuition_min = filters.tuition_min;
     if (filters.tuition_max) params.tuition_max = filters.tuition_max;
     if (filters.sort && filters.sort !== 'rating_avg-DESC') params.sort = filters.sort;
-    if (page > 1) params.page = String(page);
+    if (showAll) params.view = 'all';
+    if (!showAll && page > 1) params.page = String(page);
     setSearchParams(params);
-  }, [filters, page, setSearchParams]);
+  }, [filters, page, setSearchParams, showAll]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -160,6 +163,34 @@ export default function UniversityList() {
         <p className="text-slate-500 text-sm">
           {loading ? 'Loading...' : `${total} universities found`}
         </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setShowAll(false);
+              setPage(1);
+            }}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+            style={!showAll
+              ? { background: '#1B3A6B', color: '#fff', border: '1px solid #1B3A6B' }
+              : { background: '#fff', color: '#64748b', border: '1px solid #e2e8f0' }}
+          >
+            Paginated view
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowAll(true);
+              setPage(1);
+            }}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all"
+            style={showAll
+              ? { background: '#1B3A6B', color: '#fff', border: '1px solid #1B3A6B' }
+              : { background: '#fff', color: '#64748b', border: '1px solid #e2e8f0' }}
+          >
+            Show all
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6">
@@ -451,14 +482,16 @@ export default function UniversityList() {
                 })}
               </div>
 
-              <div className="mt-8">
-                <Pagination
-                  page={page} totalPages={totalPages}
-                  onNext={() => setPage((p) => p + 1)}
-                  onPrev={() => setPage((p) => p - 1)}
-                  onPage={setPage}
-                />
-              </div>
+              {!showAll && (
+                <div className="mt-8">
+                  <Pagination
+                    page={page} totalPages={totalPages}
+                    onNext={() => setPage((p) => p + 1)}
+                    onPrev={() => setPage((p) => p - 1)}
+                    onPage={setPage}
+                  />
+                </div>
+              )}
             </>
           )}
         </div>

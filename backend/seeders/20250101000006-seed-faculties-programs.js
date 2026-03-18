@@ -22,6 +22,10 @@ module.exports = {
     const norton = uniMap['norton-university'];
     const puc   = uniMap['paññasastra-university-of-cambodia'];
     const aupp  = uniMap['american-university-of-phnom-penh'];
+    const uc    = uniMap['university-of-cambodia'];
+    const num   = uniMap['national-university-of-management'];
+    const rule  = uniMap['royal-university-of-law-and-economics'];
+    const camtech = uniMap['camtech-university'];
 
     // ── Faculties ─────────────────────────────────────────────────────────────
     const faculties = [
@@ -44,6 +48,18 @@ module.exports = {
       // AUPP
       { id: randomUUID(), university_id: aupp,   name: 'School of Business',                     name_km: null,                                     description: 'Business administration with American curriculum.',                 dean_name: 'Dr. Michael Grant',   established_year: 2013, sort_order: 1, created_at: now, updated_at: now },
       { id: randomUUID(), university_id: aupp,   name: 'School of Technology',                   name_km: null,                                     description: 'Computer science and information systems.',                        dean_name: 'Dr. Sarah Chen',      established_year: 2013, sort_order: 2, created_at: now, updated_at: now },
+      // UC
+      { id: randomUUID(), university_id: uc,     name: 'College of Social Sciences',             name_km: null,                                     description: 'Programs in international relations, policy, and communication.',  dean_name: 'Dr. Chan Dara',       established_year: 2003, sort_order: 1, created_at: now, updated_at: now },
+      { id: randomUUID(), university_id: uc,     name: 'College of Science and Technology',      name_km: null,                                     description: 'Technology and computing programs with practical lab exposure.',   dean_name: 'Dr. Sok Davy',        established_year: 2003, sort_order: 2, created_at: now, updated_at: now },
+      // NUM
+      { id: randomUUID(), university_id: num,    name: 'School of Business',                     name_km: null,                                     description: 'Management, accounting, and finance programs.',                    dean_name: 'Dr. Hor Sreyneang',   established_year: 1983, sort_order: 1, created_at: now, updated_at: now },
+      { id: randomUUID(), university_id: num,    name: 'School of Public Policy',                name_km: null,                                     description: 'International relations, public policy, and digital economy.',     dean_name: 'Dr. Chay Sengtha',    established_year: 2022, sort_order: 2, created_at: now, updated_at: now },
+      // RULE
+      { id: randomUUID(), university_id: rule,   name: 'Faculty of Law',                         name_km: 'មហាវិទ្យាល័យនីតិសាស្ត្រ',              description: 'Core legal studies including public and private law.',             dean_name: 'Dr. Pen Bora',        established_year: 1949, sort_order: 1, created_at: now, updated_at: now },
+      { id: randomUUID(), university_id: rule,   name: 'Faculty of Economics and Management',    name_km: 'មហាវិទ្យាល័យសេដ្ឋកិច្ច និង គ្រប់គ្រង', description: 'Economics, management, and policy-oriented programs.',             dean_name: 'Dr. Kim Sothea',      established_year: 1949, sort_order: 2, created_at: now, updated_at: now },
+      // CamTech
+      { id: randomUUID(), university_id: camtech, name: 'Faculty of Engineering',                name_km: null,                                     description: 'Engineering programs with applied and industry-linked training.',  dean_name: 'Dr. Peng Sophea',     established_year: 2018, sort_order: 1, created_at: now, updated_at: now },
+      { id: randomUUID(), university_id: camtech, name: 'Faculty of Applied Science',            name_km: null,                                     description: 'Computer science, AI, and applied STEM programs.',                 dean_name: 'Dr. Ly Dararith',     established_year: 2018, sort_order: 2, created_at: now, updated_at: now },
     ];
 
     await queryInterface.bulkInsert('faculties', faculties);
@@ -80,6 +96,18 @@ module.exports = {
       // AUPP
       { id: randomUUID(), university_id: aupp, faculty_id: fMap[`${aupp}_School of Business`],            major_id: majorMap['business-administration'], name: 'BS in Business Administration',    degree_level: 'bachelor', duration_years: 4, language: 'English', tuition_fee: 5500, tuition_currency: 'USD', credits_required: 120, is_available: true, created_at: now, updated_at: now },
       { id: randomUUID(), university_id: aupp, faculty_id: fMap[`${aupp}_School of Technology`],          major_id: majorMap['computer-science'],       name: 'BS in Computer Science',           degree_level: 'bachelor', duration_years: 4, language: 'English', tuition_fee: 5500, tuition_currency: 'USD', credits_required: 120, is_available: true, created_at: now, updated_at: now },
+      // UC
+      { id: randomUUID(), university_id: uc, faculty_id: fMap[`${uc}_College of Social Sciences`],        major_id: majorMap['international-relations'], name: 'Bachelor of International Relations', degree_level: 'bachelor', duration_years: 4, language: 'English', tuition_fee: 1800, tuition_currency: 'USD', credits_required: 120, is_available: true, created_at: now, updated_at: now },
+      { id: randomUUID(), university_id: uc, faculty_id: fMap[`${uc}_College of Science and Technology`], major_id: majorMap['computer-science'],       name: 'Bachelor of Computer Science',       degree_level: 'bachelor', duration_years: 4, language: 'English', tuition_fee: 2200, tuition_currency: 'USD', credits_required: 120, is_available: true, created_at: now, updated_at: now },
+      // NUM
+      { id: randomUUID(), university_id: num, faculty_id: fMap[`${num}_School of Business`],              major_id: majorMap['business-administration'], name: 'Bachelor of Business Administration', degree_level: 'bachelor', duration_years: 4, language: 'Khmer', tuition_fee: 950, tuition_currency: 'USD', credits_required: 120, is_available: true, created_at: now, updated_at: now },
+      { id: randomUUID(), university_id: num, faculty_id: fMap[`${num}_School of Public Policy`],         major_id: majorMap['international-relations'], name: 'Bachelor of International Relations', degree_level: 'bachelor', duration_years: 4, language: 'English', tuition_fee: 1400, tuition_currency: 'USD', credits_required: 120, is_available: true, created_at: now, updated_at: now },
+      // RULE
+      { id: randomUUID(), university_id: rule, faculty_id: fMap[`${rule}_Faculty of Law`],                major_id: majorMap['law'],                     name: 'Bachelor of Laws',                    degree_level: 'bachelor', duration_years: 4, language: 'Khmer', tuition_fee: 850, tuition_currency: 'USD', credits_required: 120, is_available: true, created_at: now, updated_at: now },
+      { id: randomUUID(), university_id: rule, faculty_id: fMap[`${rule}_Faculty of Economics and Management`], major_id: majorMap['business-administration'], name: 'Bachelor of Economics and Management', degree_level: 'bachelor', duration_years: 4, language: 'Khmer', tuition_fee: 900, tuition_currency: 'USD', credits_required: 120, is_available: true, created_at: now, updated_at: now },
+      // CamTech
+      { id: randomUUID(), university_id: camtech, faculty_id: fMap[`${camtech}_Faculty of Engineering`],  major_id: majorMap['electrical-engineering'],  name: 'Bachelor of Electrical Engineering',   degree_level: 'bachelor', duration_years: 4, language: 'English', tuition_fee: 3200, tuition_currency: 'USD', credits_required: 120, is_available: true, created_at: now, updated_at: now },
+      { id: randomUUID(), university_id: camtech, faculty_id: fMap[`${camtech}_Faculty of Applied Science`], major_id: majorMap['computer-science'],      name: 'Bachelor of Computer Science',         degree_level: 'bachelor', duration_years: 4, language: 'English', tuition_fee: 3400, tuition_currency: 'USD', credits_required: 120, is_available: true, created_at: now, updated_at: now },
     ];
 
     // Only insert programs whose faculty and major IDs were resolved
