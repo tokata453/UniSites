@@ -10,11 +10,19 @@ module.exports = {
       { type: queryInterface.sequelize.QueryTypes.SELECT },
     );
     const admin = await queryInterface.sequelize.query(
-      `SELECT id FROM users WHERE email = 'superadmin@gmail.com' LIMIT 1`,
+      `SELECT id FROM users WHERE email IN ('superadmin@gmail.com', 'admin@gmail.com') ORDER BY email = 'superadmin@gmail.com' DESC LIMIT 1`,
+      { type: queryInterface.sequelize.QueryTypes.SELECT },
+    );
+    const orgUsers = await queryInterface.sequelize.query(
+      `SELECT id, email FROM users WHERE email IN ('careers@cambodiacareercenter.org', 'mobility@aseancambodia.org', 'programs@younginnovatorscambodia.org')`,
       { type: queryInterface.sequelize.QueryTypes.SELECT },
     );
     const uniMap = Object.fromEntries(unis.map((u) => [u.slug, u.id]));
     const adminId = admin[0]?.id || null;
+    const orgUserMap = Object.fromEntries(orgUsers.map((user) => [user.email, user.id]));
+    const careerCenterId = orgUserMap["careers@cambodiacareercenter.org"] || adminId;
+    const aseanMobilityId = orgUserMap["mobility@aseancambodia.org"] || adminId;
+    const youngInnovatorsId = orgUserMap["programs@younginnovatorscambodia.org"] || adminId;
 
     const rupp = uniMap["royal-university-of-phnom-penh"];
     const itc = uniMap["institute-of-technology-of-cambodia"];
@@ -42,7 +50,7 @@ module.exports = {
           "The Royal University of Phnom Penh offers merit-based scholarships to outstanding students pursuing undergraduate degrees. Recipients receive full tuition coverage plus a monthly stipend. Applicants must demonstrate academic excellence with a GPA of 3.5 or above from their high school.",
         type: "scholarship",
         university_id: rupp,
-        posted_by: adminId,
+        posted_by: aseanMobilityId,
         deadline: "2026-06-30",
         start_date: "2026-09-01",
         end_date: "2030-06-30",
@@ -81,7 +89,7 @@ module.exports = {
           "The Institute of Technology of Cambodia awards full scholarships to top-performing students in science, technology, engineering, and mathematics. Scholarship covers tuition, accommodation, and a monthly living allowance. Priority given to students from rural provinces.",
         type: "scholarship",
         university_id: itc,
-        posted_by: adminId,
+        posted_by: aseanMobilityId,
         deadline: "2026-07-15",
         start_date: "2026-09-15",
         end_date: "2030-09-15",
@@ -124,7 +132,7 @@ module.exports = {
           "The American University of Phnom Penh Presidential Scholarship is awarded to exceptional students who demonstrate outstanding academic achievement, leadership potential, and community involvement. Up to 5 scholarships are awarded annually covering 50% to 100% of tuition fees.",
         type: "scholarship",
         university_id: aupp,
-        posted_by: adminId,
+        posted_by: aseanMobilityId,
         deadline: "2026-05-31",
         start_date: "2026-08-01",
         end_date: "2030-05-31",
@@ -168,7 +176,7 @@ module.exports = {
           "The Japanese Government offers the MEXT Scholarship for Cambodian students to study at Japanese universities. The scholarship covers round-trip airfare, tuition, accommodation, and a monthly allowance. Programs available in engineering, science, social science, and humanities.",
         type: "scholarship",
         university_id: null,
-        posted_by: adminId,
+        posted_by: careerCenterId,
         deadline: "2026-04-30",
         start_date: "2026-10-01",
         end_date: "2030-09-30",
@@ -1475,11 +1483,145 @@ module.exports = {
         created_at: now,
         updated_at: now,
       },
+      {
+        id: randomUUID(),
+        slug: "young-innovators-digital-skills-bootcamp-2026",
+        title: "Young Innovators Digital Skills Bootcamp 2026",
+        description:
+          "Young Innovators Cambodia is running a practical digital skills bootcamp for university students and fresh graduates focused on teamwork, design thinking, presentations, spreadsheets, and digital project execution. Participants will build a real mini project and receive mentorship from local trainers.",
+        type: "workshop",
+        university_id: null,
+        posted_by: youngInnovatorsId,
+        deadline: "2026-08-05",
+        start_date: "2026-08-15",
+        end_date: "2026-08-30",
+        eligibility:
+          "Open to Cambodian university students and recent graduates with interest in digital career skills",
+        eligibility_criteria: JSON.stringify({
+          nationality: "Cambodian",
+          audience: ["University students", "Recent graduates"],
+        }),
+        field_of_study: ["All fields"],
+        country: "Cambodia",
+        location: "Phnom Penh",
+        is_online: false,
+        source: "external",
+        source_url:
+          "https://younginnovatorscambodia.org/programs/digital-skills-bootcamp",
+        application_url:
+          "https://younginnovatorscambodia.org/apply/digital-skills-bootcamp",
+        contact_email: "programs@younginnovatorscambodia.org",
+        funding_amount: "Free participation + certificate",
+        funding_currency: "USD",
+        is_fully_funded: true,
+        is_verified: true,
+        is_featured: false,
+        is_published: true,
+        views_count: 720,
+        applicant_count: 61,
+        created_at: now,
+        updated_at: now,
+      },
+      {
+        id: randomUUID(),
+        slug: "cambodia-career-center-paid-marketing-internship-2026",
+        title: "Cambodia Career Center Paid Marketing Internship 2026",
+        description:
+          "Cambodia Career Center is matching students with short-term paid internships in digital marketing, community outreach, and content support across partner companies in Phnom Penh. Interns will receive onboarding, supervision, and a completion reference letter.",
+        type: "internship",
+        university_id: null,
+        posted_by: careerCenterId,
+        deadline: "2026-07-25",
+        start_date: "2026-08-10",
+        end_date: "2026-10-10",
+        eligibility:
+          "Year 2+ university students with communication skills and basic digital literacy",
+        eligibility_criteria: JSON.stringify({
+          year_min: 2,
+          skills: ["Communication", "Basic digital literacy"],
+        }),
+        field_of_study: ["Business", "Marketing", "Media", "English"],
+        country: "Cambodia",
+        location: "Phnom Penh",
+        is_online: false,
+        source: "external",
+        source_url:
+          "https://cambodiacareercenter.org/internships/marketing-2026",
+        application_url:
+          "https://cambodiacareercenter.org/apply/marketing-internship-2026",
+        contact_email: "careers@cambodiacareercenter.org",
+        funding_amount: "$120 - $180 per month",
+        funding_currency: "USD",
+        is_fully_funded: false,
+        is_verified: true,
+        is_featured: false,
+        is_published: true,
+        views_count: 810,
+        applicant_count: 74,
+        created_at: now,
+        updated_at: now,
+      },
+      {
+        id: randomUUID(),
+        slug: "asean-mobility-student-volunteer-network-2026",
+        title: "ASEAN Mobility Student Volunteer Network 2026",
+        description:
+          "ASEAN Mobility Cambodia is recruiting student volunteers to support regional student exchange briefings, airport welcome coordination, and intercultural orientation events for inbound and outbound exchange participants.",
+        type: "volunteer",
+        university_id: null,
+        posted_by: aseanMobilityId,
+        deadline: "2026-06-20",
+        start_date: "2026-07-01",
+        end_date: "2026-12-15",
+        eligibility:
+          "University students with strong communication skills and interest in international exchange",
+        eligibility_criteria: JSON.stringify({
+          skills: ["Communication", "Event support"],
+          interest: "International exchange",
+        }),
+        field_of_study: ["All fields"],
+        country: "Cambodia",
+        location: "Phnom Penh",
+        is_online: false,
+        source: "external",
+        source_url: "https://aseancambodia.org/volunteer-network-2026",
+        application_url:
+          "https://aseancambodia.org/apply/volunteer-network-2026",
+        contact_email: "mobility@aseancambodia.org",
+        funding_amount: "Volunteer certificate + event allowance",
+        funding_currency: "USD",
+        is_fully_funded: false,
+        is_verified: true,
+        is_featured: false,
+        is_published: true,
+        views_count: 540,
+        applicant_count: 48,
+        created_at: now,
+        updated_at: now,
+      },
     ];
 
-    await queryInterface.bulkInsert("opportunities", opps, {
-      ignoreDuplicates: true,
+    const seededSlugs = opps.map((opp) => opp.slug);
+    const existingOpps = await queryInterface.sequelize.query(
+      `SELECT id FROM opportunities WHERE slug = ANY(ARRAY[:slugs])`,
+      {
+        replacements: { slugs: seededSlugs },
+        type: queryInterface.sequelize.QueryTypes.SELECT,
+      },
+    );
+    const existingOppIds = existingOpps.map((opp) => opp.id);
+
+    if (existingOppIds.length > 0) {
+      await queryInterface.bulkDelete("opportunity_tags", {
+        opportunity_id: existingOppIds,
+      });
+    }
+
+    await queryInterface.bulkDelete("opportunities", {
+      slug: seededSlugs,
     });
+
+    await queryInterface.bulkInsert("opportunities", opps);
 
     // ── OpportunityTags ───────────────────────────────────────────────────────
     const tagMap = {
@@ -1702,6 +1844,24 @@ module.exports = {
         "CamTech",
         "Ambassador",
         "Campus Events",
+      ],
+      "young-innovators-digital-skills-bootcamp-2026": [
+        "Workshop",
+        "Digital Skills",
+        "Career Readiness",
+        "Youth Program",
+      ],
+      "cambodia-career-center-paid-marketing-internship-2026": [
+        "Internship",
+        "Paid",
+        "Marketing",
+        "Career Center",
+      ],
+      "asean-mobility-student-volunteer-network-2026": [
+        "Volunteer",
+        "ASEAN",
+        "Exchange",
+        "Student Leadership",
       ],
     };
 

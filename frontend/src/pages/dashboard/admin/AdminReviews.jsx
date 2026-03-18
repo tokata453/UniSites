@@ -19,6 +19,7 @@ export default function AdminReviews() {
   const [page,     setPage]     = useState(1);
   const [pages,    setPages]    = useState(1);
   const [loading,  setLoading]  = useState(true);
+  const [search,   setSearch]   = useState('');
   const [filter,   setFilter]   = useState('false');
   const [flagged,  setFlagged]  = useState('');
   const [confirm,  setConfirm]  = useState(null);
@@ -34,13 +35,13 @@ export default function AdminReviews() {
 
   const load = useCallback(() => {
     setLoading(true);
-    adminApi.getReviews({ page, limit: 12, approved: filter || undefined, flagged: flagged || undefined })
+    adminApi.getReviews({ page, limit: 12, search: search || undefined, approved: filter || undefined, flagged: flagged || undefined })
       .then(r => { setReviews(r.data.reviews); setTotal(r.data.total); setPages(r.data.pages); })
       .catch(() => {}).finally(() => setLoading(false));
-  }, [page, filter, flagged]);
+  }, [page, search, filter, flagged]);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => { setPage(1); }, [filter, flagged]);
+  useEffect(() => { setPage(1); }, [search, filter, flagged]);
 
   const filteredReviews = useMemo(() => (
     reviews.filter((review) => {
@@ -157,6 +158,9 @@ export default function AdminReviews() {
     <div style={{ fontFamily: "'DM Sans',sans-serif" }}>
       <PageHeader title="Reviews" subtitle="Approve and moderate university reviews" count={total} />
       <Card>
+        <div style={{ padding: '16px 16px 0' }}>
+          <SearchBar value={search} onChange={setSearch} placeholder="Search all reviews..." />
+        </div>
         <Table columns={cols} rows={filteredReviews} loading={loading} emptyMsg="No reviews found" />
         <div style={{ padding: '8px 16px 14px' }}><Pagination page={page} pages={pages} onChange={setPage} /></div>
       </Card>

@@ -129,6 +129,9 @@ export default function AdminOpportunities() {
     <div style={{ fontFamily: "'DM Sans',sans-serif" }}>
       <PageHeader title="Opportunities" subtitle="Manage scholarships, internships, and all opportunities" count={total} />
       <Card>
+        <div style={{ padding: '16px 16px 0' }}>
+          <SearchBar value={search} onChange={setSearch} placeholder="Search all opportunities..." />
+        </div>
         <Table columns={cols} rows={filteredOpps} loading={loading} emptyMsg="No opportunities found" />
         <div style={{ padding: '8px 16px 14px' }}><Pagination page={page} pages={pages} onChange={setPage} /></div>
       </Card>

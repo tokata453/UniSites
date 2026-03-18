@@ -287,6 +287,9 @@ export default function AdminUsers() {
       <PageHeader title="Users" subtitle="Manage all registered users" count={total} />
 
       <Card>
+        <div style={{ padding: '16px 16px 0' }}>
+          <SearchBar value={search} onChange={setSearch} placeholder="Search all users..." />
+        </div>
         <Table columns={cols} rows={filteredUsers} loading={loading} emptyMsg="No users found" />
         <div style={{ padding: '8px 16px 14px' }}>
           <Pagination page={page} pages={pages} onChange={setPage} />

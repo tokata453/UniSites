@@ -139,6 +139,9 @@ export default function AdminForum() {
     <div style={{ fontFamily: "'DM Sans',sans-serif" }}>
       <PageHeader title="Forum" subtitle="Manage, pin, and moderate forum threads" count={total} />
       <Card>
+        <div style={{ padding: '16px 16px 0' }}>
+          <SearchBar value={search} onChange={setSearch} placeholder="Search all threads..." />
+        </div>
         <Table columns={cols} rows={filteredThreads} loading={loading} emptyMsg="No threads found" />
         <div style={{ padding: '8px 16px 14px' }}><Pagination page={page} pages={pages} onChange={setPage} /></div>
       </Card>

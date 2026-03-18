@@ -62,8 +62,27 @@ const getFeatured = async (req, res) => {
 
 const getMine = async (req, res) => {
   try {
+    const role = req.user.Role?.name;
+    let where = { posted_by: req.user.id };
+
+    if (role === 'owner') {
+      const ownedUniversity = await db.University.findOne({
+        where: { owner_id: req.user.id },
+        attributes: ['id'],
+      });
+
+      where = ownedUniversity?.id
+        ? {
+            [Op.or]: [
+              { posted_by: req.user.id },
+              { university_id: ownedUniversity.id },
+            ],
+          }
+        : { posted_by: req.user.id };
+    }
+
     const opportunities = await db.Opportunity.findAll({
-      where: { posted_by: req.user.id },
+      where,
       include: [
         { model: db.OpportunityTag, as: 'Tags' },
         { model: db.University, as: 'University', required: false, attributes: ['id', 'name', 'slug', 'logo_url'] },

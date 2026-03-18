@@ -31,13 +31,13 @@ const ADMIN_NAV = [
 const OWNER_NAV = [
   { to: '/owner',             label: 'Analytics',            icon: 'M18 20V10 M12 20V4 M6 20v-6',                          end: true },
   { to: '/owner/profile',     label: 'University Profile',   icon: 'M19 21v-2a4 4 0 00-4-4H9a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8z' },
-  { to: '/owner/opportunities', label: 'Opportunities',      icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' },
-  { to: '/owner/reviews',     label: 'Reviews',              icon: 'M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11' },
-  { to: '/owner/inbox',       label: 'Inbox',                icon: 'M22 12.08V19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h12.93 M22 6l-10 7L2 6' },
   { to: '/owner/gallery',     label: 'Gallery',              icon: 'M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z M4 22v-7' },
   { to: '/owner/faculties',   label: 'Faculties & Programs', icon: 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75' },
   { to: '/owner/news',        label: 'News & Events',        icon: 'M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2' },
   { to: '/owner/faq',         label: 'FAQs & Contact',       icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z' },
+  { to: '/owner/opportunities', label: 'Opportunities', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' },
+  { to: '/owner/reviews', label: 'Reviews', icon: 'M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11' },
+  { to: '/owner/inbox', label: 'Inbox', icon: 'M22 12.08V19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h12.93 M22 6l-10 7L2 6' },
 ];
 
 const ORGANIZATION_NAV = [

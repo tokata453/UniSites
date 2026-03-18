@@ -374,6 +374,9 @@ export default function AdminMajors() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: 16, alignItems: 'start' }}>
         <Card>
+          <div style={{ padding: '16px 16px 0' }}>
+            <SearchBar value={search} onChange={setSearch} placeholder="Search all majors..." />
+          </div>
           <Table
             columns={cols}
             rows={filteredMajors}

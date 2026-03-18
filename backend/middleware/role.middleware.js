@@ -55,6 +55,18 @@ const isOpportunityOwner = () => async (req, res, next) => {
       return next();
     }
 
+    if (req.user.Role?.name === 'owner') {
+      const ownedUniversity = await db.University.findOne({
+        where: { owner_id: req.user.id },
+        attributes: ['id'],
+      });
+
+      if (opp.posted_by === req.user.id || (ownedUniversity?.id && opp.university_id === ownedUniversity.id)) {
+        req.opportunity = opp;
+        return next();
+      }
+    }
+
     if (opp.posted_by !== req.user.id) {
       return forbidden(res, 'You do not own this opportunity');
     }

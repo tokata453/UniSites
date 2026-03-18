@@ -285,10 +285,23 @@ exports.deleteOpportunity = async (req, res) => {
 exports.getReviews = async (req, res) => {
   try {
     if (!isAdmin(req, res)) return;
-    const { page = 1, limit = 20, approved, flagged } = req.query;
+    const { page = 1, limit = 20, approved, flagged, search } = req.query;
     const where = {};
     if (approved !== undefined) where.is_approved = approved === 'true';
     if (flagged !== undefined) where.flagged_for_recheck = flagged === 'true';
+    if (search) {
+      where[Op.or] = [
+        { title: { [Op.iLike]: `%${search}%` } },
+        { content: { [Op.iLike]: `%${search}%` } },
+        { pros: { [Op.iLike]: `%${search}%` } },
+        { cons: { [Op.iLike]: `%${search}%` } },
+        { owner_reply: { [Op.iLike]: `%${search}%` } },
+        { flag_reason: { [Op.iLike]: `%${search}%` } },
+        { '$University.name$': { [Op.iLike]: `%${search}%` } },
+        { '$Author.name$': { [Op.iLike]: `%${search}%` } },
+        { '$Author.email$': { [Op.iLike]: `%${search}%` } },
+      ];
+    }
     const { count, rows } = await db.Review.findAndCountAll({
       where, limit: +limit, offset: (+page - 1) * +limit,
       include: [

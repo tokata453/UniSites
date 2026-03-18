@@ -582,6 +582,9 @@ export default function AdminUniversities() {
         </button>
       </div>
       <Card>
+        <div style={{ padding: '16px 16px 0' }}>
+          <SearchBar value={search} onChange={setSearch} placeholder="Search all universities..." />
+        </div>
         <Table columns={cols} rows={filteredUnis} loading={loading} emptyMsg="No universities found" />
         <div style={{ padding: '8px 16px 14px' }}><Pagination page={page} pages={pages} onChange={setPage} /></div>
       </Card>
