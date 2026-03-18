@@ -8,6 +8,51 @@ const isAdmin = (req, res) => {
   return true;
 };
 
+const attachOwnedUniversitySummary = async (users) => {
+  await Promise.all(
+    users.map(async (user) => {
+      const ownedUniversity = await db.University.findOne({
+        where: { owner_id: user.id },
+        attributes: ['id', 'name', 'slug'],
+        order: [['created_at', 'ASC']],
+      });
+
+      user.setDataValue('owned_university_id', ownedUniversity?.id || null);
+      user.setDataValue('owned_university_name', ownedUniversity?.name || null);
+      user.setDataValue('owned_university_slug', ownedUniversity?.slug || null);
+    }),
+  );
+};
+
+const validateOwnerAvailability = async ({ ownerId, universityId = null }) => {
+  if (!ownerId) return null;
+
+  const ownerUser = await db.User.findByPk(ownerId, {
+    include: [{ model: db.Role, as: 'Role', attributes: ['name'] }],
+    attributes: ['id'],
+  });
+
+  if (!ownerUser) {
+    return 'Selected owner user was not found.';
+  }
+
+  if (ownerUser.Role?.name !== 'owner') {
+    return 'Only users with the owner role can own a university.';
+  }
+
+  const existingOwnedUniversity = await db.University.findOne({
+    where: {
+      owner_id: ownerId,
+      ...(universityId ? { id: { [Op.ne]: universityId } } : {}),
+    },
+    attributes: ['id', 'name'],
+  });
+
+  if (!existingOwnedUniversity) return null;
+
+  return `This owner already owns "${existingOwnedUniversity.name}". Transfer ownership from their current university first.`;
+};
+
 const recalcUniversityRating = async (universityId) => {
   const reviews = await db.Review.findAll({
     where: { university_id: universityId, is_approved: true },
@@ -65,6 +110,8 @@ exports.getUsers = async (req, res) => {
       attributes: { exclude: ['password', 'provider_id'] },
       order: [['created_at', 'DESC']],
     });
+
+    await attachOwnedUniversitySummary(rows);
     return success(res, { users: rows, total: count, page: +page, pages: Math.ceil(count / +limit) });
   } catch (e) { serverError(res, e.message); }
 };
@@ -169,6 +216,15 @@ exports.updateUniversity = async (req, res) => {
     if (!isAdmin(req, res)) return;
     const uni = await db.University.findByPk(req.params.id);
     if (!uni) return notFound(res, 'University not found');
+
+    if (Object.prototype.hasOwnProperty.call(req.body, 'owner_id')) {
+      const ownerError = await validateOwnerAvailability({
+        ownerId: req.body.owner_id || null,
+        universityId: uni.id,
+      });
+      if (ownerError) return error(res, ownerError, 400);
+    }
+
     await uni.update(req.body);
     return success(res, { university: uni }, 'University updated');
   } catch (e) { serverError(res, e.message); }
@@ -318,6 +374,11 @@ exports.createUniversity = async (req, res) => {
             owner_id } = req.body;
 
     if (!name || !university_type) return error(res, 'Name and type are required');
+
+    const ownerError = await validateOwnerAvailability({
+      ownerId: owner_id || null,
+    });
+    if (ownerError) return error(res, ownerError, 400);
 
     const { uniqueSlug } = require('../utils/slug.utils');
     const university = await db.University.create({

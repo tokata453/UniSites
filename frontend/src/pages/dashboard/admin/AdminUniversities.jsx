@@ -240,18 +240,40 @@ function UniversityModal({ mode = 'create', university = null, onClose, onSucces
                   {ownerResults.length > 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                       {ownerResults.map(o => (
-                        <div key={o.id} onClick={() => { setForm(p => ({ ...p, owner_id: o.id, owner_name: o.name })); setOwnerSearch(''); setOwnerResults([]); }}
-                          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', transition: 'background 0.1s' }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                          onMouseLeave={e => e.currentTarget.style.background = '#fff'}>
-                          <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#1B3A6B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                            {o.name?.[0]?.toUpperCase()}
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{o.name}</div>
-                            <div style={{ fontSize: 11, color: '#94a3b8' }}>{o.email}</div>
-                          </div>
-                        </div>
+                        (() => {
+                          const ownsAnotherUniversity = Boolean(o.owned_university_id) && o.owned_university_id !== university?.id;
+                          return (
+                            <div key={o.id} onClick={() => {
+                              if (ownsAnotherUniversity) return;
+                              setForm(p => ({ ...p, owner_id: o.id, owner_name: o.name }));
+                              setOwnerSearch('');
+                              setOwnerResults([]);
+                            }}
+                              style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, border: '1px solid #e2e8f0', background: ownsAnotherUniversity ? '#f8fafc' : '#fff', cursor: ownsAnotherUniversity ? 'not-allowed' : 'pointer', transition: 'background 0.1s', opacity: ownsAnotherUniversity ? 0.6 : 1 }}
+                              onMouseEnter={e => { if (!ownsAnotherUniversity) e.currentTarget.style.background = '#f8fafc'; }}
+                              onMouseLeave={e => { if (!ownsAnotherUniversity) e.currentTarget.style.background = '#fff'; }}>
+                              <div style={{ width: 28, height: 28, borderRadius: '50%', background: ownsAnotherUniversity ? '#cbd5e1' : '#1B3A6B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+                                {o.name?.[0]?.toUpperCase()}
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                                  {o.name}
+                                  {ownsAnotherUniversity && (
+                                    <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontWeight: 700 }}>
+                                      Already owns a university
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: 11, color: '#94a3b8' }}>{o.email}</div>
+                                {ownsAnotherUniversity && (
+                                  <div style={{ fontSize: 11, color: '#dc2626', marginTop: 2 }}>
+                                    Current university: {o.owned_university_name}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()
                       ))}
                     </div>
                   )}
@@ -290,11 +312,10 @@ function TransferOwnerModal({ university, onClose, onSuccess, showToast }) {
   const [selected,  setSelected]  = useState(null);
   const [saving,    setSaving]    = useState(false);
 
-  // Search owner-role users
+  // Load owner-role users and narrow results when searching
   useEffect(() => {
-    if (search.trim().length < 1) { setOwners([]); return; }
     setLoading(true);
-    adminApi.getUsers({ search, role: 'owner', limit: 8 })
+    adminApi.getUsers({ role: 'owner', limit: 8, ...(search.trim() ? { search } : {}) })
       .then(r => setOwners(r.data.users || []))
       .catch(() => setOwners([]))
       .finally(() => setLoading(false));
@@ -350,7 +371,7 @@ function TransferOwnerModal({ university, onClose, onSuccess, showToast }) {
         {/* Search owners */}
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-            Search University Owner
+            University Owners
           </label>
           <div style={{ position: 'relative' }}>
             <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
@@ -370,27 +391,24 @@ function TransferOwnerModal({ university, onClose, onSuccess, showToast }) {
         <div style={{ minHeight: 120, marginBottom: 20 }}>
           {loading ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 80, color: '#94a3b8', fontSize: 13 }}>
-              Searching...
-            </div>
-          ) : search.trim().length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: 80, color: '#94a3b8', gap: 6 }}>
-              <IC d="M21 21l-4.35-4.35 M11 19a8 8 0 100-16 8 8 0 000 16z" size={22} />
-              <span style={{ fontSize: 12 }}>Search for an owner-role user</span>
+              Loading owners...
             </div>
           ) : owners.length === 0 ? (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 80, color: '#94a3b8', fontSize: 13 }}>
-              No owners found for "{search}"
+              {search.trim().length > 0 ? `No owners found for "${search}"` : 'No owner users available'}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
               {owners.map(owner => {
                 const isSelected = selected?.id === owner.id;
                 const isCurrent  = owner.id === university.owner_id;
+                const ownsAnotherUniversity = Boolean(owner.owned_university_id) && owner.owned_university_id !== university.id;
+                const isDisabled = isCurrent || ownsAnotherUniversity;
                 return (
-                  <div key={owner.id} onClick={() => !isCurrent && setSelected(isSelected ? null : owner)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `1px solid ${isSelected ? '#1B3A6B' : '#e2e8f0'}`, background: isSelected ? '#eff6ff' : isCurrent ? '#f8fafc' : '#fff', cursor: isCurrent ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: isCurrent ? 0.6 : 1 }}
-                    onMouseEnter={e => { if (!isCurrent && !isSelected) e.currentTarget.style.background = '#f8fafc'; }}
-                    onMouseLeave={e => { if (!isCurrent && !isSelected) e.currentTarget.style.background = '#fff'; }}>
+                  <div key={owner.id} onClick={() => !isDisabled && setSelected(isSelected ? null : owner)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 10, border: `1px solid ${isSelected ? '#1B3A6B' : '#e2e8f0'}`, background: isSelected ? '#eff6ff' : isDisabled ? '#f8fafc' : '#fff', cursor: isDisabled ? 'not-allowed' : 'pointer', transition: 'all 0.15s', opacity: isDisabled ? 0.6 : 1 }}
+                    onMouseEnter={e => { if (!isDisabled && !isSelected) e.currentTarget.style.background = '#f8fafc'; }}
+                    onMouseLeave={e => { if (!isDisabled && !isSelected) e.currentTarget.style.background = '#fff'; }}>
                     {/* Avatar */}
                     <div style={{ width: 34, height: 34, borderRadius: '50%', background: isSelected ? '#1B3A6B' : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: isSelected ? '#fff' : '#64748b', flexShrink: 0, transition: 'all 0.15s' }}>
                       {owner.avatar_url
@@ -401,8 +419,14 @@ function TransferOwnerModal({ university, onClose, onSuccess, showToast }) {
                       <div style={{ fontSize: 13, fontWeight: 600, color: isSelected ? '#1B3A6B' : '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
                         {owner.name}
                         {isCurrent && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 10, background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', fontWeight: 600 }}>Current</span>}
+                        {ownsAnotherUniversity && <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 10, background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontWeight: 700 }}>Occupied</span>}
                       </div>
                       <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{owner.email}</div>
+                      {ownsAnotherUniversity && (
+                        <div style={{ fontSize: 11, color: '#dc2626', marginTop: 2 }}>
+                          Current university: {owner.owned_university_name}
+                        </div>
+                      )}
                     </div>
                     {isSelected && (
                       <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#1B3A6B', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
