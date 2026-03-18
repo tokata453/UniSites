@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminApi } from '@/api';
+import { CAMBODIA_PROVINCE_OPTIONS } from '@/constants/cambodiaLocations';
 import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, FilterBar, ConfirmModal, Toast, ToggleSwitch, IC } from './AdminShared';
 
 const TYPE_OPTIONS = [
@@ -12,7 +13,6 @@ const PUB_OPTIONS = [{ value: '', label: 'All Status' }, { value: 'true', label:
 const TYPE_COLORS = { public: '#1d4ed8', private: '#15803d', international: '#7c3aed' };
 const TYPE_BG     = { public: '#eff6ff',  private: '#f0fdf4',  international: '#faf5ff' };
 
-const PROVINCES = ['Phnom Penh','Siem Reap','Battambang','Kampong Cham','Kandal','Kampot','Sihanoukville','Other'];
 const UNIVERSITY_TYPE_OPTIONS = [
   { value: '', label: 'Select type...' },
   { value: 'public', label: 'Public' },
@@ -21,7 +21,7 @@ const UNIVERSITY_TYPE_OPTIONS = [
 ];
 const PROVINCE_OPTIONS = [
   { value: '', label: 'Select province...' },
-  ...PROVINCES.map((province) => ({ value: province, label: province })),
+  ...CAMBODIA_PROVINCE_OPTIONS,
 ];
 
 const Field = ({ label, required, children }) => (

@@ -87,7 +87,7 @@ const Btn = ({ children, onClick, variant='primary', size='md', disabled, loadin
 };
 
 const formatSalary = n => n ? `$${n >= 1000 ? (n/1000).toFixed(0)+'k' : n}` : null;
-const FIELDS = ['All','Technology','Business','Medicine','Engineering','Law','Education','Arts','Science','Social Science'];
+const DEMAND_OPTIONS = ['all', 'very_high', 'high', 'medium', 'low'];
 
 const STYLES = `
   @keyframes spin   { to { transform:rotate(360deg); } }
@@ -145,6 +145,8 @@ export function MajorsPage() {
   const [search,   setSearch]   = useState('');
   const [field,    setField]    = useState('All');
   const [stemOnly, setStemOnly] = useState(false);
+  const [demand,   setDemand]   = useState('all');
+  const [demandOpen, setDemandOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([majorApi.list({ page: 1, limit: 1000 }), majorApi.getFeatured()])
@@ -156,12 +158,52 @@ export function MajorsPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const fields = ['All', ...Array.from(new Set(
+    majors
+      .map((major) => major.field_of_study)
+      .filter(Boolean)
+  )).sort((a, b) => a.localeCompare(b))];
+
   const filtered = majors.filter(m => {
-    if (search   && !m.name.toLowerCase().includes(search.toLowerCase())) return false;
+    const query = search.trim().toLowerCase();
+    if (
+      query &&
+      ![
+        m.name,
+        m.name_km,
+        m.description,
+        m.field_of_study,
+      ]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(query))
+    ) return false;
     if (field !== 'All' && m.field_of_study !== field) return false;
     if (stemOnly && !m.is_stem) return false;
+    if (demand !== 'all' && m.job_demand !== demand) return false;
     return true;
   });
+
+  const activeFilters = [
+    search.trim() ? 'search' : null,
+    field !== 'All' ? 'field' : null,
+    stemOnly ? 'stem' : null,
+    demand !== 'all' ? 'demand' : null,
+  ].filter(Boolean).length;
+
+  const resetFilters = () => {
+    setSearch('');
+    setField('All');
+    setStemOnly(false);
+    setDemand('all');
+    setDemandOpen(false);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = () => setDemandOpen(false);
+    if (!demandOpen) return undefined;
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, [demandOpen]);
 
   return (
     <>
@@ -195,21 +237,44 @@ export function MajorsPage() {
           )}
 
           {/* Filters */}
-          <div style={{ marginBottom:22, display:'flex', flexWrap:'wrap', gap:10, alignItems:'center' }}>
+          <div style={{ marginBottom:22, display:'flex', flexDirection:'column', gap:12 }}>
             {/* Search */}
-            <div style={{ position:'relative', minWidth:220 }}>
-              <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', pointerEvents:'none' }}>
-                <Icon d="M21 21l-4.35-4.35 M11 19a8 8 0 100-16 8 8 0 000 16z" size={15} />
-              </span>
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search majors..."
-                style={{ paddingLeft:34, paddingRight:12, paddingTop:9, paddingBottom:9, background:'#fff', border:'1px solid #e2e8f0', borderRadius:10, color:'#334155', fontSize:13, outline:'none', width:'100%', fontFamily:"'DM Sans',sans-serif", boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }} />
+            <div style={{ display:'flex', flexWrap:'wrap', gap:10, alignItems:'center' }}>
+              <div style={{ position:'relative', minWidth:240, flex:'1 1 260px' }}>
+                <span style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', color:'#94a3b8', pointerEvents:'none' }}>
+                  <Icon d="M21 21l-4.35-4.35 M11 19a8 8 0 100-16 8 8 0 000 16z" size={15} />
+                </span>
+                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search majors, fields, or keywords..."
+                  style={{ paddingLeft:34, paddingRight:12, paddingTop:10, paddingBottom:10, background:'#fff', border:'1px solid #e2e8f0', borderRadius:12, color:'#334155', fontSize:13, outline:'none', width:'100%', fontFamily:"'DM Sans',sans-serif", boxShadow:'0 1px 4px rgba(0,0,0,0.04)' }} />
+              </div>
+
+              <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
+                <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
+                  <div onClick={() => setStemOnly(p => !p)} style={{
+                    width:18, height:18, borderRadius:5, border:`2px solid ${stemOnly ? '#1B3A6B' : '#cbd5e1'}`,
+                    background: stemOnly ? '#1B3A6B' : '#fff', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s',
+                  }}>
+                    {stemOnly && <Icon d="M20 6L9 17l-5-5" size={11} />}
+                  </div>
+                  <span style={{ fontSize:13, color:'#475569', fontWeight:500 }}>STEM only</span>
+                </label>
+
+                <Btn
+                  variant="secondary"
+                  size="sm"
+                  onClick={resetFilters}
+                  disabled={activeFilters === 0}
+                >
+                  Clear filters
+                </Btn>
+              </div>
             </div>
 
             {/* Field filters */}
-            <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
-              {FIELDS.map(f => (
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              {fields.map(f => (
                 <button key={f} onClick={() => setField(f)} style={{
-                  padding:'6px 12px', borderRadius:8, fontSize:11, fontWeight:600, cursor:'pointer', border:'1px solid', transition:'all 0.15s', fontFamily:"'DM Sans',sans-serif",
+                  padding:'7px 14px', borderRadius:999, fontSize:12, fontWeight:600, cursor:'pointer', border:'1px solid', transition:'all 0.15s', fontFamily:"'DM Sans',sans-serif",
                   background: field === f ? '#1B3A6B' : '#fff',
                   borderColor: field === f ? '#1B3A6B' : '#e2e8f0',
                   color: field === f ? '#fff' : '#64748b',
@@ -220,16 +285,96 @@ export function MajorsPage() {
               ))}
             </div>
 
-            {/* STEM checkbox */}
-            <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', marginLeft:'auto' }}>
-              <div onClick={() => setStemOnly(p => !p)} style={{
-                width:18, height:18, borderRadius:5, border:`2px solid ${stemOnly ? '#1B3A6B' : '#cbd5e1'}`,
-                background: stemOnly ? '#1B3A6B' : '#fff', display:'flex', alignItems:'center', justifyContent:'center', transition:'all 0.15s',
-              }}>
-                {stemOnly && <Icon d="M20 6L9 17l-5-5" size={11} />}
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
+              <span style={{ fontSize:12, fontWeight:700, color:'#94a3b8', letterSpacing:'0.05em', textTransform:'uppercase' }}>
+                Demand
+              </span>
+              <div style={{ position:'relative' }}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDemandOpen((prev) => !prev);
+                  }}
+                  style={{
+                    minWidth:190,
+                    padding:'10px 12px',
+                    borderRadius:12,
+                    border:'1px solid #e2e8f0',
+                    background:'#fff',
+                    color:'#475569',
+                    fontSize:13,
+                    fontWeight:500,
+                    fontFamily:"'DM Sans',sans-serif",
+                    display:'flex',
+                    alignItems:'center',
+                    justifyContent:'space-between',
+                    gap:10,
+                    boxShadow:'0 1px 4px rgba(0,0,0,0.04)',
+                    cursor:'pointer',
+                  }}
+                >
+                  <span>
+                    {demand === 'all' ? 'All demand levels' : `${DEMAND[demand]?.label} demand`}
+                  </span>
+                  <span style={{ color:'#94a3b8', transform: demandOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition:'transform 0.15s ease' }}>
+                    ▼
+                  </span>
+                </button>
+
+                {demandOpen && (
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      position:'absolute',
+                      top:'calc(100% + 8px)',
+                      left:0,
+                      minWidth:'100%',
+                      background:'#fff',
+                      border:'1px solid #e2e8f0',
+                      borderRadius:14,
+                      boxShadow:'0 18px 40px rgba(15,23,42,0.14)',
+                      padding:8,
+                      zIndex:20,
+                    }}
+                  >
+                    {DEMAND_OPTIONS.map((option) => {
+                      const active = demand === option;
+                      const tone = option === 'all' ? null : DEMAND[option];
+                      return (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => {
+                            setDemand(option);
+                            setDemandOpen(false);
+                          }}
+                          style={{
+                            width:'100%',
+                            textAlign:'left',
+                            padding:'10px 12px',
+                            borderRadius:10,
+                            border:'none',
+                            background: active ? (tone?.bg || '#eff6ff') : 'transparent',
+                            color: active ? (tone?.color || '#1B3A6B') : '#475569',
+                            fontSize:13,
+                            fontWeight:active ? 700 : 500,
+                            fontFamily:"'DM Sans',sans-serif",
+                            cursor:'pointer',
+                            display:'flex',
+                            alignItems:'center',
+                            justifyContent:'space-between',
+                          }}
+                        >
+                          <span>{option === 'all' ? 'All demand levels' : `${tone?.label} demand`}</span>
+                          {active && <span style={{ color:tone?.color || '#1B3A6B' }}>✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-              <span style={{ fontSize:13, color:'#475569', fontWeight:500 }}>STEM only</span>
-            </label>
+            </div>
           </div>
 
           {/* Results */}
@@ -242,7 +387,14 @@ export function MajorsPage() {
             </div>
           ) : (
             <>
-              <p style={{ fontSize:11, color:'#94a3b8', marginBottom:14, fontWeight:500 }}>{filtered.length} majors found</p>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:12, flexWrap:'wrap', marginBottom:14 }}>
+                <p style={{ fontSize:11, color:'#94a3b8', margin:0, fontWeight:500 }}>{filtered.length} majors found</p>
+                {activeFilters > 0 && (
+                  <p style={{ fontSize:11, color:'#94a3b8', margin:0 }}>
+                    {activeFilters} active filter{activeFilters > 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(240px,1fr))', gap:14 }}>
                 {filtered.map(m => <MajorCard key={m.id} major={m} />)}
               </div>

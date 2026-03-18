@@ -6,7 +6,7 @@ module.exports = {
     const now = new Date();
 
     const unis = await queryInterface.sequelize.query(
-      `SELECT id, slug FROM universities`,
+      `SELECT id, slug, name, type, province, founded_year, tuition_min, tuition_max FROM universities`,
       { type: queryInterface.sequelize.QueryTypes.SELECT }
     );
     const majors = await queryInterface.sequelize.query(
@@ -20,12 +20,20 @@ module.exports = {
     const rupp  = uniMap['royal-university-of-phnom-penh'];
     const itc   = uniMap['institute-of-technology-of-cambodia'];
     const norton = uniMap['norton-university'];
-    const puc   = uniMap['paññasastra-university-of-cambodia'];
+    const puc   = uniMap['paññāsāstra-university-of-cambodia'] || uniMap['paññasastra-university-of-cambodia'];
     const aupp  = uniMap['american-university-of-phnom-penh'];
     const uc    = uniMap['university-of-cambodia'];
     const num   = uniMap['national-university-of-management'];
     const rule  = uniMap['royal-university-of-law-and-economics'];
     const camtech = uniMap['camtech-university'];
+    const allUniIds = unis.map((u) => u.id).filter(Boolean);
+
+    await queryInterface.bulkDelete('programs', {
+      university_id: allUniIds,
+    });
+    await queryInterface.bulkDelete('faculties', {
+      university_id: allUniIds,
+    });
 
     // ── Faculties ─────────────────────────────────────────────────────────────
     const faculties = [
@@ -61,6 +69,154 @@ module.exports = {
       { id: randomUUID(), university_id: camtech, name: 'Faculty of Engineering',                name_km: null,                                     description: 'Engineering programs with applied and industry-linked training.',  dean_name: 'Dr. Peng Sophea',     established_year: 2018, sort_order: 1, created_at: now, updated_at: now },
       { id: randomUUID(), university_id: camtech, name: 'Faculty of Applied Science',            name_km: null,                                     description: 'Computer science, AI, and applied STEM programs.',                 dean_name: 'Dr. Ly Dararith',     established_year: 2018, sort_order: 2, created_at: now, updated_at: now },
     ];
+
+    const curatedUniIds = new Set(
+      [rupp, itc, norton, puc, aupp, uc, num, rule, camtech].filter(Boolean),
+    );
+
+    const selectFacultyBlueprints = (uni) => {
+      const name = (uni.name || '').toLowerCase();
+
+      if (name.includes('health') || name.includes('medical') || name.includes('puthisastra')) {
+        return [
+          {
+            name: 'Faculty of Health Sciences',
+            description: 'Programs focused on clinical knowledge, health systems, and patient care.',
+            dean_name: 'Dr. Sreypich Vann',
+          },
+          {
+            name: 'Faculty of Business and Public Health',
+            description: 'Management, public health, and service-oriented programs supporting healthcare and administration.',
+            dean_name: 'Dr. Dara Kim',
+          },
+        ];
+      }
+
+      if (name.includes('agriculture')) {
+        return [
+          {
+            name: 'Faculty of Agricultural Science',
+            description: 'Programs in crop systems, agricultural development, and practical field-based learning.',
+            dean_name: 'Dr. Vicheth Men',
+          },
+          {
+            name: 'Faculty of Agribusiness and Technology',
+            description: 'Applied programs combining farm management, sustainability, and technology.',
+            dean_name: 'Dr. Chanrith Ouk',
+          },
+        ];
+      }
+
+      if (name.includes('law') || name.includes('economics')) {
+        return [
+          {
+            name: 'Faculty of Law and Governance',
+            description: 'Legal studies, public administration, and governance-oriented training.',
+            dean_name: 'Dr. Sopheak Mean',
+          },
+          {
+            name: 'Faculty of Economics and Management',
+            description: 'Economics, finance, and management programs with policy and business applications.',
+            dean_name: 'Dr. Chenda Prak',
+          },
+        ];
+      }
+
+      if (
+        name.includes('technology') ||
+        name.includes('polytechnic') ||
+        name.includes('engineering') ||
+        name.includes('science') ||
+        name.includes('institute of business')
+      ) {
+        return [
+          {
+            name: 'Faculty of Engineering and Technology',
+            description: 'Hands-on programs in engineering, computing, and applied technical skills.',
+            dean_name: 'Dr. Borey Sok',
+          },
+          {
+            name: 'Faculty of Business and Innovation',
+            description: 'Business, entrepreneurship, and innovation-focused programs linked to industry practice.',
+            dean_name: 'Dr. Maly Chhay',
+          },
+        ];
+      }
+
+      if (uni.type === 'international') {
+        return [
+          {
+            name: 'School of Business and Leadership',
+            description: 'English-medium business programs with leadership, communication, and project-based learning.',
+            dean_name: 'Dr. Sophia Lim',
+          },
+          {
+            name: 'School of Science and Digital Studies',
+            description: 'Technology and science programs designed around practical and international-facing skills.',
+            dean_name: 'Dr. Daniel Phan',
+          },
+        ];
+      }
+
+      return [
+        {
+          name: 'Faculty of Business and Social Sciences',
+          description: 'Programs in management, communication, social science, and public-facing professions.',
+          dean_name: 'Dr. Sophal Dy',
+        },
+        {
+          name: 'Faculty of Science and Technology',
+          description: 'Academic and applied programs in computing, engineering foundations, and STEM learning.',
+          dean_name: 'Dr. Pich Seyha',
+        },
+      ];
+    };
+
+    const genericFaculties = unis
+      .filter((uni) => !curatedUniIds.has(uni.id))
+      .flatMap((uni) =>
+        selectFacultyBlueprints(uni).map((faculty, index) => ({
+          id: randomUUID(),
+          university_id: uni.id,
+          name: faculty.name,
+          name_km: null,
+          description: faculty.description,
+          dean_name: faculty.dean_name,
+          established_year: uni.founded_year || 2005,
+          sort_order: index + 1,
+          created_at: now,
+          updated_at: now,
+        })),
+      );
+
+    const sharedExtensionFaculties = unis.flatMap((uni) => ([
+      {
+        id: randomUUID(),
+        university_id: uni.id,
+        name: 'Faculty of Education and Languages',
+        name_km: null,
+        description: 'Programs supporting language proficiency, communication, and teacher development for local and international learning pathways.',
+        dean_name: 'Dr. Sreynich Kao',
+        established_year: uni.founded_year || 2005,
+        sort_order: 90,
+        created_at: now,
+        updated_at: now,
+      },
+      {
+        id: randomUUID(),
+        university_id: uni.id,
+        name: 'Center for Professional Studies',
+        name_km: null,
+        description: 'Career-oriented programs and short-form professional pathways designed for employability and continuing education.',
+        dean_name: 'Dr. Vannak Meas',
+        established_year: uni.founded_year || 2005,
+        sort_order: 91,
+        created_at: now,
+        updated_at: now,
+      },
+    ]));
+
+    faculties.push(...genericFaculties, ...sharedExtensionFaculties);
 
     await queryInterface.bulkInsert('faculties', faculties);
 
@@ -110,8 +266,165 @@ module.exports = {
       { id: randomUUID(), university_id: camtech, faculty_id: fMap[`${camtech}_Faculty of Applied Science`], major_id: majorMap['computer-science'],      name: 'Bachelor of Computer Science',         degree_level: 'bachelor', duration_years: 4, language: 'English', tuition_fee: 3400, tuition_currency: 'USD', credits_required: 120, is_available: true, created_at: now, updated_at: now },
     ];
 
+    const genericPrograms = [];
+    const buildProgram = (uni, facultyName, majorSlug, name, degreeLevel, durationYears, language, tuitionFee, creditsRequired) => {
+      const facultyId = fMap[`${uni.id}_${facultyName}`];
+      const majorId = majorMap[majorSlug];
+      if (!facultyId || !majorId) return null;
+      return {
+        id: randomUUID(),
+        university_id: uni.id,
+        faculty_id: facultyId,
+        major_id: majorId,
+        name,
+        degree_level: degreeLevel,
+        duration_years: durationYears,
+        language,
+        tuition_fee: tuitionFee,
+        tuition_currency: 'USD',
+        credits_required: creditsRequired,
+        is_available: true,
+        created_at: now,
+        updated_at: now,
+      };
+    };
+
+    const estimateTuition = (uni, fallback) => {
+      if (uni.tuition_min && uni.tuition_max) {
+        return Math.round((Number(uni.tuition_min) + Number(uni.tuition_max)) / 2);
+      }
+      if (uni.tuition_max) return Number(uni.tuition_max);
+      if (uni.tuition_min) return Number(uni.tuition_min);
+      return fallback;
+    };
+
+    unis
+      .filter((uni) => !curatedUniIds.has(uni.id))
+      .forEach((uni) => {
+        const name = (uni.name || '').toLowerCase();
+        const language = uni.type === 'public' ? 'Khmer' : 'English';
+        const standardTuition = estimateTuition(uni, uni.type === 'international' ? 3500 : 1200);
+
+        if (name.includes('health') || name.includes('medical') || name.includes('puthisastra')) {
+          genericPrograms.push(
+            buildProgram(uni, 'Faculty of Health Sciences', 'medicine', 'Bachelor of Medicine', 'bachelor', 6, language, standardTuition + 1200, 180),
+            buildProgram(uni, 'Faculty of Health Sciences', 'education', 'Bachelor of Community Health Education', 'bachelor', 4, language, standardTuition, 120),
+            buildProgram(uni, 'Faculty of Business and Public Health', 'business-administration', 'Bachelor of Healthcare Management', 'bachelor', 4, language, standardTuition, 120),
+            buildProgram(uni, 'Faculty of Business and Public Health', 'international-relations', 'Bachelor of Public Health Policy', 'bachelor', 4, language, standardTuition, 120),
+          );
+          return;
+        }
+
+        if (name.includes('agriculture')) {
+          genericPrograms.push(
+            buildProgram(uni, 'Faculty of Agricultural Science', 'agricultural-science', 'Bachelor of Agricultural Science', 'bachelor', 4, language, standardTuition, 120),
+            buildProgram(uni, 'Faculty of Agricultural Science', 'civil-engineering', 'Bachelor of Irrigation and Rural Infrastructure', 'bachelor', 4, language, standardTuition + 200, 126),
+            buildProgram(uni, 'Faculty of Agribusiness and Technology', 'business-administration', 'Bachelor of Agribusiness Management', 'bachelor', 4, language, standardTuition, 120),
+            buildProgram(uni, 'Faculty of Agribusiness and Technology', 'computer-science', 'Bachelor of Agricultural Information Systems', 'bachelor', 4, 'English', standardTuition + 150, 120),
+          );
+          return;
+        }
+
+        if (name.includes('law') || name.includes('economics')) {
+          genericPrograms.push(
+            buildProgram(uni, 'Faculty of Law and Governance', 'law', 'Bachelor of Laws', 'bachelor', 4, language, standardTuition, 120),
+            buildProgram(uni, 'Faculty of Law and Governance', 'international-relations', 'Bachelor of Governance and Public Affairs', 'bachelor', 4, 'English', standardTuition, 120),
+            buildProgram(uni, 'Faculty of Economics and Management', 'business-administration', 'Bachelor of Business Administration', 'bachelor', 4, language, standardTuition, 120),
+            buildProgram(uni, 'Faculty of Economics and Management', 'finance-accounting', 'Bachelor of Finance and Accounting', 'bachelor', 4, language, standardTuition, 120),
+          );
+          return;
+        }
+
+        if (
+          name.includes('technology') ||
+          name.includes('polytechnic') ||
+          name.includes('engineering') ||
+          name.includes('science') ||
+          name.includes('institute of business')
+        ) {
+          genericPrograms.push(
+            buildProgram(uni, 'Faculty of Engineering and Technology', 'computer-science', 'Bachelor of Computer Science', 'bachelor', 4, 'English', standardTuition, 120),
+            buildProgram(uni, 'Faculty of Engineering and Technology', 'electrical-engineering', 'Bachelor of Electrical Engineering', 'bachelor', 4, language, standardTuition + 200, 126),
+            buildProgram(uni, 'Faculty of Engineering and Technology', 'civil-engineering', 'Bachelor of Civil Engineering', 'bachelor', 4, language, standardTuition + 200, 126),
+            buildProgram(uni, 'Faculty of Business and Innovation', 'business-administration', 'Bachelor of Innovation Management', 'bachelor', 4, 'English', standardTuition, 120),
+          );
+          return;
+        }
+
+        if (uni.type === 'international') {
+          genericPrograms.push(
+            buildProgram(uni, 'School of Business and Leadership', 'business-administration', 'Bachelor of Business Administration', 'bachelor', 4, 'English', standardTuition, 120),
+            buildProgram(uni, 'School of Business and Leadership', 'international-relations', 'Bachelor of International Relations', 'bachelor', 4, 'English', standardTuition, 120),
+            buildProgram(uni, 'School of Science and Digital Studies', 'computer-science', 'Bachelor of Computer Science', 'bachelor', 4, 'English', standardTuition, 120),
+            buildProgram(uni, 'School of Science and Digital Studies', 'education', 'Bachelor of Education Leadership', 'bachelor', 4, 'English', standardTuition - 200, 120),
+          );
+          return;
+        }
+
+        genericPrograms.push(
+          buildProgram(uni, 'Faculty of Business and Social Sciences', 'business-administration', 'Bachelor of Business Administration', 'bachelor', 4, language, standardTuition, 120),
+          buildProgram(uni, 'Faculty of Business and Social Sciences', 'international-relations', 'Bachelor of International Relations', 'bachelor', 4, 'English', standardTuition, 120),
+          buildProgram(uni, 'Faculty of Science and Technology', 'computer-science', 'Bachelor of Computer Science', 'bachelor', 4, 'English', standardTuition + 100, 120),
+          buildProgram(uni, 'Faculty of Science and Technology', 'education', 'Bachelor of Education', 'bachelor', 4, language, Math.max(600, standardTuition - 100), 120),
+        );
+      });
+
+    const sharedExtensionPrograms = [];
+
+    unis.forEach((uni) => {
+      const language = uni.type === 'public' ? 'Khmer' : 'English';
+      const standardTuition = estimateTuition(uni, uni.type === 'international' ? 3500 : 1200);
+
+      sharedExtensionPrograms.push(
+        buildProgram(
+          uni,
+          'Faculty of Education and Languages',
+          'education',
+          'Bachelor of Education',
+          'bachelor',
+          4,
+          language,
+          Math.max(600, standardTuition - 150),
+          120,
+        ),
+        buildProgram(
+          uni,
+          'Faculty of Education and Languages',
+          'international-relations',
+          'Bachelor of English for International Communication',
+          'bachelor',
+          4,
+          'English',
+          Math.max(650, standardTuition - 50),
+          120,
+        ),
+        buildProgram(
+          uni,
+          'Center for Professional Studies',
+          'business-administration',
+          'Diploma in Professional Business Practice',
+          'diploma',
+          2,
+          language,
+          Math.max(500, Math.round(standardTuition * 0.6)),
+          60,
+        ),
+        buildProgram(
+          uni,
+          'Center for Professional Studies',
+          'computer-science',
+          'Certificate in Digital Skills and Data Tools',
+          'certificate',
+          1,
+          'English',
+          Math.max(350, Math.round(standardTuition * 0.35)),
+          24,
+        ),
+      );
+    });
+
     // Only insert programs whose faculty and major IDs were resolved
-    const validPrograms = programs.filter(p => p.faculty_id && (p.major_id !== undefined));
+    const validPrograms = [...programs, ...genericPrograms, ...sharedExtensionPrograms].filter((p) => p?.faculty_id);
     await queryInterface.bulkInsert('programs', validPrograms);
   },
 

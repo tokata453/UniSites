@@ -2,18 +2,12 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { universityApi } from '@/api';
 import { Spinner, Pagination, Empty } from '@/components/common';
+import { CAMBODIA_PROVINCE_OPTIONS } from '@/constants/cambodiaLocations';
 import { logoUrl, coverUrl, formatCurrency, truncate } from '@/utils';
 
 const PROVINCES = [
   { value: '', label: 'All' },
-  { value: 'Phnom Penh', label: 'Phnom Penh' },
-  { value: 'Siem Reap', label: 'Siem Reap' },
-  { value: 'Battambang', label: 'Battambang' },
-  { value: 'Kampong Cham', label: 'Kampong Cham' },
-  { value: 'Kandal', label: 'Kandal' },
-  { value: 'Kampot', label: 'Kampot' },
-  { value: 'Sihanoukville', label: 'Sihanoukville' },
-  { value: 'Other', label: 'Other' },
+  ...CAMBODIA_PROVINCE_OPTIONS,
 ];
 const SORT_OPTIONS = [
   { value: 'rating_avg-DESC', label: 'Top rated' },
