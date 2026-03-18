@@ -50,7 +50,7 @@ export default function MainLayout() {
               { to: '/universities',  label: 'Universities'  },
               { to: '/majors',        label: 'Majors'        },
               { to: '/opportunities', label: 'Opportunities' },
-              { to: '/forum',         label: 'Forum'         },
+              { to: '/feed',          label: 'Feed'          },
               { to: '/about',         label: 'About'         },
             ].map(({ to, label }) => (
               <NavLink key={to} to={to}
@@ -138,7 +138,7 @@ export default function MainLayout() {
             <Link to="/universities"  className="hover:text-slate-400 hover:underline duration-150 active:scale-90 transition-all">Universities</Link>
             <Link to="/majors"        className="hover:text-slate-400 hover:underline duration-150 active:scale-90 transition-all">Majors</Link>
             <Link to="/opportunities" className="hover:text-slate-400 hover:underline duration-150 active:scale-90 transition-all">Opportunities</Link>
-            <Link to="/forum"         className="hover:text-slate-400 hover:underline duration-150 active:scale-90 transition-all">Forum</Link>
+            <Link to="/feed"          className="hover:text-slate-400 hover:underline duration-150 active:scale-90 transition-all">Feed</Link>
             <Link to="/about"         className="hover:text-slate-400 hover:underline duration-150 active:scale-90 transition-all">About</Link>
           </div>
         </div>

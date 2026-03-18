@@ -34,13 +34,13 @@ const HOW_IT_WORKS = [
   { step: '01', icon: '🔍', title: 'Search & Explore',    desc: 'Browse 50+ universities filtered by type, province, tuition range, and available scholarships.',     color: '#1B3A6B' },
   { step: '02', icon: '🎯', title: 'Take the Major Quiz', desc: 'Answer 5 quick questions and get personalized major recommendations that match your interests.',       color: '#4AAEE0' },
   { step: '03', icon: '💰', title: 'Find Scholarships',   desc: 'Discover funding opportunities from local universities, government programs, and international bodies.', color: '#F47B20' },
-  { step: '04', icon: '🎓', title: 'Apply & Succeed',     desc: 'Connect with universities directly, get guidance from the community forum, and start your journey.',    color: '#3DAE6B' },
+  { step: '04', icon: '🎓', title: 'Apply & Succeed',     desc: 'Follow the latest campus feed, connect with universities directly, and start your journey.',    color: '#3DAE6B' },
 ];
 
 const TESTIMONIALS = [
   { name: 'Srey Leak Heng', role: 'CS Graduate · RUPP 2024',          avatar: '👩‍💻', content: 'UniSites helped me discover RUPP\'s computer science program and apply for their excellence scholarship. I landed a tech job within 3 months of graduating!',                    rating: 5, uni: 'RUPP',   color: '#1B3A6B' },
   { name: 'Dara Pich',      role: 'Electrical Eng. Graduate · ITC',   avatar: '👨‍🔧', content: 'Found ITC through UniSites and used the Major Quiz to confirm engineering was right for me. The scholarship finder saved me hours of research.',                           rating: 5, uni: 'ITC',    color: '#4AAEE0' },
-  { name: 'Channary Ros',   role: 'Tourism Student · PUC',            avatar: '👩‍🎓', content: 'The forum connected me with seniors who shared real insights about PUC\'s hospitality program. I got my internship placement through advice from the community!',           rating: 5, uni: 'PUC',    color: '#3DAE6B' },
+  { name: 'Channary Ros',   role: 'Tourism Student · PUC',            avatar: '👩‍🎓', content: 'The UniSites feed helped me keep up with hospitality events, scholarships, and student updates from PUC. It made choosing my program much easier.',           rating: 5, uni: 'PUC',    color: '#3DAE6B' },
   { name: 'Kevin Phon',     role: 'Business Graduate · AUPP 2024',    avatar: '👨‍💼', content: 'UniSites made comparing AUPP vs other universities so easy. The detailed program info and student reviews helped me make a confident decision.',                             rating: 5, uni: 'AUPP',   color: '#F47B20' },
 ];
 

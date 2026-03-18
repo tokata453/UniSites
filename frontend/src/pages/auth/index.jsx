@@ -293,7 +293,7 @@ export function RegisterPage() {
                 <p style={{ fontSize:'11px', color:'#64748b', fontWeight:700, letterSpacing:'0.08em', textTransform:'uppercase', margin:'0 0 8px' }}>Account Type</p>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'8px' }}>
                   {[
-                    { value: 'student', label: 'Student', desc: 'Browse universities, save items, join the forum.' },
+                    { value: 'student', label: 'Student', desc: 'Browse universities, save items, and follow the feed.' },
                     { value: 'organization', label: 'Organization', desc: 'Post and manage official opportunities.' },
                   ].map((option) => (
                     <button

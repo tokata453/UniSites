@@ -7,11 +7,9 @@ import DashboardLayout   from '@/components/layout/DashboardLayout';
 
 // Public pages
 import LandingPage       from '@/pages/LandingPage';
+import FeedPage         from '@/pages/feed';
 import UniversityList    from '@/pages/universities/UniversityList';
 import UniversityDetail  from '@/pages/universities/UniversityDetail';
-import ForumPage         from '@/pages/forum/ForumPage';
-import ForumThreadPage   from '@/pages/forum/ForumThreadPage';
-import { ForumNewThreadPage } from '@/pages/forum';
 import OpportunitiesPage from '@/pages/opportunities/OpportunitiesPage';
 import OpportunityDetail from '@/pages/opportunities/OpportunityDetail';
 import InboxPage from '@/pages/inbox/InboxPage';
@@ -73,11 +71,16 @@ export default function App() {
         {/* ── Public routes with main layout ── */}
         <Route element={<MainLayout />}>
           <Route path="/"                        element={<LandingPage />} />
+          <Route path="/feed"                    element={
+            <PrivateRoute>
+              <FeedPage />
+            </PrivateRoute>
+          } />
           <Route path="/universities"            element={<UniversityList />} />
           <Route path="/universities/:slug"      element={<UniversityDetail />} />
-          <Route path="/forum"                   element={<ForumPage />} />
-          <Route path="/forum/new"               element={<ForumNewThreadPage />} />
-          <Route path="/forum/:slug"             element={<ForumThreadPage />} />
+          <Route path="/forum"                   element={<Navigate to="/feed" replace />} />
+          <Route path="/forum/new"               element={<Navigate to="/feed" replace />} />
+          <Route path="/forum/:slug"             element={<Navigate to="/feed" replace />} />
           <Route path="/opportunities"           element={<OpportunitiesPage />} />
           <Route path="/opportunities/:slug"     element={<OpportunityDetail />} />
           <Route path="/about" element={<AboutPage />} />

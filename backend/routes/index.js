@@ -18,6 +18,7 @@ router.use('/universities/:universityId/contact',             require('./contact
 router.use('/universities/:universityId/reviews',             require('./review.routes'));
 
 router.use('/opportunities', require('./opportunity.routes'));
+router.use('/feed',          require('./feed.routes'));
 router.use('/majors',        require('./major.routes'));
 router.use('/forum',         require('./forum.routes'));
 router.use('/inbox',         require('./inbox.routes'));

@@ -26,7 +26,7 @@ export function StudentOverview() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
           { label: 'Saved Universities', value: savedCount, icon: '🔖', bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-[#1B3A6B]' },
-          { label: 'Forum Posts',        value: 0,          icon: '💬', bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-700' },
+          { label: 'Feed Activity',      value: 0,          icon: '📰', bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-700' },
           { label: 'Applications',       value: 0,          icon: '📝', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-600' },
         ].map((s) => (
           <div key={s.label} className={`p-5 rounded-xl ${s.bg} border ${s.border}`}>
@@ -55,9 +55,9 @@ export function StudentOverview() {
               Find Opportunities
             </button>
           </Link>
-          <Link to="/forum">
+          <Link to="/feed">
             <button className="px-4 py-2 rounded-lg text-sm font-medium border border-slate-200 text-slate-600 hover:bg-slate-100 transition-all">
-              Visit Forum
+              Open Feed
             </button>
           </Link>
         </div>
@@ -84,10 +84,12 @@ export function StudentSaved() {
 
   if (loading) return <div className="flex justify-center py-20"><Spinner size="lg" /></div>;
 
+  const visibleItems = items.filter((item) => item.item_type !== 'thread');
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-slate-800">Saved Items</h2>
-      {items.length === 0 ? (
+      {visibleItems.length === 0 ? (
         <Empty title="Nothing saved yet" description="Save universities and opportunities to find them later.">
           <Link to="/universities">
             <button className="px-4 py-2 rounded-lg text-sm font-medium bg-[#1B3A6B] text-white hover:bg-[#15305a] transition-all">
@@ -97,7 +99,7 @@ export function StudentSaved() {
         </Empty>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {items.map((item) => (
+          {visibleItems.map((item) => (
             <div key={item.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               {item.item_type === 'university' && item.University && (
                 <>
@@ -165,38 +167,6 @@ export function StudentSaved() {
                   <div className="px-4 pb-4 flex items-center justify-between">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">
                       Opportunity
-                    </span>
-                    <button onClick={() => unsave(item)}
-                      className="text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all">
-                      Remove
-                    </button>
-                  </div>
-                </>
-              )}
-
-              {item.item_type === 'thread' && item.Thread && (
-                <>
-                  <Link to={`/forum/${item.Thread.slug}`} className="block group p-4">
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
-                        {item.Thread.Category?.name || 'Forum'}
-                      </span>
-                      {item.Thread.is_pinned && (
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
-                          Pinned
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm font-bold text-slate-800 group-hover:text-[#1B3A6B] transition-colors">{item.Thread.title}</p>
-                    <div className="mt-4 flex items-center justify-between text-xs text-slate-500 border-t border-slate-100 pt-3">
-                      <span>{item.Thread.reply_count || 0} replies</span>
-                      <span>{item.Thread.like_count || 0} likes</span>
-                      <span>{item.Thread.views || 0} views</span>
-                    </div>
-                  </Link>
-                  <div className="px-4 pb-4 flex items-center justify-between">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
-                      Thread
                     </span>
                     <button onClick={() => unsave(item)}
                       className="text-xs text-red-400 hover:text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all">

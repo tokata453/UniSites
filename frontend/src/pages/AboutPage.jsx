@@ -28,12 +28,12 @@ const Reveal = ({ children, delay = 0, className = '' }) => {
 const TIMELINE = [
   { year: '2024', title: 'The Idea',       desc: 'Seven AUPP students noticed how hard it was to find reliable university info in Cambodia and decided to build the solution.' },
   { year: 'Jan 2025', title: 'Development Begins', desc: 'The team started designing and building UniSites as part of the INFO 251-001 course at AUPP.' },
-  { year: 'Mar 2025', title: 'Beta Launch',  desc: 'First version launched with 10 universities, basic search, and the forum. Early users provided valuable feedback.' },
+  { year: 'Mar 2025', title: 'Beta Launch',  desc: 'First version launched with 10 universities, basic search, and campus updates. Early users provided valuable feedback.' },
   { year: 'Sep 2025', title: 'Full Launch',  desc: 'UniSites launched publicly with 50+ universities, scholarship finder, Major Quiz, and complete owner dashboards.' },
 ];
 
 const VALUES = [
-  { icon: '🔓', title: 'Always Free',         desc: 'Every feature — search, quiz, forum, scholarships — is completely free for students. No paywalls, ever.',     color: '#1B3A6B' },
+  { icon: '🔓', title: 'Always Free',         desc: 'Every feature — search, quiz, feed, scholarships — is completely free for students. No paywalls, ever.',     color: '#1B3A6B' },
   { icon: '✅', title: 'Verified Data',        desc: 'University profiles are reviewed and kept up to date. We work directly with institutions to ensure accuracy.',  color: '#3DAE6B' },
   { icon: '🇰🇭', title: 'Cambodia First',       desc: 'Every decision we make is guided by what\'s best for Cambodian students navigating higher education.',          color: '#F47B20' },
   { icon: '🌐', title: 'Open & Transparent',   desc: 'We show you everything — tuition, ratings, reviews, contact info — with no hidden agendas or paid rankings.',   color: '#4AAEE0' },
@@ -50,7 +50,7 @@ const TEAM = [
 ];
 
 const FAQS = [
-  { q: 'Is UniSites free to use?',              a: 'Yes — 100% free for students. All features including search, Major Quiz, forum, and scholarship finder are completely free.' },
+  { q: 'Is UniSites free to use?',              a: 'Yes — 100% free for students. All features including search, Major Quiz, feed, and scholarship finder are completely free.' },
   { q: 'How do I list my university?',          a: 'Register as a university owner, complete your profile, and submit for verification. Our team reviews and publishes within 3 business days.' },
   { q: 'How accurate is the university data?',  a: 'We work directly with universities to verify information. Profiles are reviewed regularly and owners can update their info anytime.' },
   { q: 'Can I trust the student reviews?',      a: 'Reviews are moderated by our admin team before publishing. We verify student status where possible to ensure authenticity.' },

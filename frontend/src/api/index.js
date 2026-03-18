@@ -19,6 +19,14 @@ export const authApi = {
   facebookAuthUrl:  () => `${import.meta.env.VITE_API_URL || '/api'}/auth/facebook`,
 };
 
+// ── Feed ──────────────────────────────────────────────────────────────────────
+export const feedApi = {
+  list: (params) => api.get('/feed', { params }),
+  getComments: (itemType, itemId) => api.get(`/feed/${itemType}/${itemId}/comments`),
+  addComment: (itemType, itemId, data) => api.post(`/feed/${itemType}/${itemId}/comments`, data),
+  toggleLike: (itemType, itemId) => api.post(`/feed/${itemType}/${itemId}/like`),
+};
+
 // ── Uploads ───────────────────────────────────────────────────────────────────
 export const uploadApi = {
   image: (data) => api.post('/upload/image', data),
