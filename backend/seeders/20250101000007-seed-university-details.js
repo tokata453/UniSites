@@ -4,6 +4,7 @@ const {
   createContentImage,
   createUniversityCover,
   createUniversityLogo,
+  isSeedFallbackImage,
 } = require("../utils/mediaPlaceholders");
 
 module.exports = {
@@ -90,9 +91,9 @@ module.exports = {
         "universities",
         {
           logo_url: uni.logo_url || createUniversityLogo(uni.name, uni.type || "university"),
-          cover_url:
-            uni.cover_url ||
-            createUniversityCover(uni.name, uni.province || "Cambodia", uni.type || "university"),
+          cover_url: (!uni.cover_url || isSeedFallbackImage(uni.cover_url))
+            ? createUniversityCover(uni.name, uni.province || "Cambodia", uni.type || "university")
+            : uni.cover_url,
           description: uni.description || generatedDescription,
           accreditation: uni.accreditation || "Accreditation Committee of Cambodia (ACC)",
           location: uni.location || `${uni.province || "Cambodia"}, Cambodia`,

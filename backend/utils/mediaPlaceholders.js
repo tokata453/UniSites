@@ -12,16 +12,33 @@ const PALETTES = [
 const CAMBODIA_CITY_IMAGES = [
   'https://images.unsplash.com/photo-1657027537483-39bb7a44028a?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
   'https://images.unsplash.com/photo-1631067701909-111c10141e07?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+  'https://upload.wikimedia.org/wikipedia/commons/c/c8/Phnom_Penh_2025.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/e/e3/Skyline_of_Phnom_Penh.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/9/93/Phnom_Penh_Skyline_January_2022.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/f/f1/Phnom_Penh_Skyline_August_2022_View_from_Preah_Monivong_Bridge_Area.jpg',
 ];
 
 const CAMBODIA_CAMPUS_IMAGES = [
   'https://images.unsplash.com/photo-1623053071809-80ed5bc65f2e?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
   'https://images.unsplash.com/photo-1755053757871-d49d9a3f8d74?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
   'https://images.unsplash.com/photo-1737182269834-49f8b02edf02?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+  'https://images.unsplash.com/photo-1623053071809-80ed5bc65f2e?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
 ];
 
 const CAMBODIA_HERITAGE_IMAGES = [
-  'https://images.unsplash.com/photo-1657027537483-39bb7a44028a?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+  'https://upload.wikimedia.org/wikipedia/commons/e/e3/Skyline_of_Phnom_Penh.jpg',
+  'https://upload.wikimedia.org/wikipedia/commons/f/f1/Phnom_Penh_Skyline_August_2022_View_from_Preah_Monivong_Bridge_Area.jpg',
+];
+
+const CAMBODIA_CLASSROOM_IMAGES = [
+  'https://images.unsplash.com/photo-1737182269834-49f8b02edf02?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+  'https://images.unsplash.com/photo-1623053071809-80ed5bc65f2e?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+];
+
+const CAMBODIA_MEETING_IMAGES = [
+  'https://images.unsplash.com/photo-1755053757871-d49d9a3f8d74?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+  'https://images.unsplash.com/photo-1737182269834-49f8b02edf02?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+  'https://images.unsplash.com/photo-1623053071809-80ed5bc65f2e?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
 ];
 
 const UNIVERSITY_COVER_IMAGES = [
@@ -41,6 +58,8 @@ const EVENT_IMAGES = [
 
 const OPPORTUNITY_IMAGES = [
   ...CAMBODIA_CAMPUS_IMAGES,
+  ...CAMBODIA_CLASSROOM_IMAGES,
+  ...CAMBODIA_MEETING_IMAGES,
   ...CAMBODIA_CITY_IMAGES,
   ...CAMBODIA_HERITAGE_IMAGES,
 ];
@@ -56,34 +75,77 @@ const GENERIC_FALLBACK_IMAGES = [
   'https://images.unsplash.com/photo-1744982588041-8488ed9d8c17?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
 ];
 
+const LEGACY_GENERIC_IMAGES = new Set([
+  ...GENERIC_FALLBACK_IMAGES,
+  'https://images.unsplash.com/photo-1760111085279-6c4b6d831acc?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+  'https://images.unsplash.com/photo-1758873268379-39301764793f?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+  'https://images.unsplash.com/photo-1770048532658-14834b7acef8?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+]);
+
 const UNIVERSITY_COVER_OVERRIDES = [
+  {
+    match: /asia-euro-university|aeu/i,
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/c/c8/Phnom_Penh_2025.jpg',
+      'https://images.unsplash.com/photo-1737182269834-49f8b02edf02?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://images.unsplash.com/photo-1623053071809-80ed5bc65f2e?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+    ],
+  },
+  {
+    match: /american-university-of-phnom-penh|aupp/i,
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/e/e3/Skyline_of_Phnom_Penh.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/c/c8/Phnom_Penh_2025.jpg',
+      'https://images.unsplash.com/photo-1755053757871-d49d9a3f8d74?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+    ],
+  },
+  {
+    match: /institute-of-technology-of-cambodia|itc/i,
+    images: [
+      'https://images.unsplash.com/photo-1737182269834-49f8b02edf02?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://images.unsplash.com/photo-1623053071809-80ed5bc65f2e?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://upload.wikimedia.org/wikipedia/commons/9/93/Phnom_Penh_Skyline_January_2022.jpg',
+    ],
+  },
   {
     match: /royal-university-of-phnom-penh|rupp|national-university-of-management|num|royal-university-of-law-and-economics|rule/i,
     images: [
-      'https://images.unsplash.com/photo-1623053071809-80ed5bc65f2e?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://web.itc.rupp.edu.kh/assets/researchers_rupp.png',
+      'https://upload.wikimedia.org/wikipedia/commons/f/f1/Phnom_Penh_Skyline_August_2022_View_from_Preah_Monivong_Bridge_Area.jpg',
       'https://images.unsplash.com/photo-1657027537483-39bb7a44028a?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
     ],
   },
   {
-    match: /institute-of-technology-of-cambodia|itc|camtech|iic|technology/i,
+    match: /paññāsastra-university-of-cambodia|paññasastra-university-of-cambodia|pannasastra-university-of-cambodia|puc/i,
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/e/e3/Skyline_of_Phnom_Penh.jpg',
+      'https://images.unsplash.com/photo-1755053757871-d49d9a3f8d74?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://images.unsplash.com/photo-1623053071809-80ed5bc65f2e?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+    ],
+  },
+  {
+    match: /norton-university|western-university|international-university|human-resource-university|phnom-penh-international-university/i,
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/c/c8/Phnom_Penh_2025.jpg',
+      'https://images.unsplash.com/photo-1737182269834-49f8b02edf02?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://upload.wikimedia.org/wikipedia/commons/e/e3/Skyline_of_Phnom_Penh.jpg',
+    ],
+  },
+  {
+    match: /camtech|iic|technology/i,
     images: [
       'https://images.unsplash.com/photo-1737182269834-49f8b02edf02?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
       'https://images.unsplash.com/photo-1755053757871-d49d9a3f8d74?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
     ],
   },
   {
-    match: /american-university-of-phnom-penh|aupp|private|international/i,
-    images: [
-      'https://images.unsplash.com/photo-1631067701909-111c10141e07?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
-      'https://images.unsplash.com/photo-1657027537483-39bb7a44028a?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
-    ],
-  },
-  {
-    match: /phnom-penh|cambodia|asia-euro|norton|university-of-cambodia|pannasastra|paññāsastra|puthisastra|human-resource|international/i,
+    match: /phnom-penh|cambodia|university-of-cambodia|puthisastra|private|international/i,
     images: [
       'https://images.unsplash.com/photo-1657027537483-39bb7a44028a?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
       'https://images.unsplash.com/photo-1631067701909-111c10141e07?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
       'https://images.unsplash.com/photo-1623053071809-80ed5bc65f2e?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://upload.wikimedia.org/wikipedia/commons/c/c8/Phnom_Penh_2025.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/e/e3/Skyline_of_Phnom_Penh.jpg',
     ],
   },
 ];
@@ -92,15 +154,16 @@ const OPPORTUNITY_IMAGE_OVERRIDES = [
   {
     match: /mext|japan|japanese government/i,
     images: [
-      'https://images.unsplash.com/photo-1755053757871-d49d9a3f8d74?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
       'https://images.unsplash.com/photo-1657027537483-39bb7a44028a?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://images.unsplash.com/photo-1631067701909-111c10141e07?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://upload.wikimedia.org/wikipedia/commons/c/c8/Phnom_Penh_2025.jpg',
     ],
   },
   {
     match: /gks|korean government|korea/i,
     images: [
       'https://images.unsplash.com/photo-1631067701909-111c10141e07?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
-      'https://images.unsplash.com/photo-1755053757871-d49d9a3f8d74?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://upload.wikimedia.org/wikipedia/commons/9/93/Phnom_Penh_Skyline_January_2022.jpg',
     ],
   },
   {
@@ -108,14 +171,18 @@ const OPPORTUNITY_IMAGE_OVERRIDES = [
     images: [
       'https://images.unsplash.com/photo-1737182269834-49f8b02edf02?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
       'https://images.unsplash.com/photo-1755053757871-d49d9a3f8d74?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://images.unsplash.com/photo-1657027537483-39bb7a44028a?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://upload.wikimedia.org/wikipedia/commons/e/e3/Skyline_of_Phnom_Penh.jpg',
     ],
   },
   {
     match: /internship|job|career|volunteer|bootcamp|network|competition|exchange|workshop|research/i,
     images: [
       'https://images.unsplash.com/photo-1737182269834-49f8b02edf02?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://images.unsplash.com/photo-1755053757871-d49d9a3f8d74?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
       'https://images.unsplash.com/photo-1623053071809-80ed5bc65f2e?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
       'https://images.unsplash.com/photo-1631067701909-111c10141e07?auto=format&fit=crop&fm=jpg&ixlib=rb-4.1.0&q=80&w=2200',
+      'https://upload.wikimedia.org/wikipedia/commons/f/f1/Phnom_Penh_Skyline_August_2022_View_from_Preah_Monivong_Bridge_Area.jpg',
     ],
   },
 ];
@@ -169,6 +236,12 @@ function pickFromMatchingPool(seed, source, rules, fallbackPool = []) {
       ? fallbackPool
       : GENERIC_FALLBACK_IMAGES;
   return pickFrom(`${seed}:${value}`, pool);
+}
+
+function isSeedFallbackImage(value = '') {
+  if (!value) return true;
+  if (String(value).startsWith('data:image/svg+xml')) return true;
+  return LEGACY_GENERIC_IMAGES.has(String(value).trim());
 }
 
 function createUniversityLogo(name, type = 'university') {
@@ -267,4 +340,5 @@ module.exports = {
   createUniversityCover,
   createContentImage,
   createMajorCover,
+  isSeedFallbackImage,
 };

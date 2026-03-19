@@ -6,6 +6,7 @@ const dotenv = require('dotenv');
 const {
   createUniversityLogo,
   createUniversityCover,
+  isSeedFallbackImage,
 } = require('../utils/mediaPlaceholders');
 
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
@@ -115,7 +116,7 @@ function buildUniversityPayload(entry) {
     payload.logo_url = createUniversityLogo(payload.name, payload.type || 'university');
   }
 
-  if (!payload.cover_url && payload.name) {
+  if ((!payload.cover_url || isSeedFallbackImage(payload.cover_url)) && payload.name) {
     payload.cover_url = createUniversityCover(
       payload.name,
       payload.province || 'Cambodia',
