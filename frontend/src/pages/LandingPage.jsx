@@ -1,20 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
+import { ArrowRight, BookOpen, BriefcaseBusiness, Building2, Clock3, GraduationCap, Landmark, MapPin, MessagesSquare, MonitorCog, Rocket, School, Search, Star, Target, Wallet, Wrench, Globe2, Zap, UserRound } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { universityApi, majorApi } from '@/api';
 
 const TYPES = ['All', 'Public', 'Private', 'International'];
 
-const SearchIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-  </svg>
-);
-
-const ArrowRight = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-    <path d="M5 12h14M12 5l7 7-7 7"/>
-  </svg>
-);
+const SearchIcon = () => <Search size={18} />;
 
 const BG_SLIDES = [
   { url: 'https://images.unsplash.com/photo-1562774053-701939374585?w=1600&q=80',  label: 'Universities'  },
@@ -24,38 +15,38 @@ const BG_SLIDES = [
 ];
 
 const SCHOLARSHIPS = [
-  { emoji: '🇯🇵', title: 'MEXT Japanese Government Scholarship', org: 'Government of Japan', type: 'Full Funding', deadline: 'Apr 30, 2026', color: '#dc2626', bg: '#fef2f2', border: '#fecaca', link: '/opportunities/japanese-government-mext-scholarship-2026' },
-  { emoji: '🇰🇷', title: 'Korean Government Scholarship (GKS)', org: 'Government of Korea', type: 'Full Funding', deadline: 'Mar 31, 2026', color: '#1D4ED8', bg: '#eff6ff', border: '#bfdbfe', link: '/opportunities/korean-government-gks-scholarship-2026' },
-  { emoji: '🏛️', title: 'RUPP Excellence Scholarship 2026',      org: 'Royal Univ. of Phnom Penh', type: 'Full Funding', deadline: 'Jun 30, 2026', color: '#15803D', bg: '#f0fdf4', border: '#bbf7d0', link: '/opportunities/rupp-excellence-scholarship-2026' },
-  { emoji: '⚙️', title: 'ITC STEM Full Scholarship 2026',        org: 'Institute of Tech. Cambodia', type: 'Full Funding', deadline: 'Jul 15, 2026', color: '#F47B20', bg: '#fff7ed', border: '#fed7aa', link: '/opportunities/itc-stem-scholarship-2026' },
+  { emoji: '🇯🇵', title: 'MEXT Japanese Government Scholarship', org: 'Government of Japan', type: 'Full Funding', deadline: 'Apr 30, 2026', color: '#1B3A6B', link: '/opportunities/japanese-government-mext-scholarship-2026' },
+  { emoji: '🇰🇷', title: 'Korean Government Scholarship (GKS)', org: 'Government of Korea', type: 'Full Funding', deadline: 'Mar 31, 2026', color: '#1B3A6B', link: '/opportunities/korean-government-gks-scholarship-2026' },
+  { emoji: '🏛️', title: 'RUPP Excellence Scholarship 2026',      org: 'Royal Univ. of Phnom Penh', type: 'Full Funding', deadline: 'Jun 30, 2026', color: '#1B3A6B', link: '/opportunities/rupp-excellence-scholarship-2026' },
+  { emoji: '⚙️', title: 'ITC STEM Full Scholarship 2026',        org: 'Institute of Tech. Cambodia', type: 'Full Funding', deadline: 'Jul 15, 2026', color: '#1B3A6B', link: '/opportunities/itc-stem-scholarship-2026' },
 ];
 
 const HOW_IT_WORKS = [
-  { step: '01', icon: '🔍', title: 'Search & Explore',    desc: 'Browse 50+ universities filtered by type, province, tuition range, and available scholarships.',     color: '#1B3A6B' },
-  { step: '02', icon: '🎯', title: 'Take the Major Quiz', desc: 'Answer 5 quick questions and get personalized major recommendations that match your interests.',       color: '#4AAEE0' },
-  { step: '03', icon: '💰', title: 'Find Scholarships',   desc: 'Discover funding opportunities from local universities, government programs, and international bodies.', color: '#F47B20' },
-  { step: '04', icon: '🎓', title: 'Apply & Succeed',     desc: 'Follow the latest campus feed, connect with universities directly, and start your journey.',    color: '#3DAE6B' },
+  { step: '01', icon: Search, title: 'Search & Explore',    desc: 'Browse 50+ universities filtered by type, province, tuition range, and available scholarships.',     color: '#1B3A6B' },
+  { step: '02', icon: Target, title: 'Take the Major Quiz', desc: 'Answer 5 quick questions and get personalized major recommendations that match your interests.',       color: '#4AAEE0' },
+  { step: '03', icon: Wallet, title: 'Find Scholarships',   desc: 'Discover funding opportunities from local universities, government programs, and international bodies.', color: '#F47B20' },
+  { step: '04', icon: GraduationCap, title: 'Apply & Succeed',     desc: 'Follow the latest campus feed, connect with universities directly, and start your journey.',    color: '#3DAE6B' },
 ];
 
 const TESTIMONIALS = [
-  { name: 'Srey Leak Heng', role: 'CS Graduate · RUPP 2024',          avatar: '👩‍💻', content: 'UniSites helped me discover RUPP\'s computer science program and apply for their excellence scholarship. I landed a tech job within 3 months of graduating!',                    rating: 5, uni: 'RUPP',   color: '#1B3A6B' },
-  { name: 'Dara Pich',      role: 'Electrical Eng. Graduate · ITC',   avatar: '👨‍🔧', content: 'Found ITC through UniSites and used the Major Quiz to confirm engineering was right for me. The scholarship finder saved me hours of research.',                           rating: 5, uni: 'ITC',    color: '#4AAEE0' },
-  { name: 'Channary Ros',   role: 'Tourism Student · PUC',            avatar: '👩‍🎓', content: 'The UniSites feed helped me keep up with hospitality events, scholarships, and student updates from PUC. It made choosing my program much easier.',           rating: 5, uni: 'PUC',    color: '#3DAE6B' },
-  { name: 'Kevin Phon',     role: 'Business Graduate · AUPP 2024',    avatar: '👨‍💼', content: 'UniSites made comparing AUPP vs other universities so easy. The detailed program info and student reviews helped me make a confident decision.',                             rating: 5, uni: 'AUPP',   color: '#F47B20' },
+  { name: 'Srey Leak Heng', role: 'CS Graduate · RUPP 2024',          avatar: UserRound, content: 'UniSites helped me discover RUPP\'s computer science program and apply for their excellence scholarship. I landed a tech job within 3 months of graduating!',                    rating: 5, uni: 'RUPP',   color: '#1B3A6B' },
+  { name: 'Dara Pich',      role: 'Electrical Eng. Graduate · ITC',   avatar: UserRound, content: 'Found ITC through UniSites and used the Major Quiz to confirm engineering was right for me. The scholarship finder saved me hours of research.',                           rating: 5, uni: 'ITC',    color: '#4AAEE0' },
+  { name: 'Channary Ros',   role: 'Tourism Student · PUC',            avatar: UserRound, content: 'The UniSites feed helped me keep up with hospitality events, scholarships, and student updates from PUC. It made choosing my program much easier.',           rating: 5, uni: 'PUC',    color: '#3DAE6B' },
+  { name: 'Kevin Phon',     role: 'Business Graduate · AUPP 2024',    avatar: UserRound, content: 'UniSites made comparing AUPP vs other universities so easy. The detailed program info and student reviews helped me make a confident decision.',                             rating: 5, uni: 'AUPP',   color: '#F47B20' },
 ];
 
 const FUN_FACTS = [
-  { icon: '🌏', stat: '#1',      desc: 'Platform for Cambodian university discovery',        color: '#1B3A6B', bg: '#eff6ff' },
-  { icon: '⚡', stat: '< 5 min', desc: 'Average time to find and compare top universities',  color: '#F47B20', bg: '#fff7ed' },
-  { icon: '🎯', stat: '94%',     desc: 'Students found their match using our Major Quiz',    color: '#3DAE6B', bg: '#f0fdf4' },
-  { icon: '💬', stat: '10,000+', desc: 'Students helped and counting across Cambodia',       color: '#4AAEE0', bg: '#f0f9ff' },
+  { icon: Globe2, stat: '#1',      desc: 'Platform for Cambodian university discovery',        color: '#1B3A6B', bg: '#eff6ff' },
+  { icon: Zap, stat: '< 5 min', desc: 'Average time to find and compare top universities',  color: '#F47B20', bg: '#fff7ed' },
+  { icon: Target, stat: '94%',     desc: 'Students found their match using our Major Quiz',    color: '#3DAE6B', bg: '#f0fdf4' },
+  { icon: MessagesSquare, stat: '10,000+', desc: 'Students helped and counting across Cambodia',       color: '#4AAEE0', bg: '#f0f9ff' },
 ];
 
 const PLACEHOLDER_UNIS = [
-  { id: '1', slug: 'royal-university-of-phnom-penh',        name: 'Royal University of Phnom Penh',        university_type: 'public',        province: 'Phnom Penh', program_count: 80,  rating_avg: 4.2, icon: '🏛️', color: '#1B3A6B' },
-  { id: '2', slug: 'institute-of-technology-of-cambodia',   name: 'Institute of Technology of Cambodia',   university_type: 'public',        province: 'Phnom Penh', program_count: 35,  rating_avg: 4.5, icon: '⚙️', color: '#4AAEE0' },
-  { id: '3', slug: 'norton-university',                     name: 'Norton University',                     university_type: 'private',       province: 'Phnom Penh', program_count: 45,  rating_avg: 4.1, icon: '🎓', color: '#3DAE6B' },
-  { id: '4', slug: 'american-university-of-phnom-penh',     name: 'American University of Phnom Penh',     university_type: 'international', province: 'Phnom Penh', program_count: 20,  rating_avg: 4.6, icon: '🌏', color: '#F47B20' },
+  { id: '1', slug: 'royal-university-of-phnom-penh',        name: 'Royal University of Phnom Penh',        university_type: 'public',        province: 'Phnom Penh', program_count: 80,  rating_avg: 4.2, icon: Building2, color: '#1B3A6B' },
+  { id: '2', slug: 'institute-of-technology-of-cambodia',   name: 'Institute of Technology of Cambodia',   university_type: 'public',        province: 'Phnom Penh', program_count: 35,  rating_avg: 4.5, icon: MonitorCog, color: '#4AAEE0' },
+  { id: '3', slug: 'norton-university',                     name: 'Norton University',                     university_type: 'private',       province: 'Phnom Penh', program_count: 45,  rating_avg: 4.1, icon: GraduationCap, color: '#3DAE6B' },
+  { id: '4', slug: 'american-university-of-phnom-penh',     name: 'American University of Phnom Penh',     university_type: 'international', province: 'Phnom Penh', program_count: 20,  rating_avg: 4.6, icon: Globe2, color: '#F47B20' },
 ];
 
 const PLACEHOLDER_MAJORS = [
@@ -191,7 +182,7 @@ export default function LandingPage() {
         <div className="relative z-[2] max-w-4xl mx-auto w-full">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold mb-6"
             style={{ background: '#1B3A6B08', borderColor: '#1B3A6B25', color: '#1B3A6B' }}>
-            🎓 Discover Universities in Cambodia
+            <GraduationCap size={14} /> Discover Universities in Cambodia
           </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight text-slate-800">
             Find Your Perfect<br /><span style={{ color: '#F47B20' }}>University</span>
@@ -240,16 +231,40 @@ export default function LandingPage() {
           <Reveal><SectionHeader title="Browse by Type" subtitle="Find the right university for your goals" /></Reveal>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { type: 'public',        label: 'Public Universities',        desc: 'Government-funded institutions with affordable tuition', icon: '🏛️', bg: '#EFF6FF', border: '#BFDBFE', text: '#1D4ED8', accent: '#3B82F6' },
-              { type: 'private',       label: 'Private Universities',       desc: 'Privately funded with diverse program offerings',        icon: '🎓', bg: '#F0FDF4', border: '#BBF7D0', text: '#15803D', accent: '#22C55E' },
-              { type: 'international', label: 'International Universities', desc: 'Globally accredited with international programs',         icon: '🌏', bg: '#FFF7ED', border: '#FED7AA', text: '#C2410C', accent: '#F97316' },
+              { type: 'public',        label: 'Public Universities',        desc: 'Government-funded institutions with affordable tuition', icon: Building2 },
+              { type: 'private',       label: 'Private Universities',       desc: 'Privately funded with diverse program offerings',        icon: GraduationCap },
+              { type: 'international', label: 'International Universities', desc: 'Globally accredited with international programs',         icon: Globe2 },
             ].map((item, i) => (
               <Reveal key={item.type} delay={i * 80}>
-                <Link to={`/universities?type=${item.type}`} className="p-6 rounded-xl border hover:scale-[1.02] hover:shadow-md transition-all block" style={{ background: item.bg, borderColor: item.border }}>
-                  <div className="text-3xl mb-3">{item.icon}</div>
-                  <h3 className="text-base font-semibold mb-1" style={{ color: item.text }}>{item.label}</h3>
-                  <p className="text-sm text-slate-500 mb-4">{item.desc}</p>
-                  <span className="text-xs font-semibold" style={{ color: item.accent }}>Explore →</span>
+                <Link
+                  to={`/universities?type=${item.type}`}
+                  className="block h-full min-h-[210px] rounded-xl border p-6 transition-all hover:scale-[1.02]"
+                  style={{
+                    background: '#f8fafc',
+                    borderColor: '#e2e8f0',
+                    boxShadow: '0 10px 26px rgba(15, 23, 42, 0.06)',
+                  }}
+                >
+                  <div className="flex h-full flex-col">
+                    <div
+                      className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl border"
+                      style={{
+                        color: '#1B3A6B',
+                        background: '#ffffffcc',
+                        borderColor: '#dbe4f0',
+                        boxShadow: '0 6px 18px rgba(15, 23, 42, 0.08)',
+                      }}
+                    >
+                      <item.icon size={24} strokeWidth={2.1} />
+                    </div>
+                    <h3 className="text-base font-semibold mb-1" style={{ color: '#1B3A6B' }}>{item.label}</h3>
+                    <p className="text-sm text-slate-500 mb-4 max-w-[28ch]">{item.desc}</p>
+                    <div className="mt-auto">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold" style={{ color: '#1B3A6B' }}>
+                        Explore <ArrowRight size={13} />
+                      </span>
+                    </div>
+                  </div>
                 </Link>
               </Reveal>
             ))}
@@ -280,28 +295,28 @@ export default function LandingPage() {
               const tbg = TYPE_BG[uni.university_type] || '#eff6ff';
               return (
                 <Reveal key={uni.id || i} delay={i * 80}>
-                  <Link to={`/universities/${uni.slug}`} className="group block bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
+                  <Link to={`/universities/${uni.slug}`} className="group block h-full bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
                     <div className="h-36 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${tc}15, ${tc}08)` }}>
                       {uni.cover_url
                         ? <img src={uni.cover_url} alt={uni.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" onError={e => e.target.style.display="none"} />
-                        : <div className="w-full h-full flex items-center justify-center text-5xl">{uni.icon || "🏛️"}</div>
+                        : <div className="w-full h-full flex items-center justify-center text-slate-500">{uni.icon ? <uni.icon size={52} /> : <School size={52} />}</div>
                       }
                       <span className="absolute top-3 right-3 px-2 py-0.5 rounded-full text-xs font-bold capitalize"
                         style={{ background: tbg, color: tc, border: `1px solid ${tc}30` }}>
                         {uni.university_type}
                       </span>
                     </div>
-                    <div className="p-4">
+                    <div className="flex min-h-[118px] flex-col p-4">
                       <div className="flex items-start gap-2.5">
                         {uni.logo_url && <img src={uni.logo_url} alt="" className="w-8 h-8 rounded-lg object-cover border border-slate-100 shrink-0 mt-0.5" onError={e => e.target.style.display="none"} />}
                         <div className="min-w-0">
-                          <h3 className="text-sm font-bold text-slate-800 leading-snug group-hover:text-[#1B3A6B] transition-colors line-clamp-2">{uni.name}</h3>
-                          <p className="text-xs text-slate-500 mt-1">📍 {uni.province}</p>
+                          <h3 className="min-h-[44px] text-sm font-bold text-slate-800 leading-snug group-hover:text-[#1B3A6B] transition-colors line-clamp-2">{uni.name}</h3>
+                          <p className="text-xs text-slate-500 mt-1 inline-flex items-center gap-1"><MapPin size={12} /> {uni.province}</p>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-100">
-                        <span className="text-xs text-slate-500">📚 {uni.program_count || 0} programs</span>
-                        {uni.rating_avg > 0 && <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: '#F47B20' }}>★ {Number(uni.rating_avg).toFixed(1)}</span>}
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100">
+                        <span className="inline-flex items-center gap-1 text-xs text-slate-500"><BookOpen size={12} /> {uni.program_count || 0} programs</span>
+                        {uni.rating_avg > 0 && <span className="flex items-center gap-1 text-xs font-semibold" style={{ color: '#F47B20' }}><Star size={12} className="fill-current" /> {Number(uni.rating_avg).toFixed(1)}</span>}
                       </div>
                     </div>
                   </Link>
@@ -313,7 +328,7 @@ export default function LandingPage() {
             <div className="mt-6 text-center">
               <Link to="/universities">
                 <button className="px-6 py-3 rounded-xl text-sm font-semibold border-2 hover:opacity-80 transition-all" style={{ borderColor: '#1B3A6B', color: '#1B3A6B' }}>
-                  Explore all 50+ universities →
+                  <span className="inline-flex items-center gap-1">Explore all 50+ universities <ArrowRight size={15} /></span>
                 </button>
               </Link>
             </div>
@@ -344,7 +359,7 @@ export default function LandingPage() {
                 <Reveal key={major.id || i} delay={i * 60}>
                   <Link to={`/majors/${major.slug}`} className="group flex flex-col items-center text-center p-5 bg-white rounded-2xl border border-slate-200 hover:shadow-md hover:-translate-y-1 transition-all duration-200">
                     <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-3 transition-transform group-hover:scale-110"
-                      style={{ background: `${mc}12`, border: `1.5px solid ${mc}25` }}>
+                      style={{ background: `${mc}12`, border: `1.5px solid ${mc}25`, color: mc }}>
                       {major.icon || "📚"}
                     </div>
                     <h3 className="text-xs font-bold text-slate-800 leading-snug mb-1 group-hover:text-[#1B3A6B] transition-colors">{major.name}</h3>
@@ -393,9 +408,11 @@ export default function LandingPage() {
             {HOW_IT_WORKS.map((step, i) => (
               <Reveal key={step.step} delay={i * 100}>
                 <div className="relative z-10 flex flex-col items-center text-center p-6 bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all">
-                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-4 shadow-sm"
-                    style={{ background: `${step.color}12`, border: `1.5px solid ${step.color}25` }}>
-                    {step.icon}
+                  <div
+                    className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-4 shadow-sm"
+                    style={{ background: `${step.color}12`, border: `1.5px solid ${step.color}25`, color: step.color }}
+                  >
+                    <step.icon size={24} strokeWidth={2.2} />
                   </div>
                   <span className="text-xs font-bold tracking-widest mb-2" style={{ color: step.color }}>STEP {step.step}</span>
                   <h3 className="text-sm font-bold text-slate-800 mb-2">{step.title}</h3>
@@ -425,18 +442,23 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {SCHOLARSHIPS.map((s, i) => (
               <Reveal key={s.title} delay={i * 80}>
-                <Link to={s.link} className="flex items-start gap-4 p-5 rounded-2xl border hover:shadow-md transition-all group"
-                  style={{ background: s.bg, borderColor: s.border }}>
-                  <div className="text-3xl shrink-0">{s.emoji}</div>
-                  <div className="flex-1 min-w-0">
+                <Link
+                  to={s.link}
+                  className="group flex h-full min-h-[156px] items-start gap-4 rounded-2xl border p-5 transition-all hover:-translate-y-0.5 hover:shadow-md"
+                  style={{ background: '#f8fafc', borderColor: '#e2e8f0', boxShadow: '0 10px 26px rgba(15, 23, 42, 0.06)' }}
+                >
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white text-3xl shadow-sm ring-1 ring-slate-200/80">
+                    {s.emoji}
+                  </div>
+                  <div className="flex min-h-full flex-1 flex-col min-w-0">
                     <h3 className="text-sm font-bold text-slate-800 mb-1 group-hover:underline leading-snug">{s.title}</h3>
                     <p className="text-xs text-slate-500 mb-3">{s.org}</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: `${s.color}15`, color: s.color }}>{s.type}</span>
-                      <span className="text-xs text-slate-400">⏰ Deadline: {s.deadline}</span>
+                    <div className="mt-auto flex items-center gap-2 flex-wrap">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: '#eff6ff', color: '#1B3A6B' }}>{s.type}</span>
+                      <span className="inline-flex items-center gap-1 text-xs text-slate-400"><Clock3 size={12} /> Deadline: {s.deadline}</span>
                     </div>
                   </div>
-                  <span className="text-slate-300 group-hover:text-slate-500 transition-colors shrink-0 mt-1"><ArrowRight /></span>
+                  <span className="mt-1 shrink-0 text-slate-300 transition-colors group-hover:text-slate-500"><ArrowRight /></span>
                 </Link>
               </Reveal>
             ))}
@@ -445,7 +467,7 @@ export default function LandingPage() {
             <div className="mt-6 text-center">
               <Link to="/opportunities">
                 <button className="px-6 py-3 rounded-xl text-sm font-semibold border-2 hover:opacity-80 transition-all" style={{ borderColor: '#F47B20', color: '#F47B20' }}>
-                  Browse all 100+ opportunities →
+                  <span className="inline-flex items-center gap-1">Browse all 100+ opportunities <ArrowRight size={15} /></span>
                 </button>
               </Link>
             </div>
@@ -464,7 +486,7 @@ export default function LandingPage() {
                   {/* Stars */}
                   <div className="flex gap-0.5 mb-4">
                     {Array.from({ length: t.rating }).map((_, j) => (
-                      <span key={j} style={{ color: '#F47B20', fontSize: 14 }}>★</span>
+                      <Star key={j} size={14} className="text-amber-500 fill-amber-500" />
                     ))}
                   </div>
                   {/* Quote */}
@@ -473,7 +495,7 @@ export default function LandingPage() {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold"
                       style={{ background: `${t.color}15`, border: `1.5px solid ${t.color}25` }}>
-                      {t.avatar}
+                      <t.avatar size={18} strokeWidth={2} />
                     </div>
                     <div>
                       <p className="text-sm font-bold text-slate-800">{t.name}</p>
@@ -500,7 +522,7 @@ export default function LandingPage() {
               <Reveal key={f.stat} delay={i * 80}>
                 <div className="p-5 rounded-2xl border text-center hover:scale-[1.02] transition-all"
                   style={{ background: f.bg, borderColor: `${f.color}25` }}>
-                  <div className="text-3xl mb-3">{f.icon}</div>
+                  <div className="mb-3" style={{ color: f.color }}><f.icon size={28} strokeWidth={2} /></div>
                   <div className="text-xl font-bold mb-1" style={{ color: f.color }}>{f.stat}</div>
                   <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
                 </div>

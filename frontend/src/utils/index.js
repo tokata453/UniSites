@@ -20,8 +20,14 @@ const CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 
 export const cloudinaryUrl = (publicId, transforms = '') => {
   if (!publicId) return null;
-  // If already a full URL, return as-is
-  if (publicId.startsWith('http')) return publicId;
+  // If already a usable URL source, return as-is.
+  if (
+    publicId.startsWith('http') ||
+    publicId.startsWith('data:') ||
+    publicId.startsWith('blob:')
+  ) {
+    return publicId;
+  }
   const t = transforms ? `${transforms}/` : '';
   return `https://res.cloudinary.com/${CLOUD}/image/upload/${t}${publicId}`;
 };

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { BadgeCheck, BookOpen, Bookmark, Building2, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Clock3, Facebook, Globe2, GraduationCap, House, Mail, MapPin, MapPinned, Phone, School, Star, Trophy, Users } from 'lucide-react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { universityApi, authApi, inboxApi } from '@/api';
 import { Spinner, Empty } from '@/components/common';
@@ -55,8 +56,14 @@ const SectionTitle = ({ title, subtitle }) => (
 );
 
 const Stars = ({ n }) => (
-  <span className="text-sm">
-    {'★'.repeat(n)}<span className="text-slate-300">{'★'.repeat(5 - n)}</span>
+  <span className="inline-flex items-center gap-0.5 text-sm">
+    {Array.from({ length: 5 }).map((_, index) => (
+      <Star
+        key={index}
+        size={14}
+        className={index < n ? 'text-amber-500 fill-amber-500' : 'text-slate-300'}
+      />
+    ))}
   </span>
 );
 
@@ -136,19 +143,7 @@ const GalleryFilterSelect = ({ value, onChange, options, placeholder = 'Select a
         aria-expanded={open}
       >
         <span>{selected?.label || placeholder}</span>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className={`shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`}
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+          <ChevronDown size={16} className={`shrink-0 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
       {open && (
         <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-30 max-h-64 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl" role="listbox">
@@ -463,7 +458,7 @@ export default function UniversityDetail() {
       <div className="relative h-56 md:h-72 bg-slate-200 overflow-hidden">
         {uni.cover_url
           ? <img src={coverUrl(uni.cover_url)} alt="" className="w-full h-full object-cover" />
-          : <div className="w-full h-full flex items-center justify-center text-7xl bg-gradient-to-br from-slate-100 to-slate-200">🏛️</div>
+          : <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500"><School size={72} /></div>
         }
         <div className="absolute inset-0 bg-gradient-to-t from-slate-50/80 via-transparent to-transparent" />
       </div>
@@ -475,7 +470,7 @@ export default function UniversityDetail() {
           <div className="w-24 h-24 rounded-2xl bg-white border-2 border-slate-200 shadow-md flex items-center justify-center text-4xl overflow-hidden shrink-0">
             {uni.logo_url
               ? <img src={logoUrl(uni.logo_url)} alt="" className="w-full h-full object-cover" />
-              : '🎓'}
+              : <GraduationCap size={36} className="text-slate-500" />}
           </div>
 
           <div className="flex-1 pt-2 md:pt-14">
@@ -484,19 +479,19 @@ export default function UniversityDetail() {
                 style={{ background: ts.bg, border: `1px solid ${ts.border}`, color: ts.text }}>
                 {uniType}
               </span>
-              {uni.is_verified           && <Badge color="green">✓ Verified</Badge>}
-              {uni.scholarship_available && <Badge color="yellow">🏆 Scholarship</Badge>}
-              {uni.dormitory_available   && <Badge color="purple">🏠 Dormitory</Badge>}
-              {uni.is_featured           && <Badge color="orange">⭐ Featured</Badge>}
+              {uni.is_verified           && <Badge color="green"><span className="inline-flex items-center gap-1"><BadgeCheck size={12} /> Verified</span></Badge>}
+              {uni.scholarship_available && <Badge color="yellow"><span className="inline-flex items-center gap-1"><Trophy size={12} /> Scholarship</span></Badge>}
+              {uni.dormitory_available   && <Badge color="purple"><span className="inline-flex items-center gap-1"><House size={12} /> Dormitory</span></Badge>}
+              {uni.is_featured           && <Badge color="orange"><span className="inline-flex items-center gap-1"><Star size={12} className="fill-current" /> Featured</span></Badge>}
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-800">{uni.name}</h1>
             {uni.name_km && <p className="text-slate-500 mt-0.5 text-sm">{uni.name_km}</p>}
             <div className="flex flex-wrap gap-4 mt-3 text-sm text-slate-500">
-              {uni.province      && <span>📍 {uni.province}</span>}
-              {uni.founded_year  && <span>🗓 Est. {uni.founded_year}</span>}
-              {uni.student_count && <span>👥 {uni.student_count?.toLocaleString()} students</span>}
-              <span className="font-semibold" style={{ color: '#F47B20' }}>
-                ★ {Number(uni.rating_avg || 0).toFixed(1)}
+              {uni.province      && <span className="inline-flex items-center gap-1"><MapPin size={14} /> {uni.province}</span>}
+              {uni.founded_year  && <span className="inline-flex items-center gap-1"><CalendarDays size={14} /> Est. {uni.founded_year}</span>}
+              {uni.student_count && <span className="inline-flex items-center gap-1"><Users size={14} /> {uni.student_count?.toLocaleString()} students</span>}
+              <span className="inline-flex items-center gap-1 font-semibold" style={{ color: '#F47B20' }}>
+                <Star size={14} className="fill-current" /> {Number(uni.rating_avg || 0).toFixed(1)}
                 <span className="font-normal text-slate-400 ml-1">({uni.review_count || 0} reviews)</span>
               </span>
             </div>
@@ -504,12 +499,12 @@ export default function UniversityDetail() {
 
           <div className="flex gap-2 items-start md:pt-14 flex-wrap">
             <Link to="/universities" className="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm transition-all">
-              ← Back
+              <span className="inline-flex items-center gap-1"><ChevronLeft size={15} /> Back</span>
             </Link>
             {uni.website_url && (
               <a href={uni.website_url} target="_blank" rel="noreferrer">
                 <button className="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm transition-all">
-                  🌐 Website
+                  <span className="inline-flex items-center gap-1"><Globe2 size={15} /> Website</span>
                 </button>
               </a>
             )}
@@ -518,7 +513,7 @@ export default function UniversityDetail() {
               onClick={handleMessageUniversity}
               className="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm transition-all"
             >
-              ✉️ Message University
+              <span className="inline-flex items-center gap-1"><Mail size={15} /> Message University</span>
             </button>
             {isAuthenticated && (
               <button onClick={handleSave} disabled={savingLoading || savedLoading}
@@ -526,7 +521,7 @@ export default function UniversityDetail() {
                 style={saved
                   ? { background: '#1B3A6B', color: '#fff', border: '1px solid #1B3A6B' }
                   : { background: '#fff', color: '#1B3A6B', border: '1px solid #1B3A6B' }}>
-                {savingLoading || savedLoading ? 'Loading...' : saved ? '🔖 Saved' : '+ Save'}
+                {savingLoading || savedLoading ? 'Loading...' : saved ? <span className="inline-flex items-center gap-1"><Bookmark size={15} className="fill-current" /> Saved</span> : <span className="inline-flex items-center gap-1"><Bookmark size={15} /> Save</span>}
               </button>
             )}
           </div>
@@ -594,7 +589,7 @@ export default function UniversityDetail() {
                     <div className="flex flex-wrap gap-2">
                       {(uni.CampusFacilities || uni.Facilities).map(f => (
                         <span key={f.id} className="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-50 border border-slate-200 text-slate-600">
-                          {f.icon || '📌'} {f.name}
+                          {f.name}
                         </span>
                       ))}
                     </div>
@@ -632,16 +627,16 @@ export default function UniversityDetail() {
                   <Card className="p-5">
                     <SectionTitle title="Contact" subtitle="The easiest ways to reach the university" />
                     <div className="space-y-2.5 text-sm">
-                      {(contact.general_email || uni.email) && <p className="flex items-center gap-2 text-slate-600"><span>✉️</span> <span className="truncate">{contact.general_email || uni.email}</span></p>}
-                      {(contact.general_phone || uni.phone) && <p className="flex items-center gap-2 text-slate-600"><span>📞</span> {contact.general_phone || uni.phone}</p>}
-                      {contact.admission_email && <p className="flex items-center gap-2 text-slate-600"><span>🎓</span> <span className="truncate">{contact.admission_email}</span></p>}
-                      {contact.admission_phone && <p className="flex items-center gap-2 text-slate-600"><span>☎️</span> {contact.admission_phone}</p>}
-                      {contact.office_hours && <p className="flex items-center gap-2 text-slate-600"><span>🕘</span> {contact.office_hours}</p>}
+                      {(contact.general_email || uni.email) && <p className="flex items-center gap-2 text-slate-600"><Mail size={14} /> <span className="truncate">{contact.general_email || uni.email}</span></p>}
+                      {(contact.general_phone || uni.phone) && <p className="flex items-center gap-2 text-slate-600"><Phone size={14} /> {contact.general_phone || uni.phone}</p>}
+                      {contact.admission_email && <p className="flex items-center gap-2 text-slate-600"><GraduationCap size={14} /> <span className="truncate">{contact.admission_email}</span></p>}
+                      {contact.admission_phone && <p className="flex items-center gap-2 text-slate-600"><Phone size={14} /> {contact.admission_phone}</p>}
+                      {contact.office_hours && <p className="flex items-center gap-2 text-slate-600"><Clock3 size={14} /> {contact.office_hours}</p>}
                       {uni.facebook_url && (
                         <a href={uni.facebook_url} target="_blank" rel="noreferrer"
                           className="flex items-center gap-2 font-medium hover:underline transition-colors"
                           style={{ color: '#1877f2' }}>
-                          🔗 Facebook Page
+                          <Facebook size={14} /> Facebook Page
                         </a>
                       )}
                       {uni.telegram_url && (
@@ -655,7 +650,7 @@ export default function UniversityDetail() {
                         <a href={contact.map_embed_url} target="_blank" rel="noreferrer"
                           className="flex items-center gap-2 font-medium hover:underline"
                           style={{ color: '#1B3A6B' }}>
-                          🗺 View Map
+                          <MapPinned size={14} /> View Map
                         </a>
                       )}
                     </div>
@@ -705,7 +700,7 @@ export default function UniversityDetail() {
                         className="mb-5 flex w-full flex-col gap-4 text-left md:flex-row md:items-start md:justify-between"
                       >
                         <div className="flex items-start gap-3">
-                          <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-base shrink-0">🏛️</div>
+                          <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-base shrink-0 text-blue-700"><Building2 size={18} /></div>
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className="font-bold text-slate-800 text-base">{faculty.name}</h3>
@@ -721,19 +716,7 @@ export default function UniversityDetail() {
                           </div>
                         </div>
                         <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-slate-500 shrink-0">
-                          <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className={`transition-transform ${openFaculties[faculty.id] ? 'rotate-180' : ''}`}
-                          >
-                            <path d="M6 9l6 6 6-6" />
-                          </svg>
+                          <ChevronDown size={16} className={`transition-transform ${openFaculties[faculty.id] ? 'rotate-180' : ''}`} />
                         </span>
                       </button>
                       {openFaculties[faculty.id] ? (
@@ -949,8 +932,8 @@ export default function UniversityDetail() {
                                 {ev.is_featured && <Badge color="yellow">Featured</Badge>}
                               </div>
                               <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
-                                {ev.event_date && <span>📅 {formatDate(ev.event_date)}</span>}
-                                {ev.location && <span>📍 {ev.location}</span>}
+                                {ev.event_date && <span className="inline-flex items-center gap-1"><CalendarDays size={12} /> {formatDate(ev.event_date)}</span>}
+                                {ev.location && <span className="inline-flex items-center gap-1"><MapPin size={12} /> {ev.location}</span>}
                               </div>
                             </div>
                           </div>
@@ -965,7 +948,7 @@ export default function UniversityDetail() {
                               className="inline-block mt-4 text-xs font-semibold px-3 py-1.5 rounded-lg text-white hover:opacity-90 transition-all"
                               style={{ background: '#1B3A6B' }}
                             >
-                              Register →
+                              <span className="inline-flex items-center gap-1">Register <ChevronRight size={13} /></span>
                             </a>
                           )}
                         </>
@@ -1021,10 +1004,10 @@ export default function UniversityDetail() {
                             type="button"
                             disabled={!isAuthenticated || reviewSubmitting}
                             onClick={() => setReviewField('rating', star)}
-                            className="text-2xl transition-transform hover:scale-110 disabled:cursor-not-allowed"
+                            className="transition-transform hover:scale-110 disabled:cursor-not-allowed"
                             style={{ color: star <= reviewForm.rating ? '#F47B20' : '#cbd5e1' }}
                           >
-                            ★
+                            <Star size={24} className={star <= reviewForm.rating ? 'fill-current' : ''} />
                           </button>
                         ))}
                         <span className="ml-2 text-sm text-slate-500">
@@ -1078,7 +1061,7 @@ export default function UniversityDetail() {
                       const total = reviewCount || 1;
                       return (
                         <div key={star} className="flex items-center gap-2 text-xs">
-                          <span className="text-slate-500 w-4">{star}★</span>
+                          <span className="inline-flex items-center gap-1 text-slate-500 w-8"><span>{star}</span><Star size={11} className="fill-current" /></span>
                           <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
                             <div className="h-full rounded-full transition-all" style={{ width: `${(count/total)*100}%`, background: '#F47B20' }} />
                           </div>

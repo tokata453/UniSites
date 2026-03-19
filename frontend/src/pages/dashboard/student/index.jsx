@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Bookmark, Building2, FileText, GraduationCap, MapPin, Newspaper, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { authApi } from '@/api';
 import { Card, Badge, Spinner, Empty, Button } from '@/components/common';
@@ -25,12 +26,12 @@ export function StudentOverview() {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {[
-          { label: 'Saved Universities', value: savedCount, icon: '🔖', bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-[#1B3A6B]' },
-          { label: 'Feed Activity',      value: 0,          icon: '📰', bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-700' },
-          { label: 'Applications',       value: 0,          icon: '📝', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-600' },
+          { label: 'Saved Universities', value: savedCount, icon: Bookmark, bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-[#1B3A6B]' },
+          { label: 'Feed Activity',      value: 0,          icon: Newspaper, bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-700' },
+          { label: 'Applications',       value: 0,          icon: FileText, bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-600' },
         ].map((s) => (
           <div key={s.label} className={`p-5 rounded-xl ${s.bg} border ${s.border}`}>
-            <div className="text-2xl mb-2">{s.icon}</div>
+            <div className="mb-2"><s.icon size={24} /></div>
             <div className={`text-2xl font-bold ${s.text}`}>{s.value}</div>
             <div className="text-sm text-slate-500 mt-0.5">{s.label}</div>
           </div>
@@ -108,7 +109,7 @@ export function StudentSaved() {
                       {item.University.cover_url ? (
                         <img src={coverUrl(item.University.cover_url) || item.University.cover_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-slate-100 to-slate-200">🏛️</div>
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500"><Building2 size={52} /></div>
                       )}
                     </div>
                     <div className="p-4">
@@ -116,15 +117,15 @@ export function StudentSaved() {
                         <div className="w-11 h-11 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0">
                           {item.University.logo_url
                             ? <img src={logoUrl(item.University.logo_url)} alt="" className="w-full h-full object-cover" />
-                            : '🎓'}
+                            : <GraduationCap size={18} className="text-slate-500" />}
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-slate-800 group-hover:text-[#1B3A6B] transition-colors">{item.University.name}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">📍 {item.University.province || 'Location not set'}</p>
+                          <p className="text-xs text-slate-500 mt-0.5 inline-flex items-center gap-1"><MapPin size={12} /> {item.University.province || 'Location not set'}</p>
                         </div>
                       </div>
                       <div className="mt-4 flex items-center justify-between text-xs text-slate-500 border-t border-slate-100 pt-3">
-                        <span>★ {item.University.rating_avg ? Number(item.University.rating_avg).toFixed(1) : '—'}</span>
+                        <span className="inline-flex items-center gap-1"><Star size={12} className="text-amber-500 fill-amber-500" /> {item.University.rating_avg ? Number(item.University.rating_avg).toFixed(1) : '—'}</span>
                         <span>{item.University.tuition_min ? `${formatCurrency(item.University.tuition_min)}/yr` : 'Tuition N/A'}</span>
                         <span>{item.University.program_count || 0} programs</span>
                       </div>

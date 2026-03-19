@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { Building2, ChevronDown, GraduationCap, House, MapPin, Star, Trophy } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { universityApi } from '@/api';
 import { Spinner, Pagination, Empty } from '@/components/common';
@@ -38,21 +39,7 @@ const CheckIcon = () => (
   </svg>
 );
 
-const ChevronDownIcon = ({ open = false }) => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={`transition-transform ${open ? 'rotate-180' : ''}`}
-  >
-    <path d="m6 9 6 6 6-6" />
-  </svg>
-);
+const ChevronDownIcon = ({ open = false }) => <ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />;
 
 export default function UniversityList() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -354,8 +341,8 @@ export default function UniversityList() {
             {/* Checkboxes */}
             <div className="space-y-3 pt-1">
               {[
-                ['scholarship_available', '🏆 Has Scholarship'],
-                ['dormitory_available',   '🏠 Has Dormitory'],
+                ['scholarship_available', 'Has Scholarship'],
+                ['dormitory_available',   'Has Dormitory'],
               ].map(([key, label]) => (
                 <label key={key} className="flex items-center gap-2.5 cursor-pointer group">
                   <div
@@ -386,7 +373,7 @@ export default function UniversityList() {
                   sort: 'rating_avg-DESC',
                 })}
                 className="w-full py-2 rounded-xl text-xs font-semibold text-red-500 border border-red-200 hover:bg-red-50 transition-all">
-                ✕ Clear filters
+                Clear filters
               </button>
             )}
           </div>
@@ -413,7 +400,7 @@ export default function UniversityList() {
                           {uni.cover_url ? (
                             <img src={coverUrl(uni.cover_url) || uni.cover_url} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-slate-100 to-slate-200">🏛️</div>
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-500"><Building2 size={52} /></div>
                           )}
                           {/* Type badge */}
                           <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-bold capitalize"
@@ -424,7 +411,7 @@ export default function UniversityList() {
                           {uni.is_featured && (
                             <span className="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-bold"
                               style={{ background: '#fff7ed', color: '#F47B20', border: '1px solid #fed7aa' }}>
-                              ⭐ Featured
+                              <span className="inline-flex items-center gap-1"><Star size={12} className="fill-current" /> Featured</span>
                             </span>
                           )}
                         </div>
@@ -435,11 +422,11 @@ export default function UniversityList() {
                             <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center shrink-0 text-lg overflow-hidden">
                               {uni.logo_url
                                 ? <img src={logoUrl(uni.logo_url)} alt="" className="w-full h-full object-cover" />
-                                : '🎓'}
+                                : <GraduationCap size={18} className="text-slate-500" />}
                             </div>
                             <div className="min-w-0">
                               <h3 className="text-sm font-bold text-slate-800 leading-tight group-hover:text-[#1B3A6B] transition-colors line-clamp-2">{uni.name}</h3>
-                              <p className="text-xs text-slate-500 mt-0.5">📍 {uni.province}</p>
+                              <p className="text-xs text-slate-500 mt-0.5 inline-flex items-center gap-1"><MapPin size={12} /> {uni.province}</p>
                             </div>
                           </div>
 
@@ -450,7 +437,7 @@ export default function UniversityList() {
                           {/* Stats */}
                           <div className="flex items-center justify-between text-xs pt-3 border-t border-slate-100">
                             <span className="font-semibold" style={{ color: '#F47B20' }}>
-                              ★ {uni.rating_avg ? Number(uni.rating_avg).toFixed(1) : '—'}
+                              <span className="inline-flex items-center gap-1"><Star size={12} className="fill-current" /> {uni.rating_avg ? Number(uni.rating_avg).toFixed(1) : '—'}</span>
                             </span>
                             {uni.tuition_min && (
                               <span className="text-slate-500">{formatCurrency(uni.tuition_min)}/yr</span>
@@ -460,13 +447,13 @@ export default function UniversityList() {
                           {/* Tags */}
                           <div className="flex gap-1.5 mt-3 flex-wrap">
                             {uni.scholarship_available && (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">🏆 Scholarship</span>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200"><Trophy size={12} /> Scholarship</span>
                             )}
                             {uni.dormitory_available && (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">🏠 Dorm</span>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"><House size={12} /> Dorm</span>
                             )}
                             {uni.international_students && (
-                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">🌏 Intl</span>
+                              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">Intl</span>
                             )}
                           </div>
                         </div>

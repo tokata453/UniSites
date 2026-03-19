@@ -41,6 +41,7 @@ const list = async (req, res) => {
     const { count, rows } = await db.Opportunity.findAndCountAll({
       where,
       ...getPagination({ page, limit }),
+      distinct: true,
       order: [[safeSort, safeOrder]],
       include: [
         { model: db.OpportunityTag, as: 'Tags' },

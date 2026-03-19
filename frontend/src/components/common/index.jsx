@@ -115,26 +115,68 @@ export const Empty = ({ title = 'Nothing here yet', description = '', action }) 
 // ── Pagination ─────────────────────────────────────────────────────────────────
 export const Pagination = ({ page, totalPages, onNext, onPrev, onPage }) => {
   if (totalPages <= 1) return null;
+
+  const safePage = Math.max(1, Math.min(page || 1, totalPages));
+  const windowSize = 7;
+  const half = Math.floor(windowSize / 2);
+  let start = Math.max(1, safePage - half);
+  let end = Math.min(totalPages, start + windowSize - 1);
+
+  if (end - start + 1 < windowSize) {
+    start = Math.max(1, end - windowSize + 1);
+  }
+
+  const pages = Array.from({ length: end - start + 1 }, (_, i) => start + i);
+
   return (
     <div className="flex items-center justify-center gap-2 mt-8">
-      <button onClick={onPrev} disabled={page === 1}
-        className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 transition-all shadow-sm">
-        ← Prev
+      <button onClick={onPrev} disabled={safePage === 1}
+        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 transition-all shadow-sm">
+        <ChevronLeft size={15} />
+        <span>Prev</span>
       </button>
-      {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => i + 1).map((p) => (
+
+      {start > 1 && (
+        <>
+          <button
+            onClick={() => onPage?.(1)}
+            className="w-9 h-9 rounded-lg text-sm font-medium transition-all border shadow-sm bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+          >
+            1
+          </button>
+          {start > 2 && <span className="px-1 text-slate-400">…</span>}
+        </>
+      )}
+
+      {pages.map((p) => (
         <button key={p} onClick={() => onPage?.(p)}
           className={`w-9 h-9 rounded-lg text-sm font-medium transition-all border shadow-sm ${
-            p === page
+            p === safePage
               ? 'bg-[#1B3A6B] border-[#1B3A6B] text-white'
               : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
           }`}>
           {p}
         </button>
       ))}
-      <button onClick={onNext} disabled={page === totalPages}
-        className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 transition-all shadow-sm">
-        Next →
+
+      {end < totalPages && (
+        <>
+          {end < totalPages - 1 && <span className="px-1 text-slate-400">…</span>}
+          <button
+            onClick={() => onPage?.(totalPages)}
+            className="w-9 h-9 rounded-lg text-sm font-medium transition-all border shadow-sm bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+          >
+            {totalPages}
+          </button>
+        </>
+      )}
+
+      <button onClick={onNext} disabled={safePage === totalPages}
+        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 transition-all shadow-sm">
+        <span>Next</span>
+        <ChevronRight size={15} />
       </button>
     </div>
   );
 };
+import { ChevronLeft, ChevronRight } from 'lucide-react';

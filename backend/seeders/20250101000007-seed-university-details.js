@@ -1,12 +1,17 @@
 "use strict";
 const { randomUUID } = require("crypto");
+const {
+  createContentImage,
+  createUniversityCover,
+  createUniversityLogo,
+} = require("../utils/mediaPlaceholders");
 
 module.exports = {
   async up(queryInterface) {
     const now = new Date();
 
     const unis = await queryInterface.sequelize.query(
-      `SELECT id, slug, name, province, type, email, phone, facebook_url, website_url, founded_year, location, address, accreditation, description, description_km, meta_title, meta_description, instagram_url, youtube_url, linkedin_url, tiktok_url FROM universities`,
+      `SELECT id, slug, name, province, type, email, phone, facebook_url, website_url, founded_year, location, address, accreditation, description, description_km, meta_title, meta_description, instagram_url, youtube_url, linkedin_url, tiktok_url, logo_url, cover_url FROM universities`,
       { type: queryInterface.sequelize.QueryTypes.SELECT },
     );
     const uniMap = Object.fromEntries(unis.map((u) => [u.slug, u.id]));
@@ -84,6 +89,10 @@ module.exports = {
       await queryInterface.bulkUpdate(
         "universities",
         {
+          logo_url: uni.logo_url || createUniversityLogo(uni.name, uni.type || "university"),
+          cover_url:
+            uni.cover_url ||
+            createUniversityCover(uni.name, uni.province || "Cambodia", uni.type || "university"),
           description: uni.description || generatedDescription,
           accreditation: uni.accreditation || "Accreditation Committee of Cambodia (ACC)",
           location: uni.location || `${uni.province || "Cambodia"}, Cambodia`,
@@ -510,13 +519,25 @@ module.exports = {
       ]));
     const newsToInsert = [...newsItems, ...generatedNewsItems]
       .filter((n) => n.university_id)
-      .map((n) => ({
-        id: randomUUID(),
-        author_id: null,
-        ...n,
-        created_at: now,
-        updated_at: now,
-      }));
+      .map((n) => {
+        const fallbackImage = createContentImage(
+          n.title,
+          n.category || "News",
+          n.excerpt || n.content || "University update",
+        );
+        return {
+          id: randomUUID(),
+          author_id: null,
+          cover_url: n.cover_url || fallbackImage,
+          image_urls:
+            Array.isArray(n.image_urls) && n.image_urls.length
+              ? n.image_urls
+              : [n.cover_url || fallbackImage],
+          ...n,
+          created_at: now,
+          updated_at: now,
+        };
+      });
     await queryInterface.bulkInsert("university_news", newsToInsert, {
       ignoreDuplicates: true,
     });
@@ -643,15 +664,27 @@ module.exports = {
       ]));
     const eventsToInsert = [...events, ...generatedEvents]
       .filter((e) => e.university_id)
-      .map((e) => ({
-        id: randomUUID(),
-        meeting_url: null,
-        registration_deadline: null,
-        is_online: false,
-        ...e,
-        created_at: now,
-        updated_at: now,
-      }));
+      .map((e) => {
+        const fallbackImage = createContentImage(
+          e.title,
+          e.type ? String(e.type).replace(/_/g, " ") : "Event",
+          e.location || e.description || "Campus event",
+        );
+        return {
+          id: randomUUID(),
+          meeting_url: null,
+          registration_deadline: null,
+          is_online: false,
+          cover_url: e.cover_url || fallbackImage,
+          image_urls:
+            Array.isArray(e.image_urls) && e.image_urls.length
+              ? e.image_urls
+              : [e.cover_url || fallbackImage],
+          ...e,
+          created_at: now,
+          updated_at: now,
+        };
+      });
     await queryInterface.bulkInsert("university_events", eventsToInsert, {
       ignoreDuplicates: true,
     });

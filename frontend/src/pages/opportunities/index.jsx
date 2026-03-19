@@ -1,41 +1,94 @@
 import { useState, useEffect } from 'react';
+import { BadgeCheck, BookOpen, BriefcaseBusiness, ChevronLeft, ChevronRight, CircleDollarSign, Clock3, ExternalLink, Globe2, GraduationCap, Hammer, Landmark, Mail, MapPinned, Microscope, Monitor, Phone, Pin, Search, Star, Trophy, TriangleAlert, Users, HandHeart } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { opportunityApi, inboxApi } from '@/api';
 import { Spinner, Pagination, Empty } from '@/components/common';
-import { avatarUrl, formatDate, truncate } from '@/utils';
+import { avatarUrl, coverUrl, formatDate, logoUrl, truncate } from '@/utils';
 import { useAuth, useToast } from '@/hooks';
 
 const TYPES = ['', 'scholarship', 'internship', 'exchange', 'competition', 'workshop', 'research', 'parttime', 'volunteer'];
 
 const TYPE_STYLES = {
-  scholarship: { bg: '#f0fdf4', border: '#bbf7d0', text: '#15803d', emoji: '🏆' },
-  internship:  { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8', emoji: '💼' },
-  exchange:    { bg: '#faf5ff', border: '#e9d5ff', text: '#7c3aed', emoji: '🌏' },
-  competition: { bg: '#fefce8', border: '#fef08a', text: '#a16207', emoji: '🥇' },
-  workshop:    { bg: '#fff7ed', border: '#fed7aa', text: '#c2410c', emoji: '🛠️' },
-  research:    { bg: '#f0f9ff', border: '#bae6fd', text: '#0369a1', emoji: '🔬' },
-  parttime:    { bg: '#f8fafc', border: '#e2e8f0', text: '#475569', emoji: '⏰' },
-  volunteer:   { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534', emoji: '🤝' },
+  scholarship: { bg: '#f0fdf4', border: '#bbf7d0', text: '#15803d', icon: Trophy },
+  internship:  { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8', icon: BriefcaseBusiness },
+  exchange:    { bg: '#faf5ff', border: '#e9d5ff', text: '#7c3aed', icon: Globe2 },
+  competition: { bg: '#fefce8', border: '#fef08a', text: '#a16207', icon: Landmark },
+  workshop:    { bg: '#fff7ed', border: '#fed7aa', text: '#c2410c', icon: Hammer },
+  research:    { bg: '#f0f9ff', border: '#bae6fd', text: '#0369a1', icon: Microscope },
+  parttime:    { bg: '#f8fafc', border: '#e2e8f0', text: '#475569', icon: Clock3 },
+  volunteer:   { bg: '#f0fdf4', border: '#bbf7d0', text: '#166534', icon: HandHeart },
 };
 
 const TypeBadge = ({ type }) => {
-  const s = TYPE_STYLES[type] || { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8', emoji: '📌' };
+  const s = TYPE_STYLES[type] || { bg: '#eff6ff', border: '#bfdbfe', text: '#1d4ed8', icon: Pin };
+  const Icon = s.icon;
   return (
     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize"
       style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.text }}>
-      {s.emoji} {type}
+      <Icon size={12} /> {type}
     </span>
   );
 };
 
-const SearchIcon = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-    <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-  </svg>
-);
+const SearchIcon = () => <Search size={15} />;
 
 const isExpired   = (d) => d && new Date(d) < new Date();
 const daysLeft    = (d) => Math.ceil((new Date(d) - new Date()) / (1000 * 60 * 60 * 24));
+
+const OpportunityMediaCarousel = ({ images = [], title, imageIndex = 0, onPrev, onNext }) => {
+  if (!images.length) return null;
+  const currentIndex = Math.max(0, Math.min(imageIndex, images.length - 1));
+  const currentImage = images[currentIndex];
+
+  return (
+    <div className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+      <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden bg-slate-100">
+        <img
+          src={coverUrl(currentImage) || currentImage}
+          alt={title}
+          className="h-full max-h-[440px] w-full object-cover"
+        />
+
+        {images.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                onPrev?.();
+              }}
+              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-slate-700 shadow-sm transition hover:bg-white"
+              aria-label="Previous image"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                onNext?.();
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-slate-700 shadow-sm transition hover:bg-white"
+              aria-label="Next image"
+            >
+              <ChevronRight size={18} />
+            </button>
+            <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full bg-black/35 px-3 py-1.5 backdrop-blur-sm">
+              {images.map((_, index) => (
+                <span
+                  key={`${title}-image-dot-${index}`}
+                  className={`h-2 w-2 rounded-full transition-all ${
+                    index === currentIndex ? 'bg-white' : 'bg-white/45'
+                  }`}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
 
 // ── OpportunitiesPage ─────────────────────────────────────────────────────────
 export function OpportunitiesPage() {
@@ -48,6 +101,8 @@ export function OpportunitiesPage() {
 
   const limit      = showAll ? 1000 : 12;
   const totalPages = Math.ceil(total / limit);
+  const safeTotalPages = Math.max(totalPages, 1);
+  const setSafePage = (nextPage) => setPage(Math.max(1, Math.min(nextPage, safeTotalPages)));
   const sf = (k) => (v) => { setFilters((p) => ({ ...p, [k]: v })); setPage(1); };
 
   useEffect(() => {
@@ -133,7 +188,7 @@ export function OpportunitiesPage() {
                     style={active
                       ? { background: t ? s.text : '#1B3A6B', color: '#fff', border: `1px solid ${t ? s.text : '#1B3A6B'}`, boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }
                       : { background: '#f8fafc', color: '#64748b', border: '1px solid #e2e8f0' }}>
-                    {t ? `${s.emoji || ''} ${t}` : 'All'}
+                    {t ? t : 'All'}
                   </button>
                 );
               })}
@@ -155,7 +210,25 @@ export function OpportunitiesPage() {
                 const ts      = TYPE_STYLES[opp.type] || {};
                 return (
                   <Link key={opp.id} to={`/opportunities/${opp.slug}`} className="group block">
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 h-full flex flex-col p-5">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 h-full overflow-hidden flex flex-col">
+
+                      {/* Cover */}
+                      <div className="relative h-48 overflow-hidden bg-slate-100">
+                        {opp.cover_url ? (
+                          <img
+                            src={coverUrl(opp.cover_url) || opp.cover_url}
+                            alt={opp.title}
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-slate-400">
+                            <BriefcaseBusiness size={34} />
+                          </div>
+                        )}
+                        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/20 to-transparent" />
+                      </div>
+
+                      <div className="p-5 flex flex-1 flex-col">
 
                       {/* Top row */}
                       <div className="flex items-center justify-between mb-3">
@@ -164,13 +237,13 @@ export function OpportunitiesPage() {
                           {opp.is_featured && (
                             <span className="px-2 py-0.5 rounded-full text-xs font-bold"
                               style={{ background: '#fefce8', color: '#a16207', border: '1px solid #fef08a' }}>
-                              ⭐ Featured
+                              <span className="inline-flex items-center gap-1"><Star size={12} className="fill-current" /> Featured</span>
                             </span>
                           )}
                           {opp.is_fully_funded && (
                             <span className="px-2 py-0.5 rounded-full text-xs font-bold"
                               style={{ background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
-                              💰 Full Funding
+                              <span className="inline-flex items-center gap-1"><CircleDollarSign size={12} /> Full Funding</span>
                             </span>
                           )}
                         </div>
@@ -181,11 +254,25 @@ export function OpportunitiesPage() {
                         {opp.title}
                       </h3>
 
-                      {/* Org */}
+                      {/* Source */}
                       {opp.University && (
-                        <p className="text-xs text-slate-500 mb-2 flex items-center gap-1">
-                          🎓 {opp.University.name}
-                        </p>
+                        <div className="mb-3 flex items-center gap-2">
+                          <div className="h-8 w-8 overflow-hidden rounded-full border border-slate-200 bg-white flex items-center justify-center text-[11px] font-bold text-slate-600 shrink-0">
+                            {opp.University.logo_url ? (
+                              <img
+                                src={logoUrl(opp.University.logo_url) || opp.University.logo_url}
+                                alt={opp.University.name}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              opp.University.name?.[0]?.toUpperCase() || 'U'
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-slate-700 truncate">{opp.University.name}</p>
+                            <p className="text-[11px] text-slate-400">Official university</p>
+                          </div>
+                        </div>
                       )}
                       {!opp.University && opp.PostedBy && (
                         <div className="mb-3 flex items-center gap-2">
@@ -214,16 +301,17 @@ export function OpportunitiesPage() {
                           expired ? (
                             <span className="text-slate-400 line-through">Expired</span>
                           ) : days <= 7 ? (
-                            <span className="font-bold" style={{ color: '#dc2626' }}>⚠️ {days}d left</span>
+                            <span className="inline-flex items-center gap-1 font-bold" style={{ color: '#dc2626' }}><TriangleAlert size={12} /> {days}d left</span>
                           ) : (
-                            <span className="text-slate-500">⏰ {formatDate(opp.deadline)}</span>
+                            <span className="inline-flex items-center gap-1 text-slate-500"><Clock3 size={12} /> {formatDate(opp.deadline)}</span>
                           )
                         ) : (
                           <span className="text-slate-400">No deadline</span>
                         )}
                         <span className="font-semibold group-hover:underline" style={{ color: '#1B3A6B' }}>
-                          View →
+                          <span className="inline-flex items-center gap-1">View <ChevronRight size={13} /></span>
                         </span>
+                      </div>
                       </div>
                     </div>
                   </Link>
@@ -234,9 +322,9 @@ export function OpportunitiesPage() {
             {!showAll && (
               <div className="mt-8">
                 <Pagination page={page} totalPages={totalPages}
-                  onNext={() => setPage((p) => p + 1)}
-                  onPrev={() => setPage((p) => p - 1)}
-                  onPage={setPage} />
+                  onNext={() => setSafePage(page + 1)}
+                  onPrev={() => setSafePage(page - 1)}
+                  onPage={setSafePage} />
               </div>
             )}
           </>
@@ -254,12 +342,24 @@ export function OpportunityDetail() {
   const { error, info } = useToast();
   const [opp,     setOpp]     = useState(null);
   const [loading, setLoading] = useState(true);
+  const [imageIndex, setImageIndex] = useState(0);
 
   useEffect(() => {
     opportunityApi.getBySlug(slug)
       .then((res) => setOpp(res.data.opportunity))
       .finally(() => setLoading(false));
   }, [slug]);
+
+  useEffect(() => {
+    setImageIndex(0);
+  }, [slug]);
+
+  const mediaImages =
+    Array.isArray(opp?.image_urls) && opp.image_urls.length
+      ? opp.image_urls
+      : opp?.cover_url
+      ? [opp.cover_url]
+      : [];
 
   if (loading) return <div className="flex justify-center py-32"><Spinner size="lg" /></div>;
   if (!opp)    return <div className="text-center py-32 text-slate-400">Opportunity not found.</div>;
@@ -311,7 +411,7 @@ export function OpportunityDetail() {
 
         <Link to="/opportunities"
           className="text-sm font-medium text-slate-500 hover:text-[#1B3A6B] mb-6 inline-flex items-center gap-1 transition-colors">
-          ← Back to Opportunities
+          <ChevronLeft size={15} /> Back to Opportunities
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -321,11 +421,19 @@ export function OpportunityDetail() {
 
             {/* Hero card */}
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+              <OpportunityMediaCarousel
+                images={mediaImages}
+                title={opp.title}
+                imageIndex={imageIndex}
+                onPrev={() => setImageIndex((current) => (current - 1 + mediaImages.length) % mediaImages.length)}
+                onNext={() => setImageIndex((current) => (current + 1) % mediaImages.length)}
+              />
+
               <div className="flex gap-2 mb-4 flex-wrap">
                 <TypeBadge type={opp.type} />
-                {opp.is_featured    && <span className="px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ background:'#fefce8', color:'#a16207', border:'1px solid #fef08a' }}>⭐ Featured</span>}
-                {opp.is_fully_funded && <span className="px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ background:'#f0fdf4', color:'#15803d', border:'1px solid #bbf7d0' }}>💰 Full Funding</span>}
-                {opp.is_verified    && <span className="px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ background:'#eff6ff', color:'#1d4ed8', border:'1px solid #bfdbfe' }}>✓ Verified</span>}
+                {opp.is_featured    && <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ background:'#fefce8', color:'#a16207', border:'1px solid #fef08a' }}><Star size={12} className="fill-current" /> Featured</span>}
+                {opp.is_fully_funded && <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ background:'#f0fdf4', color:'#15803d', border:'1px solid #bbf7d0' }}><CircleDollarSign size={12} /> Full Funding</span>}
+                {opp.is_verified    && <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold" style={{ background:'#eff6ff', color:'#1d4ed8', border:'1px solid #bfdbfe' }}><BadgeCheck size={12} /> Verified</span>}
               </div>
 
               <h1 className="text-xl font-bold text-slate-800 mb-3 leading-snug">{opp.title}</h1>
@@ -334,7 +442,7 @@ export function OpportunityDetail() {
                 <Link to={`/universities/${opp.University.slug}`}
                   className="text-sm font-semibold hover:underline mb-4 inline-flex items-center gap-1 transition-colors"
                   style={{ color: '#1B3A6B' }}>
-                  🎓 {opp.University.name}
+                  <GraduationCap size={15} /> {opp.University.name}
                 </Link>
               )}
               {!opp.University && opp.PostedBy && (
@@ -360,19 +468,19 @@ export function OpportunityDetail() {
                 <div className="flex flex-wrap gap-3 mt-5 pt-5 border-t border-slate-100">
                   {opp.funding_amount && (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-green-50 border border-green-200">
-                      <span className="text-xs font-bold text-green-700">💰 Funding</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-green-700"><CircleDollarSign size={12} /> Funding</span>
                       <span className="text-xs text-green-600">{opp.funding_amount} {opp.funding_currency}</span>
                     </div>
                   )}
                   {opp.country && (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-blue-50 border border-blue-200">
-                      <span className="text-xs font-bold text-blue-700">🌍 Country</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-blue-700"><Globe2 size={12} /> Country</span>
                       <span className="text-xs text-blue-600">{opp.country}</span>
                     </div>
                   )}
                   {opp.is_online && (
                     <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-purple-50 border border-purple-200">
-                      <span className="text-xs font-bold text-purple-700">💻 Online</span>
+                      <span className="inline-flex items-center gap-1 text-xs font-bold text-purple-700"><Monitor size={12} /> Online</span>
                     </div>
                   )}
                 </div>
@@ -383,7 +491,7 @@ export function OpportunityDetail() {
             {opp.eligibility && (
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                 <h3 className="text-sm font-bold text-slate-700 mb-3 flex items-center gap-2">
-                  ✅ <span style={{ color: '#1B3A6B' }}>Eligibility Requirements</span>
+                  <BadgeCheck size={15} /> <span style={{ color: '#1B3A6B' }}>Eligibility Requirements</span>
                 </h3>
                 <p className="text-sm text-slate-600 leading-relaxed whitespace-pre-line">{opp.eligibility}</p>
               </div>
@@ -392,7 +500,7 @@ export function OpportunityDetail() {
             {/* Field of study */}
             {opp.field_of_study?.length > 0 && (
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                <h3 className="text-sm font-bold text-slate-700 mb-3">📚 Fields of Study</h3>
+                <h3 className="inline-flex items-center gap-2 text-sm font-bold text-slate-700 mb-3"><BookOpen size={15} /> Fields of Study</h3>
                 <div className="flex flex-wrap gap-2">
                   {opp.field_of_study.map((f) => (
                     <span key={f} className="px-3 py-1 rounded-xl text-xs font-medium bg-slate-50 border border-slate-200 text-slate-600">{f}</span>
@@ -445,13 +553,13 @@ export function OpportunityDetail() {
                   <button className="w-full py-3 rounded-xl text-sm font-bold text-white hover:opacity-90 transition-all shadow-sm"
                     style={{ background: expired ? '#94a3b8' : '#F47B20' }}
                     disabled={expired}>
-                    {expired ? 'Applications Closed' : 'Apply Now →'}
+                    {expired ? 'Applications Closed' : <span className="inline-flex items-center gap-1">Apply Now <ChevronRight size={14} /></span>}
                   </button>
                 </a>
               ) : (
                 <button className="w-full py-3 rounded-xl text-sm font-bold text-white hover:opacity-90 transition-all shadow-sm"
                   style={{ background: expired ? '#94a3b8' : '#F47B20' }}>
-                  {expired ? 'Applications Closed' : 'Apply Now →'}
+                  {expired ? 'Applications Closed' : <span className="inline-flex items-center gap-1">Apply Now <ChevronRight size={14} /></span>}
                 </button>
               )}
 
@@ -470,7 +578,7 @@ export function OpportunityDetail() {
                 <a href={opp.source_url} target="_blank" rel="noreferrer"
                   className="block text-center text-xs font-medium mt-3 hover:underline transition-colors"
                   style={{ color: '#1B3A6B' }}>
-                  View original source →
+                  <span className="inline-flex items-center gap-1">View original source <ExternalLink size={13} /></span>
                 </a>
               )}
             </div>
@@ -506,11 +614,11 @@ export function OpportunityDetail() {
                   <a href={`mailto:${opp.contact_email}`}
                     className="text-sm font-medium hover:underline transition-colors flex items-center gap-1"
                     style={{ color: '#1B3A6B' }}>
-                    ✉️ {opp.contact_email}
+                    <Mail size={14} /> {opp.contact_email}
                   </a>
                 )}
                 {opp.PostedBy?.contact_phone && (
-                  <p className="mt-3 text-sm font-medium text-slate-600">📞 {opp.PostedBy.contact_phone}</p>
+                  <p className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-slate-600"><Phone size={14} /> {opp.PostedBy.contact_phone}</p>
                 )}
                 {opp.PostedBy?.website_url && (
                   <a
@@ -520,7 +628,7 @@ export function OpportunityDetail() {
                     className="mt-3 inline-flex items-center gap-1 text-sm font-medium hover:underline"
                     style={{ color: '#1B3A6B' }}
                   >
-                    🌐 Visit organization website
+                    <Globe2 size={14} /> Visit organization website
                   </a>
                 )}
               </div>

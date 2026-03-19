@@ -1,5 +1,6 @@
 "use strict";
 const { randomUUID } = require("crypto");
+const { createContentImage } = require("../utils/mediaPlaceholders");
 
 module.exports = {
   async up(queryInterface) {
@@ -1621,7 +1622,23 @@ module.exports = {
       slug: seededSlugs,
     });
 
-    await queryInterface.bulkInsert("opportunities", opps);
+    const opportunitiesToInsert = opps.map((opp) => {
+      const fallbackImage = createContentImage(
+        opp.title,
+        opp.type || "Opportunity",
+        opp.location || opp.country || opp.description,
+      );
+      return {
+        cover_url: opp.cover_url || fallbackImage,
+        image_urls:
+          Array.isArray(opp.image_urls) && opp.image_urls.length
+            ? opp.image_urls
+            : [opp.cover_url || fallbackImage],
+        ...opp,
+      };
+    });
+
+    await queryInterface.bulkInsert("opportunities", opportunitiesToInsert);
 
     // ── OpportunityTags ───────────────────────────────────────────────────────
     const tagMap = {

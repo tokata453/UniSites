@@ -62,6 +62,16 @@ const getPublisher = (item) => {
 const getTimestamp = (item) =>
   item.kind === 'news' ? item.News?.published_at || item.News?.created_at : item.Opportunity?.created_at;
 
+const getFeedItemKey = (item) => `${item.kind}:${item.id}`;
+
+const mergeUniqueFeedItems = (prev, next) => {
+  const map = new Map();
+  [...prev, ...next].forEach((item) => {
+    map.set(getFeedItemKey(item), item);
+  });
+  return Array.from(map.values());
+};
+
 const InteractionButton = ({ active = false, icon, label, count, onClick }) => (
   <button
     type="button"
@@ -152,17 +162,23 @@ export default function FeedPage() {
   const [commentSubmitting, setCommentSubmitting] = useState({});
   const [imageIndexes, setImageIndexes] = useState({});
   const loadMoreRef = useRef(null);
+  const requestedPagesRef = useRef(new Set());
 
   useEffect(() => {
     setPage(1);
     setItems([]);
     setHasNextPage(false);
+    requestedPagesRef.current = new Set();
   }, [filter, search]);
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
+      const requestKey = `${filter}:${search.trim()}:${page}`;
+      if (requestedPagesRef.current.has(requestKey)) return;
+      requestedPagesRef.current.add(requestKey);
+
       if (page === 1) setLoading(true);
       else setLoadingMore(true);
       try {
@@ -174,10 +190,11 @@ export default function FeedPage() {
         });
         if (!cancelled) {
           const nextItems = res.data.items || [];
-          setItems((prev) => (page === 1 ? nextItems : [...prev, ...nextItems]));
+          setItems((prev) => (page === 1 ? nextItems : mergeUniqueFeedItems(prev, nextItems)));
           setHasNextPage(Boolean(res.data.meta?.hasNext));
         }
       } catch {
+        requestedPagesRef.current.delete(requestKey);
         if (!cancelled && page === 1) {
           setItems([]);
           setHasNextPage(false);
@@ -212,22 +229,24 @@ export default function FeedPage() {
     return () => observer.disconnect();
   }, [hasNextPage, loading, loadingMore, items.length]);
 
+  const visibleItems = useMemo(() => mergeUniqueFeedItems([], items), [items]);
+
   const summary = useMemo(() => {
-    const newsCount = items.filter((item) => item.kind === 'news').length;
-    const opportunityCount = items.filter((item) => item.kind === 'opportunity').length;
-    const featuredCount = items.filter((item) => item.Opportunity?.is_featured || item.News?.is_pinned).length;
-    const publishers = new Set(items.map((item) => getPublisher(item).name)).size;
+    const newsCount = visibleItems.filter((item) => item.kind === 'news').length;
+    const opportunityCount = visibleItems.filter((item) => item.kind === 'opportunity').length;
+    const featuredCount = visibleItems.filter((item) => item.Opportunity?.is_featured || item.News?.is_pinned).length;
+    const publishers = new Set(visibleItems.map((item) => getPublisher(item).name)).size;
     return { newsCount, opportunityCount, featuredCount, publishers };
-  }, [items]);
+  }, [visibleItems]);
 
   const trendingTopics = useMemo(() => {
     const source = [];
-    items.forEach((item) => {
+    visibleItems.forEach((item) => {
       if (item.kind === 'news' && item.News?.category) source.push(item.News.category);
       if (item.kind === 'opportunity' && item.Opportunity?.type) source.push(item.Opportunity.type);
     });
     return Array.from(new Set(source)).slice(0, 6);
-  }, [items]);
+  }, [visibleItems]);
 
   const updateItemMetrics = (itemType, itemId, patch) => {
     setItems((prev) =>
@@ -346,14 +365,14 @@ export default function FeedPage() {
           <div className="space-y-4">
             {loading ? (
               <div className="flex justify-center py-20"><Spinner size="lg" /></div>
-            ) : items.length === 0 ? (
+            ) : visibleItems.length === 0 ? (
               <Empty title="Nothing in the feed yet" description="Try a different filter or search term." />
             ) : (
               <div className="space-y-4">
-                {items.map((item) => {
+                {visibleItems.map((item) => {
                   const publisher = getPublisher(item);
                   const timestamp = getTimestamp(item);
-                  const key = `${item.kind}:${item.id}`;
+                  const key = getFeedItemKey(item);
                   const comments = commentsByItem[key] || [];
                   const commentsOpen = !!openComments[key];
 

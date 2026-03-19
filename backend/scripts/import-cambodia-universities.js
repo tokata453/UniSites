@@ -3,6 +3,10 @@
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
+const {
+  createUniversityLogo,
+  createUniversityCover,
+} = require('../utils/mediaPlaceholders');
 
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
@@ -105,6 +109,18 @@ function buildUniversityPayload(entry) {
 
   if (!payload.meta_description && payload.name && payload.province) {
     payload.meta_description = `${payload.name} in ${payload.province}, Cambodia.`;
+  }
+
+  if (!payload.logo_url && payload.name) {
+    payload.logo_url = createUniversityLogo(payload.name, payload.type || 'university');
+  }
+
+  if (!payload.cover_url && payload.name) {
+    payload.cover_url = createUniversityCover(
+      payload.name,
+      payload.province || 'Cambodia',
+      payload.type || 'university'
+    );
   }
 
   return payload;

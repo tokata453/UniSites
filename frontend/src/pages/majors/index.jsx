@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, GraduationCap, Rocket, Search, School, Sparkles, Target, TriangleAlert } from 'lucide-react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { majorApi } from '@/api';
 
@@ -109,7 +110,7 @@ const MajorCard = ({ major }) => {
 
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
           <div style={{ width:46, height:46, borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, transition:'background 0.2s', background: hov ? '#1B3A6B12' : '#f8fafc', border:'1px solid #e2e8f0' }}>
-            {major.icon || '📚'}
+            {major.icon || <BookOpen size={22} />}
           </div>
           <div style={{ display:'flex', gap:4, flexWrap:'wrap', justifyContent:'flex-end' }}>
             {major.is_stem     && <Badge color="sky">STEM</Badge>}
@@ -220,16 +221,16 @@ export function MajorsPage() {
           {/* Quiz CTA banner */}
           <div style={{ marginBottom:32, padding:'20px 24px', borderRadius:16, background:'linear-gradient(135deg, #1B3A6B, #2d5fa8)', display:'flex', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between', gap:12, boxShadow:'0 4px 20px rgba(27,58,107,0.2)' }}>
             <div>
-              <p style={{ fontSize:15, fontWeight:700, color:'#fff', margin:'0 0 4px' }}>🎯 Not sure which major suits you?</p>
+              <p style={{ fontSize:15, fontWeight:700, color:'#fff', margin:'0 0 4px', display:'flex', alignItems:'center', gap:8 }}><Target size={16} /> Not sure which major suits you?</p>
               <p style={{ fontSize:13, color:'rgba(255,255,255,0.65)', margin:0 }}>Take our quiz and get personalized major recommendations.</p>
             </div>
-            <Link to="/majors/quiz"><Btn variant="orange">Take the Quiz →</Btn></Link>
+            <Link to="/majors/quiz"><Btn variant="orange"><span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>Take the Quiz <ArrowRight size={14} /></span></Btn></Link>
           </div>
 
           {/* Featured */}
           {featured.length > 0 && (
             <div style={{ marginBottom:36 }}>
-              <p style={{ fontSize:11, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:14 }}>⭐ Featured Majors</p>
+              <p style={{ fontSize:11, fontWeight:700, color:'#94a3b8', letterSpacing:'0.1em', textTransform:'uppercase', marginBottom:14, display:'inline-flex', alignItems:'center', gap:6 }}><Sparkles size={12} /> Featured Majors</p>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:14 }}>
                 {featured.slice(0, 4).map(m => <MajorCard key={m.id} major={m} />)}
               </div>
@@ -382,7 +383,7 @@ export function MajorsPage() {
             <div style={CENTER}><Spinner /></div>
           ) : filtered.length === 0 ? (
             <div style={{ ...CENTER, flexDirection:'column', gap:8 }}>
-              <span style={{ fontSize:32 }}>🔍</span>
+              <Search size={32} color="#94a3b8" />
               <p style={{ color:'#94a3b8', fontSize:14 }}>No majors found. Try different filters.</p>
             </div>
           ) : (
@@ -435,7 +436,7 @@ export function MajorDetail() {
 
           <Link to="/majors" style={{ textDecoration:'none', color:'#64748b', fontSize:13, display:'inline-flex', alignItems:'center', gap:6, marginBottom:28, transition:'color 0.15s', fontWeight:500 }}
             onMouseEnter={e => e.currentTarget.style.color='#1B3A6B'} onMouseLeave={e => e.currentTarget.style.color='#64748b'}>
-            ← Back to Majors
+            <ArrowLeft size={14} /> Back to Majors
           </Link>
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 300px', gap:24, alignItems:'start' }}>
@@ -447,7 +448,7 @@ export function MajorDetail() {
               <Card style={{ padding:24 }}>
                 <div style={{ display:'flex', gap:18, alignItems:'flex-start' }}>
                   <div style={{ width:60, height:60, borderRadius:18, background:'#f1f5f9', border:'1px solid #e2e8f0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, flexShrink:0 }}>
-                    {major.icon || '📚'}
+                    {major.icon || <BookOpen size={30} />}
                   </div>
                   <div style={{ flex:1 }}>
                     <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:8 }}>
@@ -470,7 +471,7 @@ export function MajorDetail() {
               {major.career_paths?.length > 0 && (
                 <Card style={{ padding:20 }}>
                   <p style={{ fontSize:13, fontWeight:700, color:'#1e293b', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
-                    💼 <span style={{ color:'#1B3A6B' }}>Career Paths</span>
+                    <BriefcaseBusiness size={15} color="#1B3A6B" /> <span style={{ color:'#1B3A6B' }}>Career Paths</span>
                   </p>
                   <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
                     {major.career_paths.map(c => (
@@ -498,7 +499,7 @@ export function MajorDetail() {
               {major.Programs?.length > 0 && (
                 <Card style={{ padding:20 }}>
                   <p style={{ fontSize:13, fontWeight:700, color:'#1e293b', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
-                    🎓 <span style={{ color:'#15803d' }}>Programs Offering This Major</span>
+                    <GraduationCap size={15} color="#15803d" /> <span style={{ color:'#15803d' }}>Programs Offering This Major</span>
                   </p>
                   <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                     {major.Programs.map(prog => (
@@ -573,7 +574,7 @@ export function MajorDetail() {
                       <Link key={uni.id} to={`/universities/${uni.slug}`} style={{ textDecoration:'none', display:'flex', alignItems:'center', gap:10, padding:'8px 10px', borderRadius:8, transition:'background 0.15s' }}
                         onMouseEnter={e => e.currentTarget.style.background='#f8fafc'}
                         onMouseLeave={e => e.currentTarget.style.background='transparent'}>
-                        <div style={{ width:28, height:28, borderRadius:8, background:'#eff6ff', border:'1px solid #bfdbfe', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, flexShrink:0 }}>🏛️</div>
+                        <div style={{ width:28, height:28, borderRadius:8, background:'#eff6ff', border:'1px solid #bfdbfe', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, color:'#1d4ed8' }}><School size={14} /></div>
                         <span style={{ fontSize:12, color:'#475569', fontWeight:500 }}>{uni.name}</span>
                       </Link>
                     ))}
@@ -657,21 +658,21 @@ export function MajorQuiz() {
 
           <Link to="/majors" style={{ textDecoration:'none', color:'#64748b', fontSize:13, display:'inline-flex', alignItems:'center', gap:6, marginBottom:28, transition:'color 0.15s', fontWeight:500 }}
             onMouseEnter={e => e.currentTarget.style.color='#1B3A6B'} onMouseLeave={e => e.currentTarget.style.color='#64748b'}>
-            ← Back to Majors
+            <ArrowLeft size={14} /> Back to Majors
           </Link>
 
           {results ? (
             /* ── Results ── */
             <div style={{ animation:'fadeUp 0.4s ease-out' }}>
               <div style={{ textAlign:'center', marginBottom:32 }}>
-                <div style={{ fontSize:48, marginBottom:12 }}>🎯</div>
+                <div style={{ marginBottom:12, color:'#1B3A6B' }}><Target size={48} /></div>
                 <h1 style={{ fontSize:26, fontWeight:800, color:'#0f172a', margin:'0 0 8px', fontFamily:"'Syne',sans-serif" }}>Your Recommended Majors</h1>
                 <p style={{ fontSize:13, color:'#64748b' }}>Based on your answers, here are your best matches</p>
               </div>
 
               {results.length === 0 ? (
                 <div style={{ ...CENTER, flexDirection:'column', gap:8 }}>
-                  <span style={{ fontSize:32 }}>😅</span>
+                  <TriangleAlert size={32} color="#94a3b8" />
                   <p style={{ color:'#94a3b8', fontSize:14 }}>No matches found. Try again!</p>
                 </div>
               ) : (
@@ -679,7 +680,7 @@ export function MajorQuiz() {
                   {results.map((m, i) => (
                     <Card key={m.id} style={{ padding:18, display:'flex', alignItems:'center', gap:14 }} hover>
                       <div style={{ fontSize:26, width:48, height:48, borderRadius:14, background:'#f1f5f9', border:'1px solid #e2e8f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                        {m.icon || '📚'}
+                        {m.icon || <BookOpen size={26} />}
                       </div>
                       <div style={{ flex:1 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4, flexWrap:'wrap' }}>
@@ -696,7 +697,7 @@ export function MajorQuiz() {
                         </div>
                       </div>
                       <Link to={`/majors/${m.slug}`} style={{ textDecoration:'none' }}>
-                        <Btn variant="secondary" size="sm">View →</Btn>
+                        <Btn variant="secondary" size="sm"><span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>View <ArrowRight size={14} /></span></Btn>
                       </Link>
                     </Card>
                   ))}
@@ -713,7 +714,7 @@ export function MajorQuiz() {
             /* ── Quiz ── */
             <div style={{ animation:'fadeUp 0.4s ease-out' }}>
               <div style={{ textAlign:'center', marginBottom:32 }}>
-                <div style={{ fontSize:48, marginBottom:12 }}>🎓</div>
+                <div style={{ marginBottom:12, color:'#1B3A6B' }}><GraduationCap size={48} /></div>
                 <h1 style={{ fontSize:26, fontWeight:800, color:'#0f172a', margin:'0 0 8px', fontFamily:"'Syne',sans-serif" }}>Find Your Perfect Major</h1>
                 <p style={{ fontSize:13, color:'#64748b' }}>Answer {total} quick questions for personalized recommendations</p>
               </div>
@@ -775,15 +776,15 @@ export function MajorQuiz() {
                   {/* Nav */}
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                     <Btn variant="ghost" size="sm" onClick={() => setStep(p => Math.max(0, p - 1))} disabled={step === 0}>
-                      ← Previous
+                      <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}><ArrowLeft size={14} /> Previous</span>
                     </Btn>
                     {isLast ? (
                       <Btn onClick={submit} loading={submitting} disabled={answered < total}>
-                        Get Recommendations 🎯
+                        <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>Get Recommendations <Target size={14} /></span>
                       </Btn>
                     ) : (
                       <Btn variant="secondary" size="sm" onClick={() => setStep(p => p + 1)} disabled={!answers[current?.id]}>
-                        Next →
+                        <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>Next <ArrowRight size={14} /></span>
                       </Btn>
                     )}
                   </div>
