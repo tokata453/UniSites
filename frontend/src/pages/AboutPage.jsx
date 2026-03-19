@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { BadgeCheck, Building2, CircleDollarSign, Globe2, Mail, MapPin, MessagesSquare, MapPinned, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const useInView = () => {
@@ -26,27 +27,27 @@ const Reveal = ({ children, delay = 0, className = '' }) => {
 };
 
 const TIMELINE = [
-  { year: '2024', title: 'The Idea',       desc: 'Seven AUPP students noticed how hard it was to find reliable university info in Cambodia and decided to build the solution.' },
-  { year: 'Jan 2025', title: 'Development Begins', desc: 'The team started designing and building UniSites as part of the INFO 251-001 course at AUPP.' },
-  { year: 'Mar 2025', title: 'Beta Launch',  desc: 'First version launched with 10 universities, basic search, and campus updates. Early users provided valuable feedback.' },
-  { year: 'Sep 2025', title: 'Full Launch',  desc: 'UniSites launched publicly with 50+ universities, scholarship finder, Major Quiz, and complete owner dashboards.' },
+  { year: '2025', title: 'The Idea',       desc: 'Seven AUPP students noticed how hard it was to find reliable university info in Cambodia and decided to build the solution.' },
+  { year: 'Jun 2025', title: 'Development Begins', desc: 'The team started designing and building UniSites as part of the INFO 251-001 course at AUPP.' },
+  { year: 'Nov 2025', title: 'Beta Launch',  desc: 'First version launched with 10 universities, basic search, and campus updates. Early users provided valuable feedback.' },
+  { year: 'Mar 2026', title: 'Full Launch',  desc: 'UniSites launched publicly with 50+ universities, scholarship finder, Major Quiz, and complete owner dashboards.' },
 ];
 
 const VALUES = [
-  { icon: '🔓', title: 'Always Free',         desc: 'Every feature — search, quiz, feed, scholarships — is completely free for students. No paywalls, ever.',     color: '#1B3A6B' },
-  { icon: '✅', title: 'Verified Data',        desc: 'University profiles are reviewed and kept up to date. We work directly with institutions to ensure accuracy.',  color: '#3DAE6B' },
-  { icon: '🇰🇭', title: 'Cambodia First',       desc: 'Every decision we make is guided by what\'s best for Cambodian students navigating higher education.',          color: '#F47B20' },
-  { icon: '🌐', title: 'Open & Transparent',   desc: 'We show you everything — tuition, ratings, reviews, contact info — with no hidden agendas or paid rankings.',   color: '#4AAEE0' },
+  { icon: CircleDollarSign, title: 'Always Free',       desc: 'Every feature — search, quiz, feed, scholarships — is completely free for students. No paywalls, ever.',     color: '#1B3A6B' },
+  { icon: BadgeCheck, title: 'Verified Data',      desc: 'University profiles are reviewed and kept up to date. We work directly with institutions to ensure accuracy.',  color: '#3DAE6B' },
+  { icon: MapPinned, title: 'Cambodia First',     desc: 'Every decision we make is guided by what\'s best for Cambodian students navigating higher education.',          color: '#F47B20' },
+  { icon: Globe2, title: 'Open & Transparent', desc: 'We show you everything — tuition, ratings, reviews, contact info — with no hidden agendas or paid rankings.',   color: '#4AAEE0' },
 ];
 
 const TEAM = [
-  { name: 'Dara Sok',     role: 'Project Lead & Backend',  avatar: 'DS', color: '#1B3A6B' },
-  { name: 'Sreymom Chan', role: 'Frontend Developer',       avatar: 'SC', color: '#3DAE6B' },
-  { name: 'Bopha Lim',    role: 'UI/UX Designer',           avatar: 'BL', color: '#F47B20' },
-  { name: 'Piseth Kem',   role: 'Backend Developer',        avatar: 'PK', color: '#4AAEE0' },
-  { name: 'Channary Ros', role: 'Database & API',           avatar: 'CR', color: '#8b5cf6' },
-  { name: 'Sokha Meas',   role: 'Frontend Developer',       avatar: 'SM', color: '#ec4899' },
-  { name: 'Virak Phan',   role: 'QA & Documentation',       avatar: 'VP', color: '#f59e0b' },
+  { name: 'Panhaseth SUY', role: 'Project Lead & Backend', avatar: 'PS', color: '#1B3A6B', image: '/src/assets/images/avatars/panhaseth.JPG' },
+  { name: 'Taiseng LAI', role: 'Frontend Developer', avatar: 'TL', color: '#3DAE6B', image: '/src/assets/images/avatars/taiseng.jpeg' },
+  { name: 'Narithithya PANG', role: 'UI/UX Designer', avatar: 'NP', color: '#F47B20', image: '/src/assets/images/avatars/tithya.jpg' },
+  { name: 'Vireakpanha CHAMROEUN', role: 'Backend Developer', avatar: 'VC', color: '#4AAEE0', image: '/src/assets/images/avatars/panha.png' },
+  { name: 'Chansonaza PAN', role: 'Database & API', avatar: 'CP', color: '#8b5cf6', image: '/src/assets/images/avatars/naza.jpg' },
+  { name: 'Chumsomary LOEUNG', role: 'Frontend Developer', avatar: 'CL', color: '#ec4899', image: '/src/assets/images/avatars/mary.jpg' },
+  { name: 'Kimhorng PRAK', role: 'QA & Documentation', avatar: 'KP', color: '#f59e0b', image: '/src/assets/images/avatars/kimhorng.jpeg' },
 ];
 
 const FAQS = [
@@ -55,12 +56,6 @@ const FAQS = [
   { q: 'How accurate is the university data?',  a: 'We work directly with universities to verify information. Profiles are reviewed regularly and owners can update their info anytime.' },
   { q: 'Can I trust the student reviews?',      a: 'Reviews are moderated by our admin team before publishing. We verify student status where possible to ensure authenticity.' },
 ];
-
-const Icon = ({ d, size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-    <path d={d} />
-  </svg>
-);
 
 const SectionLabel = ({ children, color = '#1B3A6B' }) => (
   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-4"
@@ -189,7 +184,9 @@ export default function AboutPage() {
             {VALUES.map((v, i) => (
               <Reveal key={v.title} delay={i * 80}>
                 <div className="group p-6 rounded-2xl border border-slate-200 bg-white hover:shadow-md hover:-translate-y-1 transition-all duration-200">
-                  <div className="text-3xl mb-4">{v.icon}</div>
+                  <div className="mb-4" style={{ color: v.color }}>
+                    <v.icon size={28} strokeWidth={2} />
+                  </div>
                   <h3 className="text-sm font-bold mb-2" style={{ color: v.color }}>{v.title}</h3>
                   <p className="text-xs text-slate-500 leading-relaxed">{v.desc}</p>
                 </div>
@@ -217,9 +214,22 @@ export default function AboutPage() {
             {TEAM.map((member, i) => (
               <Reveal key={member.name} delay={i * 60}>
                 <div className="group text-center p-6 rounded-2xl bg-white border border-slate-200 hover:shadow-md hover:-translate-y-1 transition-all duration-200">
-                  <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center text-base font-bold text-white transition-transform group-hover:scale-105"
-                    style={{ background: `linear-gradient(135deg, ${member.color}, ${member.color}bb)` }}>
-                    {member.avatar}
+                  <div className="w-14 h-14 overflow-hidden rounded-2xl mx-auto mb-3 transition-transform group-hover:scale-105">
+                    {member.image?.trim() ? (
+                      <img
+                        src={member.image}
+                        alt={`${member.name} profile`}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div
+                        className="flex h-full w-full items-center justify-center text-base font-bold text-white"
+                        style={{ background: `linear-gradient(135deg, ${member.color}, ${member.color}bb)` }}
+                      >
+                        {member.avatar}
+                      </div>
+                    )}
                   </div>
                   <p className="text-sm font-bold text-slate-800 mb-0.5">{member.name}</p>
                   <p className="text-xs text-slate-500">{member.role}</p>
@@ -250,7 +260,7 @@ export default function AboutPage() {
                     className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-slate-50 transition-all">
                     <span className="text-sm font-semibold text-slate-800">{faq.q}</span>
                     <span className="text-slate-400 shrink-0 ml-4 transition-transform duration-200" style={{ transform: openFaq === i ? 'rotate(45deg)' : 'none' }}>
-                      <Icon d="M12 5v14M5 12h14" size={16} />
+                      <Plus size={16} strokeWidth={2} />
                     </span>
                   </button>
                   {openFaq === i && (
@@ -280,15 +290,15 @@ export default function AboutPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
             {[
-              { icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z', label: 'Email', value: 'hello@unisites.kh', href: 'mailto:hello@unisites.kh', color: '#1B3A6B' },
-              { icon: 'M17 8l4 4m0 0l-4 4m4-4H3', label: 'Facebook', value: 'UniSites Cambodia', href: 'https://facebook.com', color: '#4AAEE0' },
-              { icon: 'M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z', label: 'Location', value: 'Phnom Penh, Cambodia', href: null, color: '#3DAE6B' },
+              { icon: Mail, label: 'Email', value: 'hello@unisites.kh', href: 'mailto:hello@unisites.kh', color: '#1B3A6B' },
+              { icon: MessagesSquare, label: 'Facebook', value: 'UniSites Cambodia', href: 'https://facebook.com', color: '#4AAEE0' },
+              { icon: MapPin, label: 'Location', value: 'Phnom Penh, Cambodia', href: null, color: '#3DAE6B' },
             ].map((item, i) => (
               <Reveal key={item.label} delay={i * 80}>
                 <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-sm hover:shadow-md transition-all text-center">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3"
                     style={{ background: `${item.color}10`, color: item.color }}>
-                    <Icon d={item.icon} size={18} />
+                    <item.icon size={18} strokeWidth={2} />
                   </div>
                   <p className="text-xs text-slate-400 mb-1 font-medium uppercase tracking-wide">{item.label}</p>
                   {item.href ? (
@@ -313,17 +323,26 @@ export default function AboutPage() {
               <div className="flex gap-3 justify-center flex-wrap">
                 <a href="mailto:hello@unisites.kh">
                   <button className="px-6 py-3 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-all shadow-sm" style={{ background: '#1B3A6B' }}>
-                    ✉️ Email Us
+                    <span className="inline-flex items-center gap-2">
+                      <Mail size={16} strokeWidth={2} />
+                      <span>Email Us</span>
+                    </span>
                   </button>
                 </a>
                 <Link to="/register?role=owner">
                   <button className="px-6 py-3 rounded-xl text-sm font-semibold text-white hover:opacity-90 transition-all shadow-sm" style={{ background: '#F47B20' }}>
-                    🏫 List Your University
+                    <span className="inline-flex items-center gap-2">
+                      <Building2 size={16} strokeWidth={2} />
+                      <span>List Your University</span>
+                    </span>
                   </button>
                 </Link>
                 <a href="https://facebook.com" target="_blank" rel="noreferrer">
                   <button className="px-6 py-3 rounded-xl text-sm font-semibold border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all">
-                    Follow Us
+                    <span className="inline-flex items-center gap-2">
+                      <MessagesSquare size={16} strokeWidth={2} />
+                      <span>Follow Us</span>
+                    </span>
                   </button>
                 </a>
               </div>

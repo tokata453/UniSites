@@ -518,7 +518,7 @@ export default function UniversityDetail() {
               onClick={handleMessageUniversity}
               className="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm transition-all"
             >
-              ✉️ Inbox
+              ✉️ Message University
             </button>
             {isAuthenticated && (
               <button onClick={handleSave} disabled={savingLoading || savedLoading}

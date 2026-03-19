@@ -267,6 +267,16 @@ export function OpportunityDetail() {
   const ts      = TYPE_STYLES[opp.type] || {};
   const expired = isExpired(opp.deadline);
   const days    = opp.deadline && !expired ? daysLeft(opp.deadline) : null;
+  const messageLabel = opp.PostedBy
+    ? 'Message Organization'
+    : opp.University
+    ? 'Message University'
+    : 'Message Poster';
+  const messageHint = opp.PostedBy
+    ? 'Starts a direct conversation with the organization that posted this opportunity.'
+    : opp.University
+    ? 'Sends your message to the university contact behind this opportunity.'
+    : 'Starts a direct conversation with the opportunity contact.';
   const inboxPath = user?.Role?.name === 'owner'
     ? '/owner/inbox'
     : user?.Role?.name === 'organization'
@@ -450,8 +460,11 @@ export function OpportunityDetail() {
                 onClick={handleMessage}
                 className="mt-3 w-full rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50"
               >
-                Message Poster
+                {messageLabel}
               </button>
+              <p className="mt-2 text-center text-xs leading-5 text-slate-400">
+                {messageHint}
+              </p>
 
               {opp.source_url && (
                 <a href={opp.source_url} target="_blank" rel="noreferrer"
