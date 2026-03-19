@@ -332,17 +332,17 @@ export default function FeedPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)_320px]">
-          <div className="space-y-4">
-            <Card className="p-5 sm:p-6 lg:sticky lg:top-24">
+      <div className="mx-auto max-w-7xl px-3 py-4 sm:px-6 sm:py-8 lg:px-8">
+        <div className="grid gap-4 lg:gap-6 lg:grid-cols-[260px_minmax(0,1fr)_320px]">
+          <div className="space-y-4 lg:order-1">
+            <Card className="p-4 sm:p-6 lg:sticky lg:top-24">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Campus activity</p>
-              <h1 className="mt-1 text-3xl font-bold text-slate-900" style={{ fontFamily: "'Syne',sans-serif" }}>Feed</h1>
+              <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl" style={{ fontFamily: "'Syne',sans-serif" }}>Feed</h1>
               <p className="mt-2 text-sm leading-6 text-slate-600">
                 Follow official university updates and opportunities from across Cambodia in one place.
               </p>
 
-              <div className="mt-5 flex flex-wrap gap-2 lg:flex-col">
+              <div className="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
                 {FILTERS.map((option) => (
                   <Pill key={option.value} active={filter === option.value} onClick={() => setFilter(option.value)}>
                     {option.label}
@@ -362,7 +362,7 @@ export default function FeedPage() {
             </Card>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-4 lg:order-2">
             {loading ? (
               <div className="flex justify-center py-20"><Spinner size="lg" /></div>
             ) : visibleItems.length === 0 ? (
@@ -378,7 +378,7 @@ export default function FeedPage() {
 
                   return (
                     <Card key={key} className="overflow-hidden">
-                      <div className="p-5 sm:p-6">
+                      <div className="p-4 sm:p-6">
                         <div className="flex items-start gap-3">
                           <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full border border-slate-200 bg-slate-100">
                             {publisher.avatar ? (
@@ -414,13 +414,13 @@ export default function FeedPage() {
                         <div className="mt-4">
                           {item.kind === 'news' ? (
                             <>
-                              <h2 className="text-xl font-semibold leading-snug text-slate-900">{item.News?.title}</h2>
-                              <p className="mt-3 text-sm leading-7 text-slate-600">{truncate(item.News?.excerpt || item.News?.content, 260)}</p>
+                              <h2 className="text-lg font-semibold leading-snug text-slate-900 sm:text-xl">{item.News?.title}</h2>
+                              <p className="mt-3 text-sm leading-7 text-slate-600">{truncate(item.News?.excerpt || item.News?.content, 220)}</p>
                             </>
                           ) : (
                             <>
-                              <h2 className="text-xl font-semibold leading-snug text-slate-900">{item.Opportunity?.title}</h2>
-                              <p className="mt-3 text-sm leading-7 text-slate-600">{truncate(item.Opportunity?.description, 260)}</p>
+                              <h2 className="text-lg font-semibold leading-snug text-slate-900 sm:text-xl">{item.Opportunity?.title}</h2>
+                              <p className="mt-3 text-sm leading-7 text-slate-600">{truncate(item.Opportunity?.description, 220)}</p>
                             </>
                           )}
                         </div>
@@ -442,7 +442,7 @@ export default function FeedPage() {
                           />
                         </div>
 
-                        <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                        <div className="mt-5 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                           <div className="flex flex-wrap gap-1">
                             <InteractionButton
                               active={item.liked_by_me}
@@ -460,7 +460,7 @@ export default function FeedPage() {
                           </div>
                           <Link
                             to={item.kind === 'news' ? `/universities/${item.News?.University?.slug || ''}` : `/opportunities/${item.Opportunity?.slug || ''}`}
-                            className={`inline-flex items-center rounded-full px-4 py-2 text-sm font-semibold transition-all ${
+                            className={`inline-flex w-full items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition-all sm:w-auto ${
                               item.kind === 'news'
                                 ? 'border border-slate-200 bg-white text-[#1B3A6B] hover:bg-slate-50'
                                 : 'bg-[#1B3A6B] text-white shadow-sm hover:opacity-90'
@@ -504,7 +504,7 @@ export default function FeedPage() {
                               )}
                             </div>
 
-                            <div className="mt-4 flex gap-2">
+                            <div className="mt-4 flex flex-col gap-2 sm:flex-row">
                               <input
                                 value={commentDrafts[key] || ''}
                                 onChange={(e) => setCommentDrafts((prev) => ({ ...prev, [key]: e.target.value }))}
@@ -516,7 +516,7 @@ export default function FeedPage() {
                                 type="button"
                                 onClick={() => handleSubmitComment(item)}
                                 disabled={!isAuthenticated || commentSubmitting[key]}
-                                className="rounded-2xl bg-[#1B3A6B] px-4 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                                className="rounded-2xl bg-[#1B3A6B] px-4 py-3 text-sm font-semibold text-white transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 sm:min-w-[92px]"
                               >
                                 {commentSubmitting[key] ? 'Posting...' : 'Post'}
                               </button>
@@ -535,7 +535,7 @@ export default function FeedPage() {
             )}
           </div>
 
-          <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
+          <div className="hidden space-y-4 lg:order-3 lg:sticky lg:top-24 lg:block lg:self-start">
             <Card className="p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Trending now</p>
               <div className="mt-4 space-y-3">
@@ -556,15 +556,15 @@ export default function FeedPage() {
               <div className="mt-4 space-y-4">
                 <div>
                   <div className="mb-1.5 flex items-center justify-between text-sm"><span className="text-slate-600">Official updates</span><span className="font-medium text-slate-800">{summary.newsCount}</span></div>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-blue-600" style={{ width: `${items.length ? (summary.newsCount / items.length) * 100 : 0}%` }} /></div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-blue-600" style={{ width: `${visibleItems.length ? (summary.newsCount / visibleItems.length) * 100 : 0}%` }} /></div>
                 </div>
                 <div>
                   <div className="mb-1.5 flex items-center justify-between text-sm"><span className="text-slate-600">Opportunities</span><span className="font-medium text-slate-800">{summary.opportunityCount}</span></div>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-600" style={{ width: `${items.length ? (summary.opportunityCount / items.length) * 100 : 0}%` }} /></div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-emerald-600" style={{ width: `${visibleItems.length ? (summary.opportunityCount / visibleItems.length) * 100 : 0}%` }} /></div>
                 </div>
                 <div>
                   <div className="mb-1.5 flex items-center justify-between text-sm"><span className="text-slate-600">Highlighted</span><span className="font-medium text-slate-800">{summary.featuredCount}</span></div>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-amber-500" style={{ width: `${items.length ? (summary.featuredCount / items.length) * 100 : 0}%` }} /></div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-amber-500" style={{ width: `${visibleItems.length ? (summary.featuredCount / visibleItems.length) * 100 : 0}%` }} /></div>
                 </div>
               </div>
             </Card>

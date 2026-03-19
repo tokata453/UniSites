@@ -257,6 +257,41 @@ function Panel({ title, description, children, action }) {
   );
 }
 
+function ModalPanel({ open, title, description, children, onClose, wide = false }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-3 sm:items-center sm:p-6">
+      <button
+        type="button"
+        className="absolute inset-0"
+        onClick={onClose}
+        aria-label="Close panel"
+      />
+      <div className={`relative z-10 max-h-[90vh] w-full overflow-y-auto rounded-[28px] border border-slate-200 bg-white p-5 shadow-2xl sm:p-6 ${wide ? 'max-w-3xl' : 'max-w-2xl'}`}>
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-bold text-slate-800">{title}</h3>
+            {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700"
+            aria-label="Close panel"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function Field({ label, children, hint }) {
   return (
     <label className="block">
@@ -674,7 +709,7 @@ export function OwnerOverview() {
         ) : null
       }
     >
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
         <OverviewStat label="Total Views" value={(analytics?.total_views ?? university?.views_count ?? 0).toLocaleString()} tone="blue" />
         <OverviewStat label="Average Rating" value={`${Number(university.rating_avg || 0).toFixed(1)} / 5`} tone="orange" />
         <OverviewStat label="Reviews" value={(university.review_count || 0).toLocaleString()} tone="green" />
@@ -708,7 +743,7 @@ export function OwnerOverview() {
             </div>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
             {[
               ['Gallery images', summary.gallery],
               ['Faculties', summary.faculties],
@@ -914,7 +949,7 @@ export function OwnerProfile() {
             <div className="space-y-5">
               <div>
                 <p className={labelClass}>Logo</p>
-                <div className="flex items-center gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                   <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 text-2xl text-slate-400">
                     {form.logo_url ? (
                       <img src={logoUrl(form.logo_url) || form.logo_url} alt="University logo" className="h-full w-full object-cover" />
@@ -922,12 +957,12 @@ export function OwnerProfile() {
                       '🎓'
                     )}
                   </div>
-                  <div className="space-y-2">
+                  <div className="min-w-0 flex-1 space-y-2">
                     <input
                       type="file"
                       accept="image/*"
                       onChange={(e) => handleAssetUpload('logo', e.target.files?.[0])}
-                      className="block text-sm text-slate-500"
+                      className="block w-full max-w-full text-sm text-slate-500"
                     />
                     <p className="text-xs text-slate-400">Best for square images. Upload first, then save profile changes.</p>
                     {uploadingLogo && <p className="text-xs font-medium text-[#1B3A6B]">Uploading logo...</p>}
@@ -951,7 +986,7 @@ export function OwnerProfile() {
                     type="file"
                     accept="image/*"
                     onChange={(e) => handleAssetUpload('cover', e.target.files?.[0])}
-                    className="block text-sm text-slate-500"
+                    className="block w-full max-w-full text-sm text-slate-500"
                   />
                   <p className="text-xs text-slate-400">Use a wide campus banner for the best result.</p>
                   {uploadingCover && <p className="text-xs font-medium text-[#1B3A6B]">Uploading cover...</p>}
@@ -1013,6 +1048,7 @@ export function OwnerGallery() {
   const [caption, setCaption] = useState('');
   const [category, setCategory] = useState('campus');
   const [uploading, setUploading] = useState(false);
+  const [galleryModalOpen, setGalleryModalOpen] = useState(false);
   const [focusIndex, setFocusIndex] = useState(null);
   const [galleryFilter, setGalleryFilter] = useState('all');
   const [galleryCategoryFilter, setGalleryCategoryFilter] = useState('all');
@@ -1135,6 +1171,7 @@ export function OwnerGallery() {
       setFiles([]);
       setCaption('');
       setCategory('campus');
+      setGalleryModalOpen(false);
       loadGallery(university.id);
     } catch (err) {
       error(err.response?.data?.message || 'Failed to upload gallery images');
@@ -1158,28 +1195,56 @@ export function OwnerGallery() {
 
   return (
     <PageSection title="Gallery" subtitle="Upload campus imagery to make your university page feel alive.">
-      <div className="grid gap-5 xl:grid-cols-[0.95fr_1.25fr]">
-        <Panel title="Upload Images" description="The backend accepts up to 20 images per upload.">
-          <div className="space-y-4">
-            <Field label="Images">
-              <input type="file" multiple accept="image/*" onChange={(e) => setFiles(Array.from(e.target.files || []))} className="block w-full text-sm text-slate-500" />
-            </Field>
-            <Field label="Category"><SelectInput value={category} onChange={(e) => setCategory(e.target.value)} options={GALLERY_OPTIONS} /></Field>
-            <Field label="Caption" hint="The same caption will be applied to this upload batch.">
-              <TextInput value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Campus tour, library, student life..." />
-            </Field>
-            {files.length > 0 && (
-              <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
-                <p className="font-semibold text-slate-700">Ready to upload</p>
-                <ul className="mt-2 space-y-1">
-                  {files.map((file) => <li key={`${file.name}-${file.lastModified}`}>{file.name}</li>)}
-                </ul>
-              </div>
-            )}
-            <button type="button" onClick={handleUpload} disabled={uploading || files.length === 0} className={primaryBtn}>{uploading ? 'Uploading...' : 'Upload Images'}</button>
-          </div>
-        </Panel>
+      <div className="mb-5">
+        <button type="button" onClick={() => setGalleryModalOpen(true)} className={primaryBtn}>Upload Images</button>
+      </div>
 
+      <ModalPanel
+        open={galleryModalOpen}
+        onClose={() => {
+          setGalleryModalOpen(false);
+          setFiles([]);
+          setCaption('');
+          setCategory('campus');
+        }}
+        title="Upload Gallery Images"
+        description="The backend accepts up to 20 images per upload."
+      >
+        <div className="space-y-4">
+          <Field label="Images">
+            <input type="file" multiple accept="image/*" onChange={(e) => setFiles(Array.from(e.target.files || []))} className="block w-full text-sm text-slate-500" />
+          </Field>
+          <Field label="Category"><SelectInput value={category} onChange={(e) => setCategory(e.target.value)} options={GALLERY_OPTIONS} /></Field>
+          <Field label="Caption" hint="The same caption will be applied to this upload batch.">
+            <TextInput value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Campus tour, library, student life..." />
+          </Field>
+          {files.length > 0 && (
+            <div className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600">
+              <p className="font-semibold text-slate-700">Ready to upload</p>
+              <ul className="mt-2 space-y-1">
+                {files.map((file) => <li key={`${file.name}-${file.lastModified}`}>{file.name}</li>)}
+              </ul>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-3">
+            <button type="button" onClick={handleUpload} disabled={uploading || files.length === 0} className={primaryBtn}>{uploading ? 'Uploading...' : 'Upload Images'}</button>
+            <button
+              type="button"
+              onClick={() => {
+                setGalleryModalOpen(false);
+                setFiles([]);
+                setCaption('');
+                setCategory('campus');
+              }}
+              className={secondaryBtn}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </ModalPanel>
+
+      <div className="grid gap-5">
         <Panel title="Current Gallery" description={`${gallery.length} image(s) currently shown for ${university.name}.`}>
           {galleryLoading ? (
             <LoadingBlock />
@@ -1232,21 +1297,38 @@ export function OwnerGallery() {
               ) : (
               <div className="grid grid-cols-2 gap-2 md:grid-cols-3 md:gap-3 xl:grid-cols-4">
               {filteredGallery.map((item, index) => (
-                <button
+                <div
                   key={item.id}
-                  type="button"
-                  onClick={() => setFocusIndex(index)}
                   className="group relative aspect-square overflow-hidden bg-slate-100 text-left shadow-sm"
                 >
-                  <img
-                    src={cloudinaryUrl(item.url, 'w_1200,h_1200,c_fit,q_auto,f_auto') || item.url}
-                    alt={item.caption || 'Gallery image'}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                  <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/60 via-slate-950/10 to-transparent px-3 py-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                    <p className="text-xs font-medium leading-5 text-white line-clamp-2">{item.caption || 'Gallery image'}</p>
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => setFocusIndex(index)}
+                    className="h-full w-full"
+                  >
+                    <img
+                      src={cloudinaryUrl(item.url, 'w_1200,h_1200,c_fit,q_auto,f_auto') || item.url}
+                      alt={item.caption || 'Gallery image'}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-slate-950/60 via-slate-950/10 to-transparent px-3 py-3 opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+                      <p className="text-xs font-medium leading-5 text-white line-clamp-2">{item.caption || 'Gallery image'}</p>
+                    </div>
+                  </button>
+                  {item.source === 'gallery' ? (
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleDelete(item.id);
+                      }}
+                      className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full border border-red-200 bg-white/95 text-lg leading-none text-red-600 shadow-sm transition hover:bg-red-50"
+                      aria-label="Delete uploaded image"
+                    >
+                      ×
+                    </button>
+                  ) : null}
+                </div>
               ))}
               </div>
               )}
@@ -1328,6 +1410,10 @@ export function OwnerFaculties() {
   const [programForm, setProgramForm] = useState(emptyProgramForm);
   const [editingFacultyId, setEditingFacultyId] = useState(null);
   const [editingProgramId, setEditingProgramId] = useState(null);
+  const [facultyModalOpen, setFacultyModalOpen] = useState(false);
+  const [programModalOpen, setProgramModalOpen] = useState(false);
+  const [openFacultyIds, setOpenFacultyIds] = useState([]);
+  const [openProgramIds, setOpenProgramIds] = useState([]);
 
   const loadData = useCallback(async (uniId) => {
     const [facRes, progRes, majorRes] = await Promise.all([
@@ -1343,6 +1429,18 @@ export function OwnerFaculties() {
   useEffect(() => {
     if (university?.id) loadData(university.id);
   }, [loadData, university?.id]);
+
+  useEffect(() => {
+    setOpenFacultyIds((prev) => {
+      const validIds = prev.filter((id) => faculties.some((faculty) => faculty.id === id));
+      if (validIds.length > 0) return validIds;
+      return faculties[0]?.id ? [faculties[0].id] : [];
+    });
+  }, [faculties]);
+
+  useEffect(() => {
+    setOpenProgramIds((prev) => prev.filter((id) => programs.some((program) => program.id === id)));
+  }, [programs]);
 
   const submitFaculty = async () => {
     setBusy(true);
@@ -1363,6 +1461,7 @@ export function OwnerFaculties() {
 
       setFacultyForm(emptyFacultyForm);
       setEditingFacultyId(null);
+      setFacultyModalOpen(false);
       loadData(university.id);
     } catch (err) {
       error(err.response?.data?.message || `Failed to ${editingFacultyId ? 'update' : 'add'} faculty`);
@@ -1381,11 +1480,13 @@ export function OwnerFaculties() {
       established_year: faculty.established_year || '',
       sort_order: faculty.sort_order || 0,
     });
+    setFacultyModalOpen(true);
   };
 
   const resetFacultyForm = () => {
     setFacultyForm(emptyFacultyForm);
     setEditingFacultyId(null);
+    setFacultyModalOpen(false);
   };
 
   const submitProgram = async () => {
@@ -1410,6 +1511,7 @@ export function OwnerFaculties() {
 
       setProgramForm(emptyProgramForm);
       setEditingProgramId(null);
+      setProgramModalOpen(false);
       loadData(university.id);
     } catch (err) {
       error(err.response?.data?.message || `Failed to ${editingProgramId ? 'update' : 'add'} program`);
@@ -1433,11 +1535,41 @@ export function OwnerFaculties() {
       description: program.description || '',
       is_available: Boolean(program.is_available),
     });
+    setProgramModalOpen(true);
   };
 
   const resetProgramForm = () => {
     setProgramForm(emptyProgramForm);
     setEditingProgramId(null);
+    setProgramModalOpen(false);
+  };
+
+  const startAddFaculty = () => {
+    setFacultyForm(emptyFacultyForm);
+    setEditingFacultyId(null);
+    setFacultyModalOpen(true);
+  };
+
+  const startAddProgram = (facultyId = '') => {
+    setProgramForm({ ...emptyProgramForm, faculty_id: facultyId });
+    setEditingProgramId(null);
+    setProgramModalOpen(true);
+  };
+
+  const toggleFacultyCard = (facultyId) => {
+    setOpenFacultyIds((prev) => (
+      prev.includes(facultyId)
+        ? prev.filter((id) => id !== facultyId)
+        : [...prev, facultyId]
+    ));
+  };
+
+  const toggleProgramCard = (programId) => {
+    setOpenProgramIds((prev) => (
+      prev.includes(programId)
+        ? prev.filter((id) => id !== programId)
+        : [...prev, programId]
+    ));
   };
 
   const deleteFaculty = async (id) => {
@@ -1463,123 +1595,264 @@ export function OwnerFaculties() {
   if (loading) return <LoadingBlock />;
   if (!university) return <NoUniversity />;
 
+  const facultyProgramsMap = faculties.reduce((acc, faculty) => {
+    acc[faculty.id] = programs.filter((program) => program.faculty_id === faculty.id);
+    return acc;
+  }, {});
+  const unassignedPrograms = programs.filter((program) => !program.faculty_id);
+
   return (
-    <PageSection title="Faculties & Programs" subtitle="Organize academic structure so students can browse what you offer.">
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Panel
-          title={editingFacultyId ? 'Edit Faculty' : 'Add Faculty'}
-          description={editingFacultyId ? 'Update faculty information and save the changes.' : undefined}
-        >
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Faculty Name"><TextInput value={facultyForm.name} onChange={(e) => setFacultyForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Faculty of Engineering" /></Field>
-            <Field label="Khmer Name"><TextInput value={facultyForm.name_km} onChange={(e) => setFacultyForm((prev) => ({ ...prev, name_km: e.target.value }))} placeholder="Optional" /></Field>
-            <Field label="Dean Name"><TextInput value={facultyForm.dean_name} onChange={(e) => setFacultyForm((prev) => ({ ...prev, dean_name: e.target.value }))} placeholder="Dean or head" /></Field>
-            <Field label="Established Year"><TextInput type="number" value={facultyForm.established_year} onChange={(e) => setFacultyForm((prev) => ({ ...prev, established_year: e.target.value }))} placeholder="2001" /></Field>
-            <div className="md:col-span-2">
-              <Field label="Description"><TextArea rows={4} value={facultyForm.description} onChange={(e) => setFacultyForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="Short faculty overview" /></Field>
-            </div>
+    <PageSection
+      title="Faculties & Programs"
+      subtitle="Organize academic structure faculty by faculty so students can browse what you offer more naturally."
+      action={(
+        <div className="flex flex-wrap gap-3">
+          <button type="button" onClick={startAddFaculty} className={primaryBtn}>Create Faculty</button>
+        </div>
+      )}
+    >
+      <ModalPanel
+        open={facultyModalOpen}
+        onClose={resetFacultyForm}
+        title={editingFacultyId ? 'Edit Faculty' : 'Add Faculty'}
+        description={editingFacultyId ? 'Update faculty information and save the changes.' : 'Create a new faculty or school for your university.'}
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Faculty Name"><TextInput value={facultyForm.name} onChange={(e) => setFacultyForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Faculty of Engineering" /></Field>
+          <Field label="Khmer Name"><TextInput value={facultyForm.name_km} onChange={(e) => setFacultyForm((prev) => ({ ...prev, name_km: e.target.value }))} placeholder="Optional" /></Field>
+          <Field label="Dean Name"><TextInput value={facultyForm.dean_name} onChange={(e) => setFacultyForm((prev) => ({ ...prev, dean_name: e.target.value }))} placeholder="Dean or head" /></Field>
+          <Field label="Established Year"><TextInput type="number" value={facultyForm.established_year} onChange={(e) => setFacultyForm((prev) => ({ ...prev, established_year: e.target.value }))} placeholder="2001" /></Field>
+          <div className="md:col-span-2">
+            <Field label="Description"><TextArea rows={4} value={facultyForm.description} onChange={(e) => setFacultyForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="Short faculty overview" /></Field>
           </div>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button type="button" onClick={submitFaculty} disabled={busy || !facultyForm.name.trim()} className={primaryBtn}>{busy ? 'Saving...' : editingFacultyId ? 'Update Faculty' : 'Add Faculty'}</button>
-            {editingFacultyId && <button type="button" onClick={resetFacultyForm} className={secondaryBtn}>Cancel</button>}
-          </div>
-        </Panel>
+        </div>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <button type="button" onClick={submitFaculty} disabled={busy || !facultyForm.name.trim()} className={primaryBtn}>{busy ? 'Saving...' : editingFacultyId ? 'Update Faculty' : 'Add Faculty'}</button>
+          <button type="button" onClick={resetFacultyForm} className={secondaryBtn}>Cancel</button>
+        </div>
+      </ModalPanel>
 
-        <Panel
-          title={editingProgramId ? 'Edit Program' : 'Add Program'}
-          description={editingProgramId ? 'Update program details and its linked major.' : 'Link each program to a major so public major pages can show the right university offerings.'}
-        >
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Program Name"><TextInput value={programForm.name} onChange={(e) => setProgramForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Bachelor of Computer Science" /></Field>
-            <Field label="Khmer Name"><TextInput value={programForm.name_km} onChange={(e) => setProgramForm((prev) => ({ ...prev, name_km: e.target.value }))} placeholder="Optional" /></Field>
-            <Field label="Faculty">
-              <SelectInput
-                value={programForm.faculty_id}
-                onChange={(e) => setProgramForm((prev) => ({ ...prev, faculty_id: e.target.value }))}
-                options={[
-                  { value: '', label: 'No faculty assigned' },
-                  ...faculties.map((faculty) => ({ value: faculty.id, label: faculty.name })),
-                ]}
-              />
-            </Field>
-            <Field label="Linked Major">
-              <SelectInput
-                value={programForm.major_id}
-                onChange={(e) => setProgramForm((prev) => ({ ...prev, major_id: e.target.value }))}
-                options={[
-                  { value: '', label: 'No linked major' },
-                  ...majors.map((major) => ({ value: major.id, label: major.name })),
-                ]}
-              />
-            </Field>
-            <Field label="Degree Level"><SelectInput value={programForm.degree_level} onChange={(e) => setProgramForm((prev) => ({ ...prev, degree_level: e.target.value }))} options={DEGREE_OPTIONS} /></Field>
-            <Field label="Duration (years)"><TextInput type="number" step="0.5" value={programForm.duration_years} onChange={(e) => setProgramForm((prev) => ({ ...prev, duration_years: e.target.value }))} placeholder="4" /></Field>
-            <Field label="Language"><TextInput value={programForm.language} onChange={(e) => setProgramForm((prev) => ({ ...prev, language: e.target.value }))} placeholder="English" /></Field>
-            <Field label="Tuition Fee (USD)"><TextInput type="number" value={programForm.tuition_fee} onChange={(e) => setProgramForm((prev) => ({ ...prev, tuition_fee: e.target.value }))} placeholder="1200" /></Field>
-            <Field label="Credits Required"><TextInput type="number" value={programForm.credits_required} onChange={(e) => setProgramForm((prev) => ({ ...prev, credits_required: e.target.value }))} placeholder="128" /></Field>
-            <div className="md:col-span-2">
-              <Field label="Description"><TextArea rows={4} value={programForm.description} onChange={(e) => setProgramForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="Program overview" /></Field>
-            </div>
+      <ModalPanel
+        open={programModalOpen}
+        onClose={resetProgramForm}
+        title={editingProgramId ? 'Edit Program' : 'Add Program'}
+        description={editingProgramId ? 'Update program details and its linked major.' : 'Link each program to a major so public major pages can show the right university offerings.'}
+        wide
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Program Name"><TextInput value={programForm.name} onChange={(e) => setProgramForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Bachelor of Computer Science" /></Field>
+          <Field label="Khmer Name"><TextInput value={programForm.name_km} onChange={(e) => setProgramForm((prev) => ({ ...prev, name_km: e.target.value }))} placeholder="Optional" /></Field>
+          <Field label="Faculty">
+            <SelectInput
+              value={programForm.faculty_id}
+              onChange={(e) => setProgramForm((prev) => ({ ...prev, faculty_id: e.target.value }))}
+              options={[
+                { value: '', label: 'No faculty assigned' },
+                ...faculties.map((faculty) => ({ value: faculty.id, label: faculty.name })),
+              ]}
+            />
+          </Field>
+          <Field label="Linked Major">
+            <SelectInput
+              value={programForm.major_id}
+              onChange={(e) => setProgramForm((prev) => ({ ...prev, major_id: e.target.value }))}
+              options={[
+                { value: '', label: 'No linked major' },
+                ...majors.map((major) => ({ value: major.id, label: major.name })),
+              ]}
+            />
+          </Field>
+          <Field label="Degree Level"><SelectInput value={programForm.degree_level} onChange={(e) => setProgramForm((prev) => ({ ...prev, degree_level: e.target.value }))} options={DEGREE_OPTIONS} /></Field>
+          <Field label="Duration (years)"><TextInput type="number" step="0.5" value={programForm.duration_years} onChange={(e) => setProgramForm((prev) => ({ ...prev, duration_years: e.target.value }))} placeholder="4" /></Field>
+          <Field label="Language"><TextInput value={programForm.language} onChange={(e) => setProgramForm((prev) => ({ ...prev, language: e.target.value }))} placeholder="English" /></Field>
+          <Field label="Tuition Fee (USD)"><TextInput type="number" value={programForm.tuition_fee} onChange={(e) => setProgramForm((prev) => ({ ...prev, tuition_fee: e.target.value }))} placeholder="1200" /></Field>
+          <Field label="Credits Required"><TextInput type="number" value={programForm.credits_required} onChange={(e) => setProgramForm((prev) => ({ ...prev, credits_required: e.target.value }))} placeholder="128" /></Field>
+          <div className="md:col-span-2">
+            <Field label="Description"><TextArea rows={4} value={programForm.description} onChange={(e) => setProgramForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="Program overview" /></Field>
           </div>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <ToggleField label="Currently available" checked={programForm.is_available} onChange={(value) => setProgramForm((prev) => ({ ...prev, is_available: value }))} />
-            <button type="button" onClick={submitProgram} disabled={busy || !programForm.name.trim()} className={primaryBtn}>{busy ? 'Saving...' : editingProgramId ? 'Update Program' : 'Add Program'}</button>
-            {editingProgramId && <button type="button" onClick={resetProgramForm} className={secondaryBtn}>Cancel</button>}
-          </div>
-        </Panel>
-      </div>
+        </div>
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <ToggleField label="Currently available" checked={programForm.is_available} onChange={(value) => setProgramForm((prev) => ({ ...prev, is_available: value }))} />
+          <button type="button" onClick={submitProgram} disabled={busy || !programForm.name.trim()} className={primaryBtn}>{busy ? 'Saving...' : editingProgramId ? 'Update Program' : 'Add Program'}</button>
+          <button type="button" onClick={resetProgramForm} className={secondaryBtn}>Cancel</button>
+        </div>
+      </ModalPanel>
 
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Panel title="Current Faculties" description={`${faculties.length} faculty record(s).`}>
-          {faculties.length === 0 ? <EmptyState title="No faculties yet" description="Start by adding your main faculties or schools." /> : (
-            <div className="space-y-3">
-              {faculties.map((faculty) => (
-                <div key={faculty.id} className="rounded-xl border border-slate-200 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-slate-800">{faculty.name}</p>
-                      <p className="mt-1 text-sm text-slate-500">{faculty.dean_name || 'No dean listed'}{faculty.established_year ? ` • Est. ${faculty.established_year}` : ''}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => startEditFaculty(faculty)} className={secondaryBtn}>Edit</button>
-                      <button type="button" onClick={() => deleteFaculty(faculty.id)} className={dangerBtn}>Delete</button>
-                    </div>
-                  </div>
-                  {faculty.description && <p className="mt-3 text-sm text-slate-600">{faculty.description}</p>}
-                </div>
-              ))}
-            </div>
-          )}
-        </Panel>
+      <Panel
+        title="Faculty Structure"
+        description={`${faculties.length} facult${faculties.length === 1 ? 'y' : 'ies'} and ${programs.length} total program${programs.length === 1 ? '' : 's'}.`}
+      >
+        {faculties.length === 0 ? (
+          <EmptyState title="No faculties yet" description="Create your first faculty, then add programs inside it." />
+        ) : (
+          <div className="space-y-4">
+            {faculties.map((faculty) => {
+              const facultyPrograms = facultyProgramsMap[faculty.id] || [];
+              const isOpen = openFacultyIds.includes(faculty.id);
 
-        <Panel title="Current Programs" description={`${programs.length} program record(s).`}>
-          {programs.length === 0 ? <EmptyState title="No programs yet" description="Add your most important academic programs so students can compare options." /> : (
-            <div className="space-y-3">
-              {programs.map((program) => (
-                <div key={program.id} className="rounded-xl border border-slate-200 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
+              return (
+                <div key={faculty.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+                  <button
+                    type="button"
+                    onClick={() => toggleFacultyCard(faculty.id)}
+                    className="flex w-full items-start justify-between gap-4 px-4 py-4 text-left transition hover:bg-slate-50"
+                  >
+                    <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-semibold text-slate-800">{program.name}</p>
-                        <StatusPill tone={program.is_available ? 'green' : 'amber'}>{program.is_available ? 'Available' : 'Unavailable'}</StatusPill>
-                        {program.Major?.name && <StatusPill tone="blue">{program.Major.name}</StatusPill>}
+                        <p className="text-base font-semibold text-slate-800 sm:text-lg">{faculty.name}</p>
+                        <StatusPill tone="blue">{facultyPrograms.length} Program{facultyPrograms.length === 1 ? '' : 's'}</StatusPill>
                       </div>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {program.Faculty?.name || 'No faculty'} • {program.degree_level || 'degree'} • {program.duration_years || 'N/A'} years
+                      <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+                        {faculty.dean_name || 'No dean listed'}
+                        {faculty.established_year ? ` • Est. ${faculty.established_year}` : ''}
                       </p>
                     </div>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => startEditProgram(program)} className={secondaryBtn}>Edit</button>
-                      <button type="button" onClick={() => deleteProgram(program.id)} className={dangerBtn}>Delete</button>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="hidden text-xs font-semibold uppercase tracking-wide text-slate-400 sm:inline">
+                        {isOpen ? 'Hide' : 'Show'}
+                      </span>
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                      >
+                        <path d="m6 9 6 6 6-6" />
+                      </svg>
                     </div>
-                  </div>
-                  {program.description && <p className="mt-3 text-sm text-slate-600">{program.description}</p>}
+                  </button>
+
+                  {isOpen ? (
+                    <div className="border-t border-slate-200 px-4 py-4">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          {faculty.description ? (
+                            <p className="text-sm leading-6 text-slate-600">{faculty.description}</p>
+                          ) : (
+                            <p className="text-sm text-slate-400">No faculty description added yet.</p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          <button type="button" onClick={() => startAddProgram(faculty.id)} className={primaryBtn}>Add Program</button>
+                          <button type="button" onClick={() => startEditFaculty(faculty)} className={secondaryBtn}>Edit Faculty</button>
+                          <button type="button" onClick={() => deleteFaculty(faculty.id)} className={dangerBtn}>Delete</button>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 space-y-3">
+                        {facultyPrograms.length === 0 ? (
+                          <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-5 text-sm text-slate-500">
+                            No programs in this faculty yet.
+                          </div>
+                        ) : (
+                          facultyPrograms.map((program) => (
+                            <div key={program.id} className="overflow-hidden rounded-xl border border-slate-200">
+                              <button
+                                type="button"
+                                onClick={() => toggleProgramCard(program.id)}
+                                className="flex w-full items-start justify-between gap-4 px-4 py-4 text-left transition hover:bg-slate-50"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="text-sm font-semibold text-slate-800 sm:text-base">{program.name}</p>
+                                    <StatusPill tone={program.is_available ? 'green' : 'amber'}>
+                                      {program.is_available ? 'Available' : 'Unavailable'}
+                                    </StatusPill>
+                                  </div>
+                                  <p className="mt-1 text-xs text-slate-500 sm:text-sm">
+                                    {program.degree_level || 'degree'} • {program.duration_years || 'N/A'} years
+                                    {program.language ? ` • ${program.language}` : ''}
+                                  </p>
+                                </div>
+                                <div className="flex shrink-0 items-center gap-3">
+                                  <span className="hidden text-xs font-semibold uppercase tracking-wide text-slate-400 sm:inline">
+                                    {openProgramIds.includes(program.id) ? 'Hide' : 'Show'}
+                                  </span>
+                                  <svg
+                                    width="18"
+                                    height="18"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className={`text-slate-400 transition-transform ${openProgramIds.includes(program.id) ? 'rotate-180' : ''}`}
+                                  >
+                                    <path d="m6 9 6 6 6-6" />
+                                  </svg>
+                                </div>
+                              </button>
+                              {openProgramIds.includes(program.id) ? (
+                                <div className="border-t border-slate-200 px-4 py-4">
+                                  <div className="flex flex-wrap items-start justify-between gap-3">
+                                    <div className="flex flex-wrap gap-2">
+                                      {program.Major?.name ? <StatusPill tone="blue">{program.Major.name}</StatusPill> : null}
+                                      {program.tuition_fee ? <StatusPill tone="slate">${Number(program.tuition_fee).toLocaleString()}</StatusPill> : null}
+                                      {program.credits_required ? <StatusPill tone="slate">{program.credits_required} credits</StatusPill> : null}
+                                    </div>
+                                    <div className="flex flex-nowrap gap-2">
+                                      <button type="button" onClick={() => startEditProgram(program)} className={`${secondaryBtn} whitespace-nowrap px-3 py-2`}>Edit</button>
+                                      <button type="button" onClick={() => deleteProgram(program.id)} className={`${dangerBtn} whitespace-nowrap`}>Delete</button>
+                                    </div>
+                                  </div>
+                                  {program.description ? (
+                                    <p className="mt-3 text-sm text-slate-600">{program.description}</p>
+                                  ) : (
+                                    <p className="mt-3 text-sm text-slate-400">No description added yet.</p>
+                                  )}
+                                </div>
+                              ) : null}
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })}
+          </div>
+        )}
+      </Panel>
+
+      {unassignedPrograms.length > 0 ? (
+        <Panel
+          title="Unassigned Programs"
+          description="These programs are not linked to a faculty yet."
+          action={<button type="button" onClick={() => startAddProgram('')} className={secondaryBtn}>Add Program</button>}
+        >
+          <div className="space-y-3">
+            {unassignedPrograms.map((program) => (
+              <div key={program.id} className="rounded-xl border border-slate-200 p-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-slate-800">{program.name}</p>
+                      <StatusPill tone={program.is_available ? 'green' : 'amber'}>
+                        {program.is_available ? 'Available' : 'Unavailable'}
+                      </StatusPill>
+                      {program.Major?.name ? <StatusPill tone="blue">{program.Major.name}</StatusPill> : null}
+                    </div>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {program.degree_level || 'degree'} • {program.duration_years || 'N/A'} years
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 sm:shrink-0">
+                    <button type="button" onClick={() => startEditProgram(program)} className={secondaryBtn}>Edit</button>
+                    <button type="button" onClick={() => deleteProgram(program.id)} className={dangerBtn}>Delete</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </Panel>
-      </div>
+      ) : null}
     </PageSection>
   );
 }
@@ -1597,6 +1870,8 @@ export function OwnerNews() {
   const [editingEventId, setEditingEventId] = useState(null);
   const [newsImageIndexes, setNewsImageIndexes] = useState({});
   const [eventImageIndexes, setEventImageIndexes] = useState({});
+  const [newsModalOpen, setNewsModalOpen] = useState(false);
+  const [eventModalOpen, setEventModalOpen] = useState(false);
 
   const loadData = useCallback(async (uniId) => {
     const [newsRes, eventRes] = await Promise.all([
@@ -1644,11 +1919,13 @@ export function OwnerNews() {
   const resetNewsForm = () => {
     setNewsForm(emptyNewsForm);
     setEditingNewsId(null);
+    setNewsModalOpen(false);
   };
 
   const resetEventForm = () => {
     setEventForm(emptyEventForm);
     setEditingEventId(null);
+    setEventModalOpen(false);
   };
 
   const startEditNews = (item) => {
@@ -1664,7 +1941,7 @@ export function OwnerNews() {
         : [],
       cover_url: item.cover_url || '',
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setNewsModalOpen(true);
   };
 
   const startEditEvent = (item) => {
@@ -1683,7 +1960,19 @@ export function OwnerNews() {
       registration_deadline: toDateTimeLocalValue(item.registration_deadline),
       max_participants: item.max_participants ?? '',
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setEventModalOpen(true);
+  };
+
+  const startCreateNews = () => {
+    setNewsForm(emptyNewsForm);
+    setEditingNewsId(null);
+    setNewsModalOpen(true);
+  };
+
+  const startCreateEvent = () => {
+    setEventForm(emptyEventForm);
+    setEditingEventId(null);
+    setEventModalOpen(true);
   };
 
   const uploadImages = async (kind, files) => {
@@ -1805,80 +2094,97 @@ export function OwnerNews() {
   if (!university) return <NoUniversity />;
 
   return (
-    <PageSection title="News & Events" subtitle="Keep your university page active with announcements and upcoming activities.">
-      <div className="grid gap-5 xl:grid-cols-2">
-        <Panel
-          title={editingNewsId ? 'Edit News Post' : 'Create News Post'}
-          description="Only published posts appear in the current public news feed."
-          action={editingNewsId ? <button type="button" onClick={resetNewsForm} className={secondaryBtn}>Cancel Editing</button> : null}
-        >
-          <div className="space-y-4">
-            <Field label="Title"><TextInput value={newsForm.title} onChange={(e) => setNewsForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Admissions open for 2026 intake" /></Field>
-            <Field label="Category"><TextInput value={newsForm.category} onChange={(e) => setNewsForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="Admissions, Scholarships, Campus Life" /></Field>
-            <Field label="Excerpt"><TextArea rows={3} value={newsForm.excerpt} onChange={(e) => setNewsForm((prev) => ({ ...prev, excerpt: e.target.value }))} placeholder="Short preview shown in listings" /></Field>
-            <Field label="Content"><TextArea rows={6} value={newsForm.content} onChange={(e) => setNewsForm((prev) => ({ ...prev, content: e.target.value }))} placeholder="Full article content" /></Field>
-            <Field label="Tags"><TextInput value={newsForm.tags} onChange={(e) => setNewsForm((prev) => ({ ...prev, tags: e.target.value }))} placeholder="admissions, scholarship, 2026" /></Field>
+    <PageSection
+      title="News & Events"
+      subtitle="Keep your university page active with announcements and upcoming activities."
+      action={(
+        <div className="flex flex-wrap gap-3">
+          <button type="button" onClick={startCreateNews} className={secondaryBtn}>Create News</button>
+          <button type="button" onClick={startCreateEvent} className={primaryBtn}>Create Event</button>
+        </div>
+      )}
+    >
+      <ModalPanel
+        open={newsModalOpen}
+        onClose={resetNewsForm}
+        title={editingNewsId ? 'Edit News Post' : 'Create News Post'}
+        description="Only published posts appear in the current public news feed."
+        wide
+      >
+        <div className="space-y-4">
+          <Field label="Title"><TextInput value={newsForm.title} onChange={(e) => setNewsForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Admissions open for 2026 intake" /></Field>
+          <Field label="Category"><TextInput value={newsForm.category} onChange={(e) => setNewsForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="Admissions, Scholarships, Campus Life" /></Field>
+          <Field label="Excerpt"><TextArea rows={3} value={newsForm.excerpt} onChange={(e) => setNewsForm((prev) => ({ ...prev, excerpt: e.target.value }))} placeholder="Short preview shown in listings" /></Field>
+          <Field label="Content"><TextArea rows={6} value={newsForm.content} onChange={(e) => setNewsForm((prev) => ({ ...prev, content: e.target.value }))} placeholder="Full article content" /></Field>
+          <Field label="Tags"><TextInput value={newsForm.tags} onChange={(e) => setNewsForm((prev) => ({ ...prev, tags: e.target.value }))} placeholder="admissions, scholarship, 2026" /></Field>
+          <ImageUploadField
+            values={newsForm.image_urls}
+            uploading={uploadingTarget === 'news'}
+            onUpload={(files, event) => {
+              uploadImages('news', files);
+              if (event?.target) event.target.value = '';
+            }}
+            onRemove={(index) => setNewsForm((prev) => {
+              const image_urls = (prev.image_urls || []).filter((_, itemIndex) => itemIndex !== index);
+              return { ...prev, image_urls, cover_url: image_urls[0] || '' };
+            })}
+          />
+          <div className="flex flex-wrap gap-3">
+            <ToggleField label="Publish immediately" checked={newsForm.is_published} onChange={(value) => setNewsForm((prev) => ({ ...prev, is_published: value }))} />
+            <ToggleField label="Pin this post" checked={newsForm.is_pinned} onChange={(value) => setNewsForm((prev) => ({ ...prev, is_pinned: value }))} />
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" onClick={submitNews} disabled={saving || !newsForm.title.trim() || !newsForm.content.trim()} className={primaryBtn}>{saving ? 'Saving...' : editingNewsId ? 'Update News' : 'Publish News'}</button>
+            <button type="button" onClick={resetNewsForm} className={secondaryBtn}>Cancel</button>
+          </div>
+        </div>
+      </ModalPanel>
+
+      <ModalPanel
+        open={eventModalOpen}
+        onClose={resetEventForm}
+        title={editingEventId ? 'Edit Event' : 'Create Event'}
+        description="Events help prospective students see that your campus is active."
+        wide
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Title"><TextInput value={eventForm.title} onChange={(e) => setEventForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Open Day 2026" /></Field>
+          <Field label="Event Type"><SelectInput value={eventForm.type} onChange={(e) => setEventForm((prev) => ({ ...prev, type: e.target.value }))} options={EVENT_OPTIONS} /></Field>
+          <Field label="Start Date"><TextInput type="datetime-local" value={eventForm.event_date} onChange={(e) => setEventForm((prev) => ({ ...prev, event_date: e.target.value }))} /></Field>
+          <Field label="End Date"><TextInput type="datetime-local" value={eventForm.end_date} onChange={(e) => setEventForm((prev) => ({ ...prev, end_date: e.target.value }))} /></Field>
+          <Field label="Location"><TextInput value={eventForm.location} onChange={(e) => setEventForm((prev) => ({ ...prev, location: e.target.value }))} placeholder="Main campus auditorium" /></Field>
+          <Field label="Max Participants"><TextInput type="number" value={eventForm.max_participants} onChange={(e) => setEventForm((prev) => ({ ...prev, max_participants: e.target.value }))} placeholder="300" /></Field>
+          <Field label="Meeting URL"><TextInput value={eventForm.meeting_url} onChange={(e) => setEventForm((prev) => ({ ...prev, meeting_url: e.target.value }))} placeholder="For online events" /></Field>
+          <Field label="Registration URL"><TextInput value={eventForm.registration_url} onChange={(e) => setEventForm((prev) => ({ ...prev, registration_url: e.target.value }))} placeholder="External signup form" /></Field>
+          <Field label="Registration Deadline"><TextInput type="datetime-local" value={eventForm.registration_deadline} onChange={(e) => setEventForm((prev) => ({ ...prev, registration_deadline: e.target.value }))} /></Field>
+          <div className="md:col-span-2">
+            <Field label="Description"><TextArea rows={5} value={eventForm.description} onChange={(e) => setEventForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="What attendees can expect" /></Field>
+          </div>
+          <div className="md:col-span-2">
             <ImageUploadField
-              values={newsForm.image_urls}
-              uploading={uploadingTarget === 'news'}
+              values={eventForm.image_urls}
+              uploading={uploadingTarget === 'event'}
               onUpload={(files, event) => {
-                uploadImages('news', files);
+                uploadImages('event', files);
                 if (event?.target) event.target.value = '';
               }}
-              onRemove={(index) => setNewsForm((prev) => {
+              onRemove={(index) => setEventForm((prev) => {
                 const image_urls = (prev.image_urls || []).filter((_, itemIndex) => itemIndex !== index);
                 return { ...prev, image_urls, cover_url: image_urls[0] || '' };
               })}
             />
-            <div className="flex flex-wrap gap-3">
-              <ToggleField label="Publish immediately" checked={newsForm.is_published} onChange={(value) => setNewsForm((prev) => ({ ...prev, is_published: value }))} />
-              <ToggleField label="Pin this post" checked={newsForm.is_pinned} onChange={(value) => setNewsForm((prev) => ({ ...prev, is_pinned: value }))} />
-            </div>
-            <button type="button" onClick={submitNews} disabled={saving || !newsForm.title.trim() || !newsForm.content.trim()} className={primaryBtn}>{saving ? 'Saving...' : editingNewsId ? 'Update News' : 'Publish News'}</button>
           </div>
-        </Panel>
-
-        <Panel
-          title={editingEventId ? 'Edit Event' : 'Create Event'}
-          description="Events help prospective students see that your campus is active."
-          action={editingEventId ? <button type="button" onClick={resetEventForm} className={secondaryBtn}>Cancel Editing</button> : null}
-        >
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Title"><TextInput value={eventForm.title} onChange={(e) => setEventForm((prev) => ({ ...prev, title: e.target.value }))} placeholder="Open Day 2026" /></Field>
-            <Field label="Event Type"><SelectInput value={eventForm.type} onChange={(e) => setEventForm((prev) => ({ ...prev, type: e.target.value }))} options={EVENT_OPTIONS} /></Field>
-            <Field label="Start Date"><TextInput type="datetime-local" value={eventForm.event_date} onChange={(e) => setEventForm((prev) => ({ ...prev, event_date: e.target.value }))} /></Field>
-            <Field label="End Date"><TextInput type="datetime-local" value={eventForm.end_date} onChange={(e) => setEventForm((prev) => ({ ...prev, end_date: e.target.value }))} /></Field>
-            <Field label="Location"><TextInput value={eventForm.location} onChange={(e) => setEventForm((prev) => ({ ...prev, location: e.target.value }))} placeholder="Main campus auditorium" /></Field>
-            <Field label="Max Participants"><TextInput type="number" value={eventForm.max_participants} onChange={(e) => setEventForm((prev) => ({ ...prev, max_participants: e.target.value }))} placeholder="300" /></Field>
-            <Field label="Meeting URL"><TextInput value={eventForm.meeting_url} onChange={(e) => setEventForm((prev) => ({ ...prev, meeting_url: e.target.value }))} placeholder="For online events" /></Field>
-            <Field label="Registration URL"><TextInput value={eventForm.registration_url} onChange={(e) => setEventForm((prev) => ({ ...prev, registration_url: e.target.value }))} placeholder="External signup form" /></Field>
-            <Field label="Registration Deadline"><TextInput type="datetime-local" value={eventForm.registration_deadline} onChange={(e) => setEventForm((prev) => ({ ...prev, registration_deadline: e.target.value }))} /></Field>
-            <div className="md:col-span-2">
-              <Field label="Description"><TextArea rows={5} value={eventForm.description} onChange={(e) => setEventForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="What attendees can expect" /></Field>
-            </div>
-            <div className="md:col-span-2">
-              <ImageUploadField
-                values={eventForm.image_urls}
-                uploading={uploadingTarget === 'event'}
-                onUpload={(files, event) => {
-                  uploadImages('event', files);
-                  if (event?.target) event.target.value = '';
-                }}
-                onRemove={(index) => setEventForm((prev) => {
-                  const image_urls = (prev.image_urls || []).filter((_, itemIndex) => itemIndex !== index);
-                  return { ...prev, image_urls, cover_url: image_urls[0] || '' };
-                })}
-              />
-            </div>
-            <div className="md:col-span-2 flex flex-wrap gap-3">
-              <ToggleField label="Online event" checked={eventForm.is_online} onChange={(value) => setEventForm((prev) => ({ ...prev, is_online: value }))} />
-              <ToggleField label="Publish immediately" checked={eventForm.is_published} onChange={(value) => setEventForm((prev) => ({ ...prev, is_published: value }))} />
-              <ToggleField label="Feature this event" checked={eventForm.is_featured} onChange={(value) => setEventForm((prev) => ({ ...prev, is_featured: value }))} />
-            </div>
+          <div className="md:col-span-2 flex flex-wrap gap-3">
+            <ToggleField label="Online event" checked={eventForm.is_online} onChange={(value) => setEventForm((prev) => ({ ...prev, is_online: value }))} />
+            <ToggleField label="Publish immediately" checked={eventForm.is_published} onChange={(value) => setEventForm((prev) => ({ ...prev, is_published: value }))} />
+            <ToggleField label="Feature this event" checked={eventForm.is_featured} onChange={(value) => setEventForm((prev) => ({ ...prev, is_featured: value }))} />
           </div>
-          <div className="mt-4"><button type="button" onClick={submitEvent} disabled={saving || !eventForm.title.trim() || !eventForm.event_date} className={primaryBtn}>{saving ? 'Saving...' : editingEventId ? 'Update Event' : 'Create Event'}</button></div>
-        </Panel>
-      </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button type="button" onClick={submitEvent} disabled={saving || !eventForm.title.trim() || !eventForm.event_date} className={primaryBtn}>{saving ? 'Saving...' : editingEventId ? 'Update Event' : 'Create Event'}</button>
+          <button type="button" onClick={resetEventForm} className={secondaryBtn}>Cancel</button>
+        </div>
+      </ModalPanel>
 
       <div className="grid gap-5 xl:grid-cols-2">
         <Panel title="Published News">
@@ -1957,6 +2263,7 @@ export function OwnerOpportunities() {
   const [imageIndexes, setImageIndexes] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyOpportunityForm);
+  const [opportunityModalOpen, setOpportunityModalOpen] = useState(false);
 
   const loadOpportunities = useCallback(async () => {
     setItemsLoading(true);
@@ -1979,6 +2286,7 @@ export function OwnerOpportunities() {
   const resetForm = () => {
     setForm(emptyOpportunityForm);
     setEditingId(null);
+    setOpportunityModalOpen(false);
   };
 
   const startEdit = (item) => {
@@ -1996,7 +2304,13 @@ export function OwnerOpportunities() {
       start_date: item.start_date || '',
       end_date: item.end_date || '',
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setOpportunityModalOpen(true);
+  };
+
+  const startCreateOpportunity = () => {
+    setForm(emptyOpportunityForm);
+    setEditingId(null);
+    setOpportunityModalOpen(true);
   };
 
   const handleImageUpload = async (files) => {
@@ -2105,103 +2419,103 @@ export function OwnerOpportunities() {
     <PageSection
       title="Opportunities"
       subtitle="Create scholarships, internships, and other opportunities connected to your university."
-      action={
-        editingId ? (
-          <button type="button" onClick={resetForm} className={secondaryBtn}>Cancel Editing</button>
-        ) : null
-      }
+      action={<button type="button" onClick={startCreateOpportunity} className={primaryBtn}>Create Opportunity</button>}
     >
-      <div className="grid gap-5 xl:grid-cols-[1.05fr_1.2fr]">
-        <Panel
-          title={editingId ? 'Edit Opportunity' : 'Create Opportunity'}
-          description="Owner-created opportunities are submitted for review before they appear publicly."
-          action={<button type="button" onClick={handleSave} disabled={saving} className={primaryBtn}>{saving ? 'Saving...' : editingId ? 'Update Opportunity' : 'Create Opportunity'}</button>}
-        >
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="md:col-span-2">
-              <Field label="Title"><TextInput value={form.title} onChange={(e) => setField('title', e.target.value)} placeholder="Scholarship or program title" /></Field>
-            </div>
-            <Field label="Type"><SelectInput value={form.type} onChange={(e) => setField('type', e.target.value)} options={OPPORTUNITY_TYPE_OPTIONS} /></Field>
-            <Field label="Country"><TextInput value={form.country} onChange={(e) => setField('country', e.target.value)} placeholder="Cambodia" /></Field>
-            <Field label="Location"><TextInput value={form.location} onChange={(e) => setField('location', e.target.value)} placeholder="Phnom Penh or Online" /></Field>
-            <Field label="Application Email"><TextInput value={form.contact_email} onChange={(e) => setField('contact_email', e.target.value)} placeholder="apply@example.edu.kh" /></Field>
-            <Field label="Deadline"><TextInput type="date" value={form.deadline} onChange={(e) => setField('deadline', e.target.value)} /></Field>
-            <Field label="Start Date"><TextInput type="date" value={form.start_date} onChange={(e) => setField('start_date', e.target.value)} /></Field>
-            <Field label="End Date"><TextInput type="date" value={form.end_date} onChange={(e) => setField('end_date', e.target.value)} /></Field>
-            <Field label="Funding Amount"><TextInput value={form.funding_amount} onChange={(e) => setField('funding_amount', e.target.value)} placeholder="Up to 5,000" /></Field>
-            <Field label="Funding Currency"><TextInput value={form.funding_currency} onChange={(e) => setField('funding_currency', e.target.value)} placeholder="USD" /></Field>
-            <div className="md:col-span-2">
-              <Field label="Field of Study" hint="Separate multiple fields with commas.">
-                <TextInput value={form.field_of_study} onChange={(e) => setField('field_of_study', e.target.value)} placeholder="Computer Science, Business, Engineering" />
-              </Field>
-            </div>
-            <div className="md:col-span-2">
-              <Field label="Eligibility"><TextArea rows={4} value={form.eligibility} onChange={(e) => setField('eligibility', e.target.value)} placeholder="Who can apply and what they need to qualify" /></Field>
-            </div>
-            <div className="md:col-span-2">
-              <Field label="Description"><TextArea rows={6} value={form.description} onChange={(e) => setField('description', e.target.value)} placeholder="Describe the opportunity, benefits, and how students should approach it" /></Field>
-            </div>
-            <div className="md:col-span-2">
-              <ImageUploadField
-                values={form.image_urls}
-                uploading={uploadingCover}
-                onUpload={(files, event) => {
-                  handleImageUpload(files);
-                  if (event?.target) event.target.value = '';
-                }}
-                onRemove={(index) => setForm((prev) => {
-                  const image_urls = (prev.image_urls || []).filter((_, itemIndex) => itemIndex !== index);
-                  return { ...prev, image_urls, cover_url: image_urls[0] || '' };
-                })}
-              />
-            </div>
-            <Field label="Application URL"><TextInput value={form.application_url} onChange={(e) => setField('application_url', e.target.value)} placeholder="https://..." /></Field>
-            <Field label="Source URL"><TextInput value={form.source_url} onChange={(e) => setField('source_url', e.target.value)} placeholder="Optional external link" /></Field>
-            <div className="md:col-span-2 flex flex-wrap gap-3">
-              <ToggleField label="Fully funded" checked={!!form.is_fully_funded} onChange={(value) => setField('is_fully_funded', value)} />
-              <ToggleField label="Online opportunity" checked={!!form.is_online} onChange={(value) => setField('is_online', value)} />
-            </div>
+      <ModalPanel
+        open={opportunityModalOpen}
+        onClose={resetForm}
+        title={editingId ? 'Edit Opportunity' : 'Create Opportunity'}
+        description="Owner-created opportunities are submitted for review before they appear publicly."
+        wide
+      >
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <Field label="Title"><TextInput value={form.title} onChange={(e) => setField('title', e.target.value)} placeholder="Scholarship or program title" /></Field>
           </div>
-        </Panel>
+          <Field label="Type"><SelectInput value={form.type} onChange={(e) => setField('type', e.target.value)} options={OPPORTUNITY_TYPE_OPTIONS} /></Field>
+          <Field label="Country"><TextInput value={form.country} onChange={(e) => setField('country', e.target.value)} placeholder="Cambodia" /></Field>
+          <Field label="Location"><TextInput value={form.location} onChange={(e) => setField('location', e.target.value)} placeholder="Phnom Penh or Online" /></Field>
+          <Field label="Application Email"><TextInput value={form.contact_email} onChange={(e) => setField('contact_email', e.target.value)} placeholder="apply@example.edu.kh" /></Field>
+          <Field label="Deadline"><TextInput type="date" value={form.deadline} onChange={(e) => setField('deadline', e.target.value)} /></Field>
+          <Field label="Start Date"><TextInput type="date" value={form.start_date} onChange={(e) => setField('start_date', e.target.value)} /></Field>
+          <Field label="End Date"><TextInput type="date" value={form.end_date} onChange={(e) => setField('end_date', e.target.value)} /></Field>
+          <Field label="Funding Amount"><TextInput value={form.funding_amount} onChange={(e) => setField('funding_amount', e.target.value)} placeholder="Up to 5,000" /></Field>
+          <Field label="Funding Currency"><TextInput value={form.funding_currency} onChange={(e) => setField('funding_currency', e.target.value)} placeholder="USD" /></Field>
+          <div className="md:col-span-2">
+            <Field label="Field of Study" hint="Separate multiple fields with commas.">
+              <TextInput value={form.field_of_study} onChange={(e) => setField('field_of_study', e.target.value)} placeholder="Computer Science, Business, Engineering" />
+            </Field>
+          </div>
+          <div className="md:col-span-2">
+            <Field label="Eligibility"><TextArea rows={4} value={form.eligibility} onChange={(e) => setField('eligibility', e.target.value)} placeholder="Who can apply and what they need to qualify" /></Field>
+          </div>
+          <div className="md:col-span-2">
+            <Field label="Description"><TextArea rows={6} value={form.description} onChange={(e) => setField('description', e.target.value)} placeholder="Describe the opportunity, benefits, and how students should approach it" /></Field>
+          </div>
+          <div className="md:col-span-2">
+            <ImageUploadField
+              values={form.image_urls}
+              uploading={uploadingCover}
+              onUpload={(files, event) => {
+                handleImageUpload(files);
+                if (event?.target) event.target.value = '';
+              }}
+              onRemove={(index) => setForm((prev) => {
+                const image_urls = (prev.image_urls || []).filter((_, itemIndex) => itemIndex !== index);
+                return { ...prev, image_urls, cover_url: image_urls[0] || '' };
+              })}
+            />
+          </div>
+          <Field label="Application URL"><TextInput value={form.application_url} onChange={(e) => setField('application_url', e.target.value)} placeholder="https://..." /></Field>
+          <Field label="Source URL"><TextInput value={form.source_url} onChange={(e) => setField('source_url', e.target.value)} placeholder="Optional external link" /></Field>
+          <div className="md:col-span-2 flex flex-wrap gap-3">
+            <ToggleField label="Fully funded" checked={!!form.is_fully_funded} onChange={(value) => setField('is_fully_funded', value)} />
+            <ToggleField label="Online opportunity" checked={!!form.is_online} onChange={(value) => setField('is_online', value)} />
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button type="button" onClick={handleSave} disabled={saving} className={primaryBtn}>{saving ? 'Saving...' : editingId ? 'Update Opportunity' : 'Create Opportunity'}</button>
+          <button type="button" onClick={resetForm} className={secondaryBtn}>Cancel</button>
+        </div>
+      </ModalPanel>
 
-        <Panel title="Your Opportunities" description={`${items.length} opportunity listing(s) created by your account.`}>
-          {itemsLoading ? (
-            <LoadingBlock />
-          ) : items.length === 0 ? (
-            <EmptyState title="No opportunities yet" description="Create your first scholarship or internship opportunity from the form on the left." />
-          ) : (
-            <div className="space-y-4">
-              {items.map((item) => (
-                <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                  <MediaImageCarousel
-                    item={item}
-                    imageIndex={imageIndexes[item.id] ?? 0}
-                    onPrev={() => cycleItemImage(item, -1)}
-                    onNext={() => cycleItemImage(item, 1)}
-                  />
-                  <p className="text-2xl font-bold leading-tight text-slate-800">{item.title}</p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <StatusPill tone={item.is_published ? 'green' : 'amber'}>{item.is_published ? 'Published' : 'Pending review'}</StatusPill>
-                    <StatusPill tone="blue">{item.type}</StatusPill>
-                    {item.is_fully_funded && <StatusPill tone="green">Fully funded</StatusPill>}
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500">
-                    {item.deadline && <span>Deadline: {formatDate(item.deadline)}</span>}
-                    {item.country && <span>Country: {item.country}</span>}
-                    <span>Applicants: {item.applicant_count || 0}</span>
-                    <span>Views: {item.views_count || 0}</span>
-                  </div>
-                  {item.description && <p className="mt-3 max-w-4xl text-base leading-8 text-slate-600 line-clamp-3">{item.description}</p>}
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    <button type="button" onClick={() => startEdit(item)} className={secondaryBtn}>Edit</button>
-                    <button type="button" onClick={() => handleDelete(item.id)} className={dangerBtn}>Delete</button>
-                  </div>
+      <Panel title="Your Opportunities" description={`${items.length} opportunity listing(s) created by your account.`}>
+        {itemsLoading ? (
+          <LoadingBlock />
+        ) : items.length === 0 ? (
+          <EmptyState title="No opportunities yet" description="Create your first scholarship or internship opportunity from the button above." />
+        ) : (
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {items.map((item) => (
+              <div key={item.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <MediaImageCarousel
+                  item={item}
+                  imageIndex={imageIndexes[item.id] ?? 0}
+                  onPrev={() => cycleItemImage(item, -1)}
+                  onNext={() => cycleItemImage(item, 1)}
+                />
+                <p className="text-2xl font-bold leading-tight text-slate-800">{item.title}</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <StatusPill tone={item.is_published ? 'green' : 'amber'}>{item.is_published ? 'Published' : 'Pending review'}</StatusPill>
+                  <StatusPill tone="blue">{item.type}</StatusPill>
+                  {item.is_fully_funded && <StatusPill tone="green">Fully funded</StatusPill>}
                 </div>
-              ))}
-            </div>
-          )}
-        </Panel>
-      </div>
+                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-500">
+                  {item.deadline && <span>Deadline: {formatDate(item.deadline)}</span>}
+                  {item.country && <span>Country: {item.country}</span>}
+                  <span>Applicants: {item.applicant_count || 0}</span>
+                  <span>Views: {item.views_count || 0}</span>
+                </div>
+                {item.description && <p className="mt-3 max-w-4xl text-base leading-8 text-slate-600 line-clamp-3">{item.description}</p>}
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <button type="button" onClick={() => startEdit(item)} className={secondaryBtn}>Edit</button>
+                  <button type="button" onClick={() => handleDelete(item.id)} className={dangerBtn}>Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </Panel>
     </PageSection>
   );
 }
@@ -2213,6 +2527,7 @@ export function OwnerReviews() {
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [reviewTab, setReviewTab] = useState('all');
   const [replyDrafts, setReplyDrafts] = useState({});
+  const [openReplyIds, setOpenReplyIds] = useState([]);
   const [savingApproveId, setSavingApproveId] = useState(null);
   const [savingReplyId, setSavingReplyId] = useState(null);
   const [deletingReviewId, setDeletingReviewId] = useState(null);
@@ -2236,6 +2551,7 @@ export function OwnerReviews() {
       const nextReviews = res.data.reviews || [];
       setReviews(nextReviews);
       setReplyDrafts(Object.fromEntries(nextReviews.map((review) => [review.id, review.owner_reply || ''])));
+      setOpenReplyIds((prev) => prev.filter((id) => nextReviews.some((review) => review.id === id)));
     } catch (err) {
       setReviews([]);
     } finally {
@@ -2253,6 +2569,7 @@ export function OwnerReviews() {
     try {
       await universityApi.replyToReview(university.id, reviewId, { owner_reply: replyDrafts[reviewId] || '' });
       success(replyDrafts[reviewId]?.trim() ? 'Reply saved' : 'Reply removed');
+      setOpenReplyIds((prev) => prev.filter((id) => id !== reviewId));
       loadReviews(university.id);
     } catch (err) {
       error(err.response?.data?.message || 'Failed to save reply');
@@ -2289,6 +2606,15 @@ export function OwnerReviews() {
     }
   };
 
+  const toggleReplyComposer = (reviewId, forceOpen) => {
+    setOpenReplyIds((prev) => {
+      const isOpen = prev.includes(reviewId);
+      const nextOpen = typeof forceOpen === 'boolean' ? forceOpen : !isOpen;
+      if (nextOpen) return isOpen ? prev : [...prev, reviewId];
+      return prev.filter((id) => id !== reviewId);
+    });
+  };
+
   if (loading) return <LoadingBlock />;
   if (!university) return <NoUniversity />;
 
@@ -2322,90 +2648,184 @@ export function OwnerReviews() {
         ) : filteredReviews.length === 0 ? (
           <EmptyState title="No reviews yet" description="Student reviews will appear here once they are submitted for your university." />
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {filteredReviews.map((review) => (
-              <div key={review.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div key={review.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                {(() => {
+                  const replyComposerOpen = openReplyIds.includes(review.id);
+                  return (
+                  <>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-bold text-slate-800">{review.title || 'Untitled review'}</p>
-                      <StatusPill tone={review.is_approved ? 'green' : 'slate'}>{review.is_approved ? 'Visible' : 'Hidden'}</StatusPill>
-                      <StatusPill tone="blue">{review.rating}/5 stars</StatusPill>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-500">
-                      <span>By {review.Author?.name || 'Unknown student'}</span>
-                      {review.Author?.email && <span>{review.Author.email}</span>}
-                      <span>{formatDate(review.createdAt || review.created_at)}</span>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => approveReview(review.id)}
-                        disabled={savingApproveId === review.id}
-                        className={review.is_approved ? secondaryBtn : primaryBtn}
-                      >
-                        {savingApproveId === review.id ? 'Saving...' : review.is_approved ? 'Hide Review' : 'Show Review'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => deleteReview(review.id)}
-                        disabled={deletingReviewId === review.id}
-                        className={dangerBtn}
-                      >
-                        {deletingReviewId === review.id ? 'Deleting...' : 'Delete Review'}
-                      </button>
-                    </div>
-                    {review.content && <p className="mt-3 text-sm leading-6 text-slate-600">{review.content}</p>}
-                    {(review.pros || review.cons) && (
-                      <div className="mt-3 grid gap-3 md:grid-cols-2">
-                        <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-                          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-green-700">Pros</p>
-                          <p>{review.pros || 'No pros provided.'}</p>
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-100 text-sm font-semibold text-slate-600">
+                        {review.Author?.avatar_url ? (
+                          <img src={logoUrl(review.Author.avatar_url) || review.Author.avatar_url} alt={review.Author?.name || 'Reviewer'} className="h-full w-full object-cover" />
+                        ) : (
+                          <span>{(review.Author?.name || 'U').slice(0, 1).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="truncate text-base font-semibold text-slate-800">{review.Author?.name || 'Unknown student'}</p>
+                            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
+                              <span>{formatDate(review.createdAt || review.created_at)}</span>
+                              <span>•</span>
+                              <span>{review.rating}/5</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-0.5 text-amber-500">
+                            {Array.from({ length: 5 }).map((_, index) => (
+                              <span
+                                key={`${review.id}-star-${index}`}
+                                className={`text-sm leading-none ${index < Math.round(review.rating || 0) ? 'text-amber-500' : 'text-slate-200'}`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                          </div>
                         </div>
-                        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-red-700">Cons</p>
-                          <p>{review.cons || 'No cons provided.'}</p>
+                        {review.Author?.email ? (
+                          <p className="mt-1 truncate text-xs text-slate-500">{review.Author.email}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <StatusPill tone={review.is_approved ? 'green' : 'slate'}>{review.is_approved ? 'Visible' : 'Hidden'}</StatusPill>
+                    </div>
+                    {review.content && <p className="mt-2 text-sm leading-6 text-slate-600 line-clamp-2">{review.content}</p>}
+                    {(review.pros || review.cons) && (
+                      <div className="mt-3 grid gap-2 md:grid-cols-2">
+                        <div className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+                          <p className="mb-1 font-semibold uppercase tracking-wide text-green-700">Pros</p>
+                          <p className="leading-5">{review.pros || 'No pros provided.'}</p>
+                        </div>
+                        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                          <p className="mb-1 font-semibold uppercase tracking-wide text-red-700">Cons</p>
+                          <p className="leading-5">{review.cons || 'No cons provided.'}</p>
                         </div>
                       </div>
                     )}
                   </div>
+                  <div className="flex flex-wrap gap-2 sm:shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleReplyComposer(review.id)}
+                      className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50"
+                    >
+                      {replyComposerOpen ? 'Close Reply' : review.owner_reply?.trim() ? 'Edit Reply' : 'Reply'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => approveReview(review.id)}
+                      disabled={savingApproveId === review.id}
+                      className={review.is_approved
+                        ? 'inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50'
+                        : 'inline-flex items-center justify-center rounded-xl bg-[#1B3A6B] px-3 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60'}
+                    >
+                      {savingApproveId === review.id ? 'Saving...' : review.is_approved ? 'Hide' : 'Show'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteReview(review.id)}
+                      disabled={deletingReviewId === review.id}
+                      className="inline-flex items-center justify-center rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 transition-all hover:bg-red-100"
+                    >
+                      {deletingReviewId === review.id ? 'Deleting...' : 'Delete'}
+                    </button>
+                  </div>
                 </div>
 
-                <div className="mt-4 grid gap-4 xl:grid-cols-2">
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="mb-3 flex items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">Official Reply</p>
-                        <p className="text-xs text-slate-500">Visible as your university response to this review.</p>
+                <div className="mt-4 space-y-3">
+                  {review.owner_reply?.trim() ? (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-white text-xs font-semibold text-slate-600">
+                        {university.logo_url ? (
+                          <img src={logoUrl(university.logo_url) || university.logo_url} alt={university.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <span>{(university.name || 'U').slice(0, 1).toUpperCase()}</span>
+                        )}
                       </div>
-                      {review.owner_replied_at && <span className="text-xs text-slate-400">Updated {formatDate(review.owner_replied_at)}</span>}
-                    </div>
-                    <TextArea
-                      rows={4}
-                      value={replyDrafts[review.id] || ''}
-                      onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [review.id]: e.target.value }))}
-                      placeholder="Thank the student, clarify context, or explain how your team is addressing the feedback."
-                    />
-                    <div className="mt-3 flex justify-end">
-                      <button type="button" onClick={() => saveReply(review.id)} disabled={savingReplyId === review.id} className={primaryBtn}>
-                        {savingReplyId === review.id ? 'Saving...' : 'Save Reply'}
-                      </button>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <p className="text-sm font-semibold text-slate-800">{university.name}</p>
+                          <span className="rounded-full bg-[#1B3A6B]/8 px-2 py-0.5 text-[11px] font-medium text-[#1B3A6B]">Official reply</span>
+                          {review.owner_replied_at ? (
+                            <span className="text-xs text-slate-400">Updated {formatDate(review.owner_replied_at)}</span>
+                          ) : null}
+                        </div>
+                        {review.owner_reply?.trim() ? (
+                          <p className="mt-2 text-sm leading-6 text-slate-600">{review.owner_reply}</p>
+                        ) : (
+                          <p className="mt-2 text-sm italic text-slate-400">No official reply yet.</p>
+                        )}
+                      </div>
                     </div>
                   </div>
+                  ) : null}
 
-                  <div className="rounded-2xl border border-slate-200 bg-white p-4">
-                    <div className="mb-3">
-                      <p className="text-sm font-semibold text-slate-800">Visibility</p>
-                      <p className="text-xs text-slate-500">Hidden reviews stay in your dashboard but no longer appear on the public university page.</p>
-                    </div>
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-600">
-                      Current status: <span className="font-semibold text-slate-800">{review.is_approved ? 'Visible on public page' : 'Hidden from public page'}</span>
-                    </div>
-                    <div className="mt-3 text-xs text-slate-400">
-                      Use “Hide Review” to remove a review from the public page without deleting it permanently.
+                  {replyComposerOpen ? (
+                  <div className="rounded-xl border border-slate-200 bg-white p-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-600">
+                        {university.logo_url ? (
+                          <img src={logoUrl(university.logo_url) || university.logo_url} alt={university.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <span>{(university.name || 'U').slice(0, 1).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-semibold text-slate-800">Reply as {university.name}</p>
+                            <p className="mt-0.5 text-xs text-slate-500">
+                              {review.is_approved ? 'Your reply is visible on the public university page.' : 'This review is hidden from the public page until you show it.'}
+                            </p>
+                          </div>
+                          <StatusPill tone={review.is_approved ? 'green' : 'slate'}>
+                            {review.is_approved ? 'Reply visible' : 'Review hidden'}
+                          </StatusPill>
+                        </div>
+                        <div className="mt-3">
+                          <TextArea
+                            rows={3}
+                            value={replyDrafts[review.id] || ''}
+                            onChange={(e) => setReplyDrafts((prev) => ({ ...prev, [review.id]: e.target.value }))}
+                            placeholder="Write a public reply to this student..."
+                          />
+                        </div>
+                        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <p className="text-xs text-slate-400">
+                            Use “Hide” above to remove the review and your reply from the public page without deleting it.
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleReplyComposer(review.id, false)}
+                              className={secondaryBtn}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => saveReply(review.id)}
+                              disabled={savingReplyId === review.id}
+                              className={primaryBtn}
+                            >
+                              {savingReplyId === review.id ? 'Saving...' : review.owner_reply?.trim() ? 'Update Reply' : 'Post Reply'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                  ) : null}
                 </div>
+                  </>
+                  );
+                })()}
               </div>
             ))}
           </div>
@@ -2424,6 +2844,7 @@ export function OwnerFAQ() {
   const [editingFaqId, setEditingFaqId] = useState(null);
   const [savingFaq, setSavingFaq] = useState(false);
   const [savingContact, setSavingContact] = useState(false);
+  const [faqModalOpen, setFaqModalOpen] = useState(false);
 
   const loadData = useCallback(async (uniId) => {
     const [faqRes, contactRes] = await Promise.all([
@@ -2441,6 +2862,7 @@ export function OwnerFAQ() {
   const resetFaqForm = () => {
     setFaqForm(emptyFaqForm);
     setEditingFaqId(null);
+    setFaqModalOpen(false);
   };
 
   const startEditFaq = (faq) => {
@@ -2452,7 +2874,13 @@ export function OwnerFAQ() {
       sort_order: faq.sort_order || 0,
       is_published: Boolean(faq.is_published),
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setFaqModalOpen(true);
+  };
+
+  const startCreateFaq = () => {
+    setFaqForm(emptyFaqForm);
+    setEditingFaqId(null);
+    setFaqModalOpen(true);
   };
 
   const submitFaq = async () => {
@@ -2507,22 +2935,31 @@ export function OwnerFAQ() {
 
   return (
     <PageSection title="FAQs & Contact" subtitle="Answer common questions and make it easy for students to reach out.">
-      <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-        <Panel
-          title={editingFaqId ? 'Edit FAQ' : 'Create FAQ'}
-          action={editingFaqId ? <button type="button" onClick={resetFaqForm} className={secondaryBtn}>Cancel Editing</button> : null}
-        >
-          <div className="space-y-4">
-            <Field label="Question"><TextInput value={faqForm.question} onChange={(e) => setFaqForm((prev) => ({ ...prev, question: e.target.value }))} placeholder="Do you offer scholarships?" /></Field>
-            <Field label="Answer"><TextArea rows={5} value={faqForm.answer} onChange={(e) => setFaqForm((prev) => ({ ...prev, answer: e.target.value }))} placeholder="Write a clear, helpful answer" /></Field>
-            <Field label="Category"><TextInput value={faqForm.category} onChange={(e) => setFaqForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="Admissions, Tuition, Housing" /></Field>
-            <div className="flex flex-wrap gap-3">
-              <ToggleField label="Publish immediately" checked={faqForm.is_published} onChange={(value) => setFaqForm((prev) => ({ ...prev, is_published: value }))} />
-              <button type="button" onClick={submitFaq} disabled={savingFaq || !faqForm.question.trim() || !faqForm.answer.trim()} className={primaryBtn}>{savingFaq ? 'Saving...' : editingFaqId ? 'Update FAQ' : 'Add FAQ'}</button>
-            </div>
-          </div>
-        </Panel>
+      <div className="mb-5">
+        <button type="button" onClick={startCreateFaq} className={primaryBtn}>Create FAQ</button>
+      </div>
 
+      <ModalPanel
+        open={faqModalOpen}
+        onClose={resetFaqForm}
+        title={editingFaqId ? 'Edit FAQ' : 'Create FAQ'}
+        description="Keep answers short, clear, and useful for applicants."
+      >
+        <div className="space-y-4">
+          <Field label="Question"><TextInput value={faqForm.question} onChange={(e) => setFaqForm((prev) => ({ ...prev, question: e.target.value }))} placeholder="Do you offer scholarships?" /></Field>
+          <Field label="Answer"><TextArea rows={5} value={faqForm.answer} onChange={(e) => setFaqForm((prev) => ({ ...prev, answer: e.target.value }))} placeholder="Write a clear, helpful answer" /></Field>
+          <Field label="Category"><TextInput value={faqForm.category} onChange={(e) => setFaqForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="Admissions, Tuition, Housing" /></Field>
+          <div className="flex flex-wrap gap-3">
+            <ToggleField label="Publish immediately" checked={faqForm.is_published} onChange={(value) => setFaqForm((prev) => ({ ...prev, is_published: value }))} />
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" onClick={submitFaq} disabled={savingFaq || !faqForm.question.trim() || !faqForm.answer.trim()} className={primaryBtn}>{savingFaq ? 'Saving...' : editingFaqId ? 'Update FAQ' : 'Add FAQ'}</button>
+            <button type="button" onClick={resetFaqForm} className={secondaryBtn}>Cancel</button>
+          </div>
+        </div>
+      </ModalPanel>
+
+      <div className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         <Panel title="Contact Details" action={<button type="button" onClick={saveContact} disabled={savingContact} className={primaryBtn}>{savingContact ? 'Saving...' : 'Save Contact'}</button>}>
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Admission Email"><TextInput value={contact.admission_email} onChange={(e) => setContact((prev) => ({ ...prev, admission_email: e.target.value }))} placeholder="admissions@example.edu.kh" /></Field>
@@ -2542,31 +2979,31 @@ export function OwnerFAQ() {
             </div>
           </div>
         </Panel>
-      </div>
 
-      <Panel title="Published FAQs" description={`${faqs.length} FAQ item(s) currently public.`}>
-        {faqs.length === 0 ? <EmptyState title="No FAQs yet" description="Use this section to answer the top questions students ask before applying." /> : (
-          <div className="space-y-3">
-            {faqs.map((faq, index) => (
-              <div key={faq.id} className="rounded-xl border border-slate-200 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-semibold text-slate-800">Q{index + 1}. {faq.question}</p>
-                      {faq.category && <StatusPill tone="blue">{faq.category}</StatusPill>}
+        <Panel title="Published FAQs" description={`${faqs.length} FAQ item(s) currently public.`}>
+          {faqs.length === 0 ? <EmptyState title="No FAQs yet" description="Use this section to answer the top questions students ask before applying." /> : (
+            <div className="space-y-3">
+              {faqs.map((faq, index) => (
+                <div key={faq.id} className="rounded-xl border border-slate-200 p-4">
+                  <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-base font-semibold leading-8 text-slate-800 sm:text-lg">Q{index + 1}. {faq.question}</p>
+                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                        {faq.category && <StatusPill tone="blue">{faq.category}</StatusPill>}
+                      </div>
+                      <p className="mt-3 text-sm leading-7 text-slate-600 sm:text-base">{faq.answer}</p>
                     </div>
-                    <p className="mt-2 text-sm text-slate-600">{faq.answer}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => startEditFaq(faq)} className={secondaryBtn}>Edit</button>
-                    <button type="button" onClick={() => deleteFaq(faq.id)} className={dangerBtn}>Delete</button>
+                    <div className="flex flex-wrap gap-2 lg:shrink-0">
+                      <button type="button" onClick={() => startEditFaq(faq)} className={secondaryBtn}>Edit</button>
+                      <button type="button" onClick={() => deleteFaq(faq.id)} className={dangerBtn}>Delete</button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Panel>
+              ))}
+            </div>
+          )}
+        </Panel>
+      </div>
     </PageSection>
   );
 }

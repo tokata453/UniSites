@@ -64,6 +64,7 @@ export default function DashboardLayout({ role }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const unreadNotifications = useInboxStore((s) => s.unreadNotifications);
   const unreadMessages = useInboxStore((s) => s.unreadMessages);
   const refreshSummary = useInboxStore((s) => s.refreshSummary);
@@ -85,13 +86,28 @@ export default function DashboardLayout({ role }) {
     refreshSummary();
   }, [isInboxRoute, refreshSummary]);
 
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
+
   const handleLogout = () => { logout(); clearSummary(); navigate('/'); };
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
 
+      {mobileNavOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-[1px] lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+          aria-label="Close sidebar"
+        />
+      )}
+
       {/* ── Sidebar ── */}
-      <aside className={`flex flex-col bg-white border-r border-slate-200 shrink-0 transition-all duration-300 shadow-sm ${collapsed ? 'w-16' : 'w-60'}`}>
+      <aside className={`fixed inset-y-0 left-0 z-40 flex flex-col bg-white border-r border-slate-200 shrink-0 transition-all duration-300 shadow-sm lg:static lg:translate-x-0 ${
+        mobileNavOpen ? 'translate-x-0' : '-translate-x-full'
+      } ${collapsed ? 'w-16' : 'w-60'}`}>
 
         {/* Logo */}
         <div className={`h-16 flex items-center gap-3 px-4 border-b border-slate-200 ${collapsed ? 'justify-center' : ''}`}>
@@ -189,19 +205,41 @@ export default function DashboardLayout({ role }) {
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Top header */}
-        <header className="h-16 flex items-center justify-between px-6 bg-white border-b border-slate-200 shrink-0 shadow-sm">
-          <span className="text-sm text-slate-500">
-            Welcome back, <span className="font-semibold text-slate-800">{user?.name}</span>
-          </span>
-          <div className="flex items-center gap-3">
-            <Link to="/" className="text-sm text-slate-500 hover:text-[#152d54] transition-transform duration-150 active:scale-90">
-              ← Back to site
+        <header className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6 bg-white border-b border-slate-200 shrink-0 shadow-sm min-h-16">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileNavOpen(true)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition-all hover:bg-slate-50 lg:hidden"
+              aria-label="Open sidebar"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M4 7h16" />
+                <path d="M4 12h16" />
+                <path d="M4 17h16" />
+              </svg>
+            </button>
+            <div className="hidden lg:block text-sm text-slate-500">
+              Welcome back, <span className="font-semibold text-slate-800">{user?.name}</span>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <Link
+              to="/"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 shadow-sm transition-all hover:bg-slate-50 hover:text-[#152d54] active:scale-95"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 11.5 12 4l9 7.5" />
+                <path d="M5 10.5V20h14v-9.5" />
+              </svg>
+              <span className="sm:hidden">Back to site</span>
+              <span className="hidden sm:inline">Back to site</span>
             </Link>
           </div>
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-6 bg-slate-50">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50">
           <div className="max-w-5xl mx-auto">
             <Outlet key={location.pathname} />
           </div>

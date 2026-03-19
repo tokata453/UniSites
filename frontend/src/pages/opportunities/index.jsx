@@ -126,7 +126,7 @@ export function OpportunitiesPage() {
 
   return (
     <div className="bg-slate-50 min-h-screen">
-      <div className="max-w-7xl mx-auto px-6 py-10">
+      <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 sm:py-10">
 
         {/* Header */}
         <div className="mb-8">
@@ -178,7 +178,7 @@ export function OpportunitiesPage() {
             </div>
 
             {/* Type filters */}
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-2 overflow-x-auto pb-1 w-full md:w-auto md:flex-wrap">
               {TYPES.map((t) => {
                 const s = TYPE_STYLES[t] || {};
                 const active = filters.type === t;
@@ -203,7 +203,7 @@ export function OpportunitiesPage() {
           <Empty title="No opportunities found" description="Try adjusting your filters." />
         ) : (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {opportunities.map((opp) => {
                 const expired = isExpired(opp.deadline);
                 const days    = opp.deadline && !expired ? daysLeft(opp.deadline) : null;

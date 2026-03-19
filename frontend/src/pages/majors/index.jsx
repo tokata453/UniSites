@@ -39,12 +39,12 @@ const DemandBar = ({ demand }) => {
 
 const Badge = ({ children, color = 'navy' }) => {
   const map = {
-    navy:   { bg:'#eff6ff', border:'#bfdbfe', text:'#1d4ed8' },
-    orange: { bg:'#fff7ed', border:'#fed7aa', text:'#c2410c' },
-    green:  { bg:'#f0fdf4', border:'#bbf7d0', text:'#15803d' },
-    sky:    { bg:'#f0f9ff', border:'#bae6fd', text:'#0369a1' },
-    purple: { bg:'#faf5ff', border:'#e9d5ff', text:'#7c3aed' },
-    amber:  { bg:'#fefce8', border:'#fef08a', text:'#a16207' },
+    navy:   { bg:'#f8fafc', border:'#e2e8f0', text:'#475569' },
+    orange: { bg:'#f8fafc', border:'#e2e8f0', text:'#475569' },
+    green:  { bg:'#f8fafc', border:'#e2e8f0', text:'#475569' },
+    sky:    { bg:'#f8fafc', border:'#e2e8f0', text:'#475569' },
+    purple: { bg:'#f8fafc', border:'#e2e8f0', text:'#475569' },
+    amber:  { bg:'#f8fafc', border:'#e2e8f0', text:'#475569' },
   };
   const c = map[color] || map.navy;
   return (
@@ -109,7 +109,7 @@ const MajorCard = ({ major }) => {
         style={{ background:'#fff', border:`1px solid ${hov ? '#1B3A6B30' : '#e2e8f0'}`, borderRadius:16, padding:20, height:'100%', boxShadow: hov ? '0 8px 24px rgba(27,58,107,0.1)' : '0 1px 4px rgba(0,0,0,0.04)', transform: hov ? 'translateY(-2px)' : 'none', transition:'all 0.2s' }}>
 
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:14 }}>
-          <div style={{ width:46, height:46, borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, transition:'background 0.2s', background: hov ? '#1B3A6B12' : '#f8fafc', border:'1px solid #e2e8f0' }}>
+          <div style={{ width:46, height:46, borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, transition:'background 0.2s', background: hov ? '#f1f5f9' : '#f8fafc', border:'1px solid #e2e8f0', color:'#64748b' }}>
             {major.icon || <BookOpen size={22} />}
           </div>
           <div style={{ display:'flex', gap:4, flexWrap:'wrap', justifyContent:'flex-end' }}>
@@ -128,7 +128,7 @@ const MajorCard = ({ major }) => {
           {major.average_salary && (
             <div style={{ display:'flex', justifyContent:'space-between', fontSize:12 }}>
               <span style={{ color:'#64748b' }}>Avg. Salary</span>
-              <span style={{ color:'#16a34a', fontWeight:700 }}>{formatSalary(major.average_salary)}/yr</span>
+              <span style={{ color:'#334155', fontWeight:700 }}>{formatSalary(major.average_salary)}/yr</span>
             </div>
           )}
           {major.job_demand && <DemandBar demand={major.job_demand} />}
@@ -412,6 +412,9 @@ export function MajorDetail() {
   const { slug }  = useParams();
   const [major,   setMajor]   = useState(null);
   const [loading, setLoading] = useState(true);
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1280
+  );
 
   useEffect(() => {
     majorApi.getBySlug(slug)
@@ -420,9 +423,16 @@ export function MajorDetail() {
       .finally(() => setLoading(false));
   }, [slug]);
 
+  useEffect(() => {
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   if (loading) return <><style>{STYLES}</style><div style={{ ...PAGE, ...CENTER }}><Spinner /></div></>;
   if (!major)  return <><style>{STYLES}</style><div style={{ ...PAGE, ...CENTER, color:'#94a3b8' }}>Major not found.</div></>;
 
+  const isMobile = viewportWidth < 768;
   const demand      = DEMAND[major.job_demand];
   const universities = [...new Map(
     (major.Programs || []).filter(p => p.University).map(p => [p.University.id, p.University])
@@ -439,15 +449,15 @@ export function MajorDetail() {
             <ArrowLeft size={14} /> Back to Majors
           </Link>
 
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 300px', gap:24, alignItems:'start' }}>
+          <div style={{ display:'grid', gridTemplateColumns:isMobile ? '1fr' : '1fr 300px', gap:isMobile ? 16 : 24, alignItems:'start' }}>
 
             {/* ── Main ── */}
             <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
 
               {/* Hero card */}
-              <Card style={{ padding:24 }}>
-                <div style={{ display:'flex', gap:18, alignItems:'flex-start' }}>
-                  <div style={{ width:60, height:60, borderRadius:18, background:'#f1f5f9', border:'1px solid #e2e8f0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, flexShrink:0 }}>
+              <Card style={{ padding:isMobile ? 18 : 24 }}>
+                <div style={{ display:'flex', flexDirection:isMobile ? 'column' : 'row', gap:isMobile ? 14 : 18, alignItems:isMobile ? 'stretch' : 'flex-start' }}>
+                  <div style={{ width:isMobile ? 52 : 60, height:isMobile ? 52 : 60, borderRadius:isMobile ? 16 : 18, background:'#f1f5f9', border:'1px solid #e2e8f0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:30, flexShrink:0 }}>
                     {major.icon || <BookOpen size={30} />}
                   </div>
                   <div style={{ flex:1 }}>
@@ -456,7 +466,7 @@ export function MajorDetail() {
                       {major.is_featured    && <Badge color="amber">Featured</Badge>}
                       {major.field_of_study && <Badge color="purple">{major.field_of_study}</Badge>}
                     </div>
-                    <h1 style={{ fontSize:24, fontWeight:800, color:'#0f172a', margin:'0 0 4px', fontFamily:"'Syne',sans-serif" }}>{major.name}</h1>
+                    <h1 style={{ fontSize:isMobile ? 21 : 24, fontWeight:800, color:'#0f172a', margin:'0 0 4px', fontFamily:"'Syne',sans-serif", lineHeight:1.25 }}>{major.name}</h1>
                     {major.name_km && <p style={{ fontSize:13, color:'#94a3b8', margin:0 }}>{major.name_km}</p>}
                   </div>
                 </div>
@@ -469,7 +479,7 @@ export function MajorDetail() {
 
               {/* Career Paths */}
               {major.career_paths?.length > 0 && (
-                <Card style={{ padding:20 }}>
+                <Card style={{ padding:isMobile ? 16 : 20 }}>
                   <p style={{ fontSize:13, fontWeight:700, color:'#1e293b', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
                     <BriefcaseBusiness size={15} color="#1B3A6B" /> <span style={{ color:'#1B3A6B' }}>Career Paths</span>
                   </p>
@@ -483,7 +493,7 @@ export function MajorDetail() {
 
               {/* Skills */}
               {major.skills_gained?.length > 0 && (
-                <Card style={{ padding:20 }}>
+                <Card style={{ padding:isMobile ? 16 : 20 }}>
                   <p style={{ fontSize:13, fontWeight:700, color:'#1e293b', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
                     ⚡ <span style={{ color:'#d97706' }}>Skills You'll Gain</span>
                   </p>
@@ -497,17 +507,17 @@ export function MajorDetail() {
 
               {/* Programs */}
               {major.Programs?.length > 0 && (
-                <Card style={{ padding:20 }}>
+                <Card style={{ padding:isMobile ? 16 : 20 }}>
                   <p style={{ fontSize:13, fontWeight:700, color:'#1e293b', marginBottom:14, display:'flex', alignItems:'center', gap:8 }}>
                     <GraduationCap size={15} color="#15803d" /> <span style={{ color:'#15803d' }}>Programs Offering This Major</span>
                   </p>
                   <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                     {major.Programs.map(prog => (
-                      <div key={prog.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderRadius:10, background:'#f8fafc', border:'1px solid #e2e8f0' }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                      <div key={prog.id} style={{ display:'flex', flexDirection:isMobile ? 'column' : 'row', alignItems:isMobile ? 'stretch' : 'center', justifyContent:'space-between', gap:isMobile ? 10 : 12, padding:'10px 14px', borderRadius:10, background:'#f8fafc', border:'1px solid #e2e8f0' }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:10, minWidth:0 }}>
                           <Badge color="sky">{prog.degree_level}</Badge>
-                          <div>
-                            <p style={{ fontSize:13, color:'#1e293b', margin:'0 0 2px', fontWeight:600 }}>{prog.name}</p>
+                          <div style={{ minWidth:0 }}>
+                            <p style={{ fontSize:13, color:'#1e293b', margin:'0 0 2px', fontWeight:600, lineHeight:1.5 }}>{prog.name}</p>
                             {prog.University && (
                               <Link to={`/universities/${prog.University.slug}`} style={{ fontSize:11, color:'#1B3A6B', textDecoration:'none', fontWeight:500 }}
                                 onMouseEnter={e => e.currentTarget.style.textDecoration='underline'}
@@ -517,7 +527,7 @@ export function MajorDetail() {
                             )}
                           </div>
                         </div>
-                        <div style={{ display:'flex', alignItems:'center', gap:12, fontSize:12, color:'#64748b' }}>
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:isMobile ? 'space-between' : 'flex-end', gap:12, fontSize:12, color:'#64748b', width:isMobile ? '100%' : 'auto' }}>
                           {prog.duration_years && <span>{prog.duration_years} yrs</span>}
                           {prog.tuition_fee    && <span style={{ fontWeight:700, color:'#15803d' }}>${prog.tuition_fee.toLocaleString()}</span>}
                         </div>
@@ -529,10 +539,10 @@ export function MajorDetail() {
             </div>
 
             {/* ── Sidebar ── */}
-            <div style={{ display:'flex', flexDirection:'column', gap:14, position:'sticky', top:24 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:14, position:isMobile ? 'static' : 'sticky', top:isMobile ? 'auto' : 24 }}>
 
               {/* Stats */}
-              <Card style={{ padding:18 }}>
+              <Card style={{ padding:isMobile ? 16 : 18 }}>
                 <p style={{ fontSize:11, fontWeight:700, color:'#94a3b8', marginBottom:14, textTransform:'uppercase', letterSpacing:'0.08em' }}>Overview</p>
                 <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
                   {major.average_salary && (
@@ -567,7 +577,7 @@ export function MajorDetail() {
 
               {/* Universities */}
               {universities.length > 0 && (
-                <Card style={{ padding:18 }}>
+                <Card style={{ padding:isMobile ? 16 : 18 }}>
                   <p style={{ fontSize:11, fontWeight:700, color:'#94a3b8', marginBottom:12, textTransform:'uppercase', letterSpacing:'0.08em' }}>Universities Offering This</p>
                   <div style={{ display:'flex', flexDirection:'column', gap:4 }}>
                     {universities.slice(0, 5).map(uni => (
@@ -584,7 +594,7 @@ export function MajorDetail() {
 
               {/* Related majors */}
               {major.related_majors?.length > 0 && (
-                <Card style={{ padding:18 }}>
+                <Card style={{ padding:isMobile ? 16 : 18 }}>
                   <p style={{ fontSize:11, fontWeight:700, color:'#94a3b8', marginBottom:12, textTransform:'uppercase', letterSpacing:'0.08em' }}>Related Majors</p>
                   <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
                     {major.related_majors.map(m => (
@@ -618,6 +628,9 @@ export function MajorQuiz() {
   const [submitting, setSubmitting] = useState(false);
   const [results,    setResults]    = useState(null);
   const [step,       setStep]       = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth : 1280
+  );
 
   useEffect(() => {
     majorApi.getQuizQuestions()
@@ -626,11 +639,19 @@ export function MajorQuiz() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const total   = questions.length;
   const current = questions[step];
   const isLast  = step === total - 1;
   const answered = Object.keys(answers).length;
   const progress = total > 0 ? (step / total) * 100 : 0;
+  const isMobile = viewportWidth < 640;
+  const isTablet = viewportWidth < 900;
 
   const pick = (qId, val) => {
     setAnswers(p => ({ ...p, [qId]: val }));
@@ -654,7 +675,7 @@ export function MajorQuiz() {
     <>
       <style>{STYLES}</style>
       <div style={PAGE}>
-        <div style={{ maxWidth:600, margin:'0 auto' }}>
+        <div style={{ maxWidth:isTablet ? 640 : 760, margin:'0 auto' }}>
 
           <Link to="/majors" style={{ textDecoration:'none', color:'#64748b', fontSize:13, display:'inline-flex', alignItems:'center', gap:6, marginBottom:28, transition:'color 0.15s', fontWeight:500 }}
             onMouseEnter={e => e.currentTarget.style.color='#1B3A6B'} onMouseLeave={e => e.currentTarget.style.color='#64748b'}>
@@ -676,46 +697,52 @@ export function MajorQuiz() {
                   <p style={{ color:'#94a3b8', fontSize:14 }}>No matches found. Try again!</p>
                 </div>
               ) : (
-                <div style={{ display:'flex', flexDirection:'column', gap:12, marginBottom:24 }}>
+                <div style={{ display:'grid', gridTemplateColumns:isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap:12, marginBottom:24 }}>
                   {results.map((m, i) => (
-                    <Card key={m.id} style={{ padding:18, display:'flex', alignItems:'center', gap:14 }} hover>
-                      <div style={{ fontSize:26, width:48, height:48, borderRadius:14, background:'#f1f5f9', border:'1px solid #e2e8f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <Card key={m.id} style={{ padding:isMobile ? 14 : 18, display:'flex', flexDirection:'column', gap:12, minHeight:isMobile ? 'auto' : 230 }} hover>
+                      <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
+                        <div style={{ fontSize:26, width:isMobile ? 42 : 48, height:isMobile ? 42 : 48, borderRadius:14, background:'#f1f5f9', border:'1px solid #e2e8f0', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                         {m.icon || <BookOpen size={26} />}
-                      </div>
-                      <div style={{ flex:1 }}>
-                        <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4, flexWrap:'wrap' }}>
-                          <span style={{ fontSize:11, fontWeight:700, color:'#F47B20', background:'#fff7ed', padding:'1px 6px', borderRadius:6, border:'1px solid #fed7aa' }}>#{i + 1}</span>
-                          <span style={{ fontSize:14, fontWeight:700, color:'#0f172a' }}>{m.name}</span>
-                          {m.is_stem && <Badge color="sky">STEM</Badge>}
                         </div>
-                        <p style={{ fontSize:12, color:'#64748b', margin:'0 0 6px', lineHeight:1.5 }}>
-                          {m.description?.slice(0, 80)}{m.description?.length > 80 ? '...' : ''}
-                        </p>
-                        <div style={{ display:'flex', gap:12, fontSize:11 }}>
-                          {m.average_salary && <span style={{ color:'#16a34a', fontWeight:600 }}>{formatSalary(m.average_salary)}/yr</span>}
-                          {m.job_demand     && <span style={{ color:DEMAND[m.job_demand]?.color, fontWeight:600 }}>{DEMAND[m.job_demand]?.label} demand</span>}
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:4, flexWrap:'wrap' }}>
+                            <span style={{ fontSize:11, fontWeight:700, color:'#F47B20', background:'#fff7ed', padding:'1px 6px', borderRadius:6, border:'1px solid #fed7aa' }}>#{i + 1}</span>
+                            <span style={{ fontSize:isMobile ? 13 : 14, fontWeight:700, color:'#0f172a', lineHeight:1.35 }}>{m.name}</span>
+                            {m.is_stem && <Badge color="sky">STEM</Badge>}
+                          </div>
+                          <p style={{ fontSize:12, color:'#64748b', margin:'0 0 6px', lineHeight:1.5 }}>
+                            {m.description?.slice(0, isMobile ? 88 : 110)}{m.description?.length > (isMobile ? 88 : 110) ? '...' : ''}
+                          </p>
+                          <div style={{ display:'flex', gap:12, fontSize:11, flexWrap:'wrap' }}>
+                            {m.average_salary && <span style={{ color:'#16a34a', fontWeight:600 }}>{formatSalary(m.average_salary)}/yr</span>}
+                            {m.job_demand     && <span style={{ color:DEMAND[m.job_demand]?.color, fontWeight:600 }}>{DEMAND[m.job_demand]?.label} demand</span>}
+                          </div>
                         </div>
                       </div>
-                      <Link to={`/majors/${m.slug}`} style={{ textDecoration:'none' }}>
-                        <Btn variant="secondary" size="sm"><span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>View <ArrowRight size={14} /></span></Btn>
+                      <Link to={`/majors/${m.slug}`} style={{ textDecoration:'none', alignSelf:'stretch' }}>
+                        <Btn variant="secondary" size="sm" style={{ width:'100%', justifyContent:'center' }}>
+                          <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>View <ArrowRight size={14} /></span>
+                        </Btn>
                       </Link>
                     </Card>
                   ))}
                 </div>
               )}
 
-              <div style={{ display:'flex', gap:10, justifyContent:'center' }}>
-                <Btn variant="secondary" onClick={reset}>Retake Quiz</Btn>
-                <Link to="/majors" style={{ textDecoration:'none' }}><Btn>Browse All Majors</Btn></Link>
+              <div style={{ display:'flex', flexDirection:isMobile ? 'column' : 'row', gap:10, justifyContent:'center' }}>
+                <Btn variant="secondary" onClick={reset} style={{ width:isMobile ? '100%' : 'auto', justifyContent:'center' }}>Retake Quiz</Btn>
+                <Link to="/majors" style={{ textDecoration:'none', width:isMobile ? '100%' : 'auto' }}>
+                  <Btn style={{ width:isMobile ? '100%' : 'auto', justifyContent:'center' }}>Browse All Majors</Btn>
+                </Link>
               </div>
             </div>
 
           ) : (
             /* ── Quiz ── */
             <div style={{ animation:'fadeUp 0.4s ease-out' }}>
-              <div style={{ textAlign:'center', marginBottom:32 }}>
+              <div style={{ textAlign:'center', marginBottom:isMobile ? 24 : 32 }}>
                 <div style={{ marginBottom:12, color:'#1B3A6B' }}><GraduationCap size={48} /></div>
-                <h1 style={{ fontSize:26, fontWeight:800, color:'#0f172a', margin:'0 0 8px', fontFamily:"'Syne',sans-serif" }}>Find Your Perfect Major</h1>
+                <h1 style={{ fontSize:isMobile ? 22 : 26, fontWeight:800, color:'#0f172a', margin:'0 0 8px', fontFamily:"'Syne',sans-serif", lineHeight:1.2 }}>Find Your Perfect Major</h1>
                 <p style={{ fontSize:13, color:'#64748b' }}>Answer {total} quick questions for personalized recommendations</p>
               </div>
 
@@ -730,22 +757,11 @@ export function MajorQuiz() {
                 </div>
               </div>
 
-              {/* Step dots */}
-              <div style={{ display:'flex', justifyContent:'center', gap:6, marginBottom:28 }}>
-                {questions.map((_, i) => (
-                  <div key={i} style={{
-                    height:6, borderRadius:4, transition:'all 0.3s',
-                    width: i === step ? 24 : 6,
-                    background: i < step ? '#1B3A6B' : i === step ? '#4AAEE0' : '#e2e8f0',
-                  }} />
-                ))}
-              </div>
-
               {/* Question card */}
               {current && (
                 <div>
-                  <Card style={{ padding:24, marginBottom:14 }}>
-                    <h2 style={{ fontSize:15, fontWeight:700, color:'#0f172a', marginBottom:20, lineHeight:1.6 }}>
+                  <Card style={{ padding:isMobile ? 16 : 24, marginBottom:14 }}>
+                    <h2 style={{ fontSize:isMobile ? 14 : 15, fontWeight:700, color:'#0f172a', marginBottom:20, lineHeight:1.6 }}>
                       {current.question}
                     </h2>
                     <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
@@ -754,7 +770,7 @@ export function MajorQuiz() {
                         return (
                           <button key={i} onClick={() => pick(current.id, opt.value)}
                             style={{
-                              width:'100%', textAlign:'left', padding:'12px 16px', borderRadius:10, fontSize:13, fontWeight:500,
+                              width:'100%', textAlign:'left', padding:isMobile ? '12px 14px' : '12px 16px', borderRadius:10, fontSize:isMobile ? 12.5 : 13, fontWeight:500,
                               cursor:'pointer', transition:'all 0.15s', fontFamily:"'DM Sans',sans-serif",
                               background: sel ? '#eff6ff' : '#f8fafc',
                               border: `1.5px solid ${sel ? '#1B3A6B' : '#e2e8f0'}`,
@@ -774,16 +790,16 @@ export function MajorQuiz() {
                   </Card>
 
                   {/* Nav */}
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                    <Btn variant="ghost" size="sm" onClick={() => setStep(p => Math.max(0, p - 1))} disabled={step === 0}>
+                  <div style={{ display:'flex', flexDirection:isMobile ? 'column-reverse' : 'row', justifyContent:'space-between', alignItems:isMobile ? 'stretch' : 'center', gap:isMobile ? 10 : 12 }}>
+                    <Btn variant="ghost" size="sm" onClick={() => setStep(p => Math.max(0, p - 1))} disabled={step === 0} style={{ width:isMobile ? '100%' : 'auto', justifyContent:'center' }}>
                       <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}><ArrowLeft size={14} /> Previous</span>
                     </Btn>
                     {isLast ? (
-                      <Btn onClick={submit} loading={submitting} disabled={answered < total}>
+                      <Btn onClick={submit} loading={submitting} disabled={answered < total} style={{ width:isMobile ? '100%' : 'auto', justifyContent:'center' }}>
                         <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>Get Recommendations <Target size={14} /></span>
                       </Btn>
                     ) : (
-                      <Btn variant="secondary" size="sm" onClick={() => setStep(p => p + 1)} disabled={!answers[current?.id]}>
+                      <Btn variant="secondary" size="sm" onClick={() => setStep(p => p + 1)} disabled={!answers[current?.id]} style={{ width:isMobile ? '100%' : 'auto', justifyContent:'center' }}>
                         <span style={{ display:'inline-flex', alignItems:'center', gap:6 }}>Next <ArrowRight size={14} /></span>
                       </Btn>
                     )}

@@ -185,6 +185,8 @@ export default function UniversityDetail() {
   const [liveReviews, setLiveReviews] = useState([]);
   const [reviewError, setReviewError] = useState('');
   const [openFaculties, setOpenFaculties] = useState({});
+  const [openPrograms, setOpenPrograms] = useState({});
+  const [openFaqs, setOpenFaqs] = useState({});
   const [newsImageIndexes, setNewsImageIndexes] = useState({});
   const [eventImageIndexes, setEventImageIndexes] = useState({});
   const [galleryFocusIndex, setGalleryFocusIndex] = useState(null);
@@ -260,6 +262,33 @@ export default function UniversityDetail() {
   }, [uni?.Faculties]);
 
   useEffect(() => {
+    const faqItems = uni?.FAQs || [];
+    if (!faqItems.length) return;
+
+    setOpenFaqs((prev) => {
+      if (Object.keys(prev).length) return prev;
+      return faqItems.reduce((acc, faq, index) => {
+        acc[faq.id] = index === 0;
+        return acc;
+      }, {});
+    });
+  }, [uni?.FAQs]);
+
+  useEffect(() => {
+    const programItems = (uni?.Faculties || []).flatMap((faculty) => faculty.Programs || []);
+    if (!programItems.length) return;
+
+    setOpenPrograms((prev) => {
+      const validEntries = Object.fromEntries(
+        Object.entries(prev).filter(([id]) => programItems.some((program) => String(program.id) === id))
+      );
+      if (Object.keys(validEntries).length) return validEntries;
+      const firstProgram = programItems[0];
+      return firstProgram ? { [firstProgram.id]: true } : {};
+    });
+  }, [uni?.Faculties]);
+
+  useEffect(() => {
     if (galleryFocusIndex === null) return undefined;
 
     const handleKeyDown = (event) => {
@@ -326,6 +355,10 @@ export default function UniversityDetail() {
   const setReviewField = (key, value) => setReviewForm((prev) => ({ ...prev, [key]: value }));
   const toggleFaculty = (facultyId) =>
     setOpenFaculties((prev) => ({ ...prev, [facultyId]: !prev[facultyId] }));
+  const toggleProgram = (programId) =>
+    setOpenPrograms((prev) => ({ ...prev, [programId]: !prev[programId] }));
+  const toggleFaq = (faqId) =>
+    setOpenFaqs((prev) => ({ ...prev, [faqId]: !prev[faqId] }));
   const cycleMedia = (setIndexes, key, images, direction) => {
     if (images.length <= 1) return;
     setIndexes((prev) => {
@@ -464,7 +497,7 @@ export default function UniversityDetail() {
       </div>
 
       {/* ── Header ── */}
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex flex-col md:flex-row gap-5 -mt-12 mb-8 relative z-10">
 
           <div className="w-24 h-24 rounded-2xl bg-white border-2 border-slate-200 shadow-md flex items-center justify-center text-4xl overflow-hidden shrink-0">
@@ -497,7 +530,7 @@ export default function UniversityDetail() {
             </div>
           </div>
 
-          <div className="flex gap-2 items-start md:pt-14 flex-wrap">
+          <div className="flex gap-2 items-stretch md:items-start md:pt-14 flex-wrap">
             <Link to="/universities" className="px-4 py-2 rounded-xl text-sm font-semibold border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300 shadow-sm transition-all">
               <span className="inline-flex items-center gap-1"><ChevronLeft size={15} /> Back</span>
             </Link>
@@ -723,40 +756,56 @@ export default function UniversityDetail() {
                         (faculty.Programs || []).length > 0 ? (
                         <div className="space-y-3">
                           {(faculty.Programs || []).map((prog) => (
-                            <div key={prog.id} className="rounded-2xl bg-slate-50 border border-slate-200 p-4">
-                              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="px-2 py-0.5 rounded-full text-xs font-bold capitalize"
+                            <div key={prog.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                              <button
+                                type="button"
+                                onClick={() => toggleProgram(prog.id)}
+                                className="flex w-full items-start justify-between gap-3 px-4 py-4 text-left"
+                              >
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="rounded-full px-2 py-0.5 text-xs font-bold capitalize"
                                       style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
                                       {prog.degree_level}
                                     </span>
                                     <span className="text-sm font-semibold text-slate-800">{prog.name}</span>
                                     {prog.language && (
-                                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-200">{prog.language}</span>
+                                      <span className="rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">{prog.language}</span>
                                     )}
                                   </div>
-                                  {prog.description && <p className="mt-2 text-sm text-slate-600 leading-relaxed">{prog.description}</p>}
+                                  <p className="mt-2 text-xs text-slate-500">
+                                    {prog.duration_years ? `${prog.duration_years} yrs` : 'N/A'} • {prog.tuition_fee ? formatCurrency(prog.tuition_fee) : 'Tuition N/A'} • {prog.is_available ? 'Open' : 'Unavailable'}
+                                  </p>
                                 </div>
-                                <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 shrink-0 lg:min-w-[220px]">
-                                  <div className="rounded-xl bg-white border border-slate-200 px-3 py-2">
-                                    <span className="block text-[11px] uppercase tracking-wide text-slate-400">Duration</span>
-                                    <span className="block mt-1 font-semibold text-slate-700">{prog.duration_years ? `${prog.duration_years} yrs` : 'N/A'}</span>
+                                <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
+                                  <ChevronDown size={16} className={`transition-transform ${openPrograms[prog.id] ? 'rotate-180' : ''}`} />
+                                </span>
+                              </button>
+                              {openPrograms[prog.id] ? (
+                                <div className="border-t border-slate-200 px-4 py-4">
+                                  <div className="grid gap-2 text-xs text-slate-500 sm:grid-cols-2 xl:grid-cols-4">
+                                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                                      <span className="block text-[11px] uppercase tracking-wide text-slate-400">Duration</span>
+                                      <span className="mt-1 block font-semibold text-slate-700">{prog.duration_years ? `${prog.duration_years} yrs` : 'N/A'}</span>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                                      <span className="block text-[11px] uppercase tracking-wide text-slate-400">Tuition</span>
+                                      <span className="mt-1 block font-semibold text-slate-700">{prog.tuition_fee ? formatCurrency(prog.tuition_fee) : 'N/A'}</span>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                                      <span className="block text-[11px] uppercase tracking-wide text-slate-400">Credits</span>
+                                      <span className="mt-1 block font-semibold text-slate-700">{prog.credits_required || 'N/A'}</span>
+                                    </div>
+                                    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2">
+                                      <span className="block text-[11px] uppercase tracking-wide text-slate-400">Availability</span>
+                                      <span className="mt-1 block font-semibold text-slate-700">{prog.is_available ? 'Open' : 'Unavailable'}</span>
+                                    </div>
                                   </div>
-                                  <div className="rounded-xl bg-white border border-slate-200 px-3 py-2">
-                                    <span className="block text-[11px] uppercase tracking-wide text-slate-400">Tuition</span>
-                                    <span className="block mt-1 font-semibold text-slate-700">{prog.tuition_fee ? formatCurrency(prog.tuition_fee) : 'N/A'}</span>
-                                  </div>
-                                  <div className="rounded-xl bg-white border border-slate-200 px-3 py-2">
-                                    <span className="block text-[11px] uppercase tracking-wide text-slate-400">Credits</span>
-                                    <span className="block mt-1 font-semibold text-slate-700">{prog.credits_required || 'N/A'}</span>
-                                  </div>
-                                  <div className="rounded-xl bg-white border border-slate-200 px-3 py-2">
-                                    <span className="block text-[11px] uppercase tracking-wide text-slate-400">Availability</span>
-                                    <span className="block mt-1 font-semibold text-slate-700">{prog.is_available ? 'Open' : 'Unavailable'}</span>
-                                  </div>
+                                  {prog.description ? (
+                                    <p className="mt-3 text-sm leading-relaxed text-slate-600">{prog.description}</p>
+                                  ) : null}
                                 </div>
-                              </div>
+                              ) : null}
                             </div>
                           ))}
                         </div>
@@ -967,10 +1016,30 @@ export default function UniversityDetail() {
             <div className="space-y-3 max-w-3xl">
               {(uni.FAQs || []).length > 0 ? (
                 uni.FAQs.map((faq, i) => (
-                  <Card key={faq.id} className="p-5">
-                    <p className="text-sm font-bold mb-2" style={{ color: '#1B3A6B' }}>Q{i + 1}. {faq.question}</p>
-                    <p className="text-sm text-slate-600 leading-relaxed">{faq.answer}</p>
-                    {faq.category && <span className="inline-block mt-2 text-xs text-slate-400 font-medium">{faq.category}</span>}
+                  <Card key={faq.id} className="overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => toggleFaq(faq.id)}
+                      className="flex w-full items-start justify-between gap-3 px-5 py-4 text-left"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold leading-6" style={{ color: '#1B3A6B' }}>
+                          Q{i + 1}. {faq.question}
+                        </p>
+                        {faq.category && (
+                          <span className="mt-2 inline-block text-xs font-medium text-slate-400">{faq.category}</span>
+                        )}
+                      </div>
+                      <ChevronDown
+                        size={16}
+                        className={`mt-1 shrink-0 text-slate-400 transition-transform ${openFaqs[faq.id] ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                    {openFaqs[faq.id] ? (
+                      <div className="border-t border-slate-200 px-5 py-4">
+                        <p className="text-sm leading-relaxed text-slate-600">{faq.answer}</p>
+                      </div>
+                    ) : null}
                   </Card>
                 ))
               ) : (

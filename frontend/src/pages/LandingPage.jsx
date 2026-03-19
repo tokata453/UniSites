@@ -23,7 +23,7 @@ const SCHOLARSHIPS = [
 
 const HOW_IT_WORKS = [
   { step: '01', icon: Search, title: 'Search & Explore',    desc: 'Browse 50+ universities filtered by type, province, tuition range, and available scholarships.',     color: '#1B3A6B' },
-  { step: '02', icon: Target, title: 'Take the Major Quiz', desc: 'Answer 5 quick questions and get personalized major recommendations that match your interests.',       color: '#4AAEE0' },
+  { step: '02', icon: Target, title: 'Take the Major Quiz', desc: 'Answer a short guided quiz and get personalized major recommendations that match your interests.',       color: '#4AAEE0' },
   { step: '03', icon: Wallet, title: 'Find Scholarships',   desc: 'Discover funding opportunities from local universities, government programs, and international bodies.', color: '#F47B20' },
   { step: '04', icon: GraduationCap, title: 'Apply & Succeed',     desc: 'Follow the latest campus feed, connect with universities directly, and start your journey.',    color: '#3DAE6B' },
 ];

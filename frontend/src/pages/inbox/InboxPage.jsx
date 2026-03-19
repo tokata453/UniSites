@@ -739,8 +739,8 @@ export default function InboxPage() {
         </div>
       )}
 
-      <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
-        <aside className={`${shell} overflow-hidden`}>
+      <div className="grid gap-5 lg:grid-cols-[340px_minmax(0,1fr)]">
+        <aside className={`${shell} overflow-hidden ${selectedConversation || selectedRecipient ? 'hidden lg:block' : ''}`}>
           <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -905,12 +905,20 @@ export default function InboxPage() {
           </div>
         </aside>
 
-        <section className={`${shell} flex h-[calc(100vh-13rem)] min-h-[620px] max-h-[760px] flex-col overflow-hidden`}>
+        <section className={`${shell} ${!selectedConversation && !selectedRecipient ? 'hidden lg:flex' : 'flex'} min-h-[520px] flex-col overflow-hidden lg:h-[calc(100vh-13rem)] lg:min-h-[620px] lg:max-h-[760px]`}>
           {selectedConversation ? (
             <>
               <div className="border-b border-slate-200 bg-white px-5 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedId(null)}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700 lg:hidden"
+                      aria-label="Back to chats"
+                    >
+                      ←
+                    </button>
                     <Avatar user={selectedConversation.participant} size="lg" />
                     <div className="min-w-0">
                       <p className="truncate text-lg font-bold text-slate-900">{selectedConversation.participant?.name}</p>
@@ -983,6 +991,12 @@ export default function InboxPage() {
                       className="min-h-[88px] flex-1 resize-none rounded-2xl border-0 bg-transparent px-3 py-2 text-sm text-slate-700 outline-none placeholder:text-slate-400"
                       value={draftMessage}
                       onChange={(e) => setDraftMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (!sending && draftMessage.trim()) sendMessage();
+                        }
+                      }}
                       placeholder="Write a reply..."
                     />
                     <button type="button" onClick={sendMessage} disabled={sending || !draftMessage.trim()} className={`${primaryBtn} self-end px-4`}>
@@ -998,6 +1012,18 @@ export default function InboxPage() {
               <div className="border-b border-slate-200 bg-white px-5 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedRecipient(null);
+                        setComposeQuery('');
+                        setComposeMessage('');
+                      }}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700 lg:hidden"
+                      aria-label="Back to chats"
+                    >
+                      ←
+                    </button>
                     <Avatar user={selectedRecipient} size="lg" />
                     <div className="min-w-0">
                       <p className="truncate text-lg font-bold text-slate-900">{selectedRecipient.name}</p>
@@ -1037,6 +1063,12 @@ export default function InboxPage() {
                       className="min-h-[88px] flex-1 resize-none rounded-2xl border-0 bg-transparent px-3 py-2 text-sm text-slate-700 outline-none placeholder:text-slate-400"
                       value={composeMessage}
                       onChange={(e) => setComposeMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          if (!creating && selectedRecipient?.id && composeMessage.trim()) startConversation();
+                        }
+                      }}
                       placeholder={`Write your first message to ${selectedRecipient.name}...`}
                     />
                     <button type="button" onClick={startConversation} disabled={creating || !selectedRecipient?.id || !composeMessage.trim()} className={`${primaryBtn} self-end px-4`}>

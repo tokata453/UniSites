@@ -74,13 +74,23 @@ const formatQuestions = (questions) =>
     options: Object.entries(q.options || {}).map(([value, label]) => ({ value, label })),
   }));
 
+const dedupeQuizQuestions = (questions) => {
+  const seen = new Set();
+  return questions.filter((question) => {
+    const key = `${question.sort_order}:${String(question.question || '').trim().toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 const getQuizQuestions = async (req, res) => {
   try {
     const questions = await db.MajorQuizQuestion.findAll({
       where: { is_active: true },
-      order: [['sort_order', 'ASC']],
+      order: [['sort_order', 'ASC'], ['created_at', 'ASC']],
     });
-    return success(res, { questions: formatQuestions(questions) });
+    return success(res, { questions: formatQuestions(dedupeQuizQuestions(questions)) });
   } catch (err) {
     return error(res, err.message, 500);
   }
@@ -93,7 +103,10 @@ const getRecommendations = async (req, res) => {
       return error(res, 'answers object is required');
     }
 
-    const questions = await db.MajorQuizQuestion.findAll({ where: { is_active: true } });
+    const questions = dedupeQuizQuestions(await db.MajorQuizQuestion.findAll({
+      where: { is_active: true },
+      order: [['sort_order', 'ASC'], ['created_at', 'ASC']],
+    }));
     const scores    = {};
 
     questions.forEach(q => {

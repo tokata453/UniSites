@@ -136,7 +136,7 @@ export default function UniversityList() {
   }, []);
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-10 bg-slate-50 min-h-screen">
+    <div className="max-w-7xl mx-auto px-4 py-8 bg-slate-50 min-h-screen sm:px-6 sm:py-10">
 
       {/* ── Page header ── */}
       <div className="mb-8">
