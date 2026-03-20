@@ -1,20 +1,44 @@
 import { useEffect, useState } from 'react';
-import { authApi } from '@/api';
+import { organizationApi } from '@/api';
 import { useAuth } from '@/hooks';
 import { avatarUrl } from '@/utils';
 
 export default function OrganizationProfile() {
-  const { user, setUser } = useAuth();
+  const { user } = useAuth();
   const [form, setForm] = useState({
-    name: user?.name || '',
-    bio: user?.bio || '',
-    website_url: user?.website_url || '',
-    contact_phone: user?.contact_phone || '',
+    name: '',
+    description: '',
+    website_url: '',
+    contact_phone: '',
+    email: '',
   });
+  const [organization, setOrganization] = useState(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState('');
+
+  useEffect(() => {
+    organizationApi.getMine()
+      .then((res) => {
+        const next = res.data.organization;
+        setOrganization(next);
+        setForm({
+          name: next?.name || '',
+          description: next?.description || '',
+          website_url: next?.website_url || '',
+          contact_phone: next?.contact_phone || '',
+          email: next?.email || user?.email || '',
+        });
+      })
+      .catch(() => {
+        setOrganization(null);
+        setForm((prev) => ({
+          ...prev,
+          email: user?.email || '',
+        }));
+      });
+  }, [user?.email]);
 
   useEffect(() => {
     if (!avatarFile) {
@@ -33,12 +57,13 @@ export default function OrganizationProfile() {
     try {
       const fd = new FormData();
       fd.append('name', form.name);
-      fd.append('bio', form.bio);
+      fd.append('description', form.description);
       fd.append('website_url', form.website_url);
       fd.append('contact_phone', form.contact_phone);
-      if (avatarFile) fd.append('avatar', avatarFile);
-      const res = await authApi.updateProfile(fd);
-      setUser(res.data.user);
+      fd.append('email', form.email);
+      if (avatarFile) fd.append('logo', avatarFile);
+      const res = await organizationApi.updateMine(fd);
+      setOrganization(res.data.organization);
       setAvatarFile(null);
       setMessage('Organization profile updated!');
       setTimeout(() => setMessage(''), 3000);
@@ -57,19 +82,19 @@ export default function OrganizationProfile() {
       <div className="p-5 rounded-xl bg-white border border-slate-200 shadow-sm space-y-5">
         <div className="flex items-center gap-4 pb-5 border-b border-slate-100">
           <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold text-white shrink-0 overflow-hidden bg-teal-700">
-            {avatarPreview || user?.avatar_url ? (
+            {avatarPreview || organization?.logo_url ? (
               <img
-                src={avatarPreview || avatarUrl(user?.avatar_url) || user?.avatar_url}
+                src={avatarPreview || avatarUrl(organization?.logo_url) || organization?.logo_url}
                 alt={user?.name || 'Organization avatar'}
                 className="w-full h-full object-cover"
               />
             ) : (
-              user?.name?.[0]?.toUpperCase() || 'O'
+              organization?.name?.[0]?.toUpperCase() || user?.name?.[0]?.toUpperCase() || 'O'
             )}
           </div>
           <div>
-            <p className="font-semibold text-slate-800">{user?.name}</p>
-            <p className="text-sm text-slate-500">{user?.email}</p>
+            <p className="font-semibold text-slate-800">{organization?.name || user?.name}</p>
+            <p className="text-sm text-slate-500">{organization?.email || user?.email}</p>
             <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-50 text-teal-700 border border-teal-200">
               {user?.Role?.name}
             </span>
@@ -99,8 +124,8 @@ export default function OrganizationProfile() {
           <div>
             <label className="block text-xs font-semibold text-slate-600 mb-1.5">Organization Info</label>
             <textarea
-              value={form.bio}
-              onChange={(e) => setForm((prev) => ({ ...prev, bio: e.target.value }))}
+              value={form.description}
+              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
               rows={4}
               placeholder="Describe your organization, mission, and the kind of opportunities you provide."
               className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm outline-none focus:border-[#0f766e] focus:ring-2 focus:ring-[#0f766e]/10 transition-all resize-none"
@@ -113,6 +138,16 @@ export default function OrganizationProfile() {
               value={form.website_url}
               onChange={(e) => setForm((prev) => ({ ...prev, website_url: e.target.value }))}
               placeholder="https://your-organization.org"
+              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm outline-none focus:border-[#0f766e] focus:ring-2 focus:ring-[#0f766e]/10 transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 mb-1.5">Public Email</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+              placeholder="hello@organization.org"
               className="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 text-sm outline-none focus:border-[#0f766e] focus:ring-2 focus:ring-[#0f766e]/10 transition-all"
             />
           </div>

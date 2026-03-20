@@ -344,9 +344,13 @@ export default function UniversityDetail() {
       return;
     }
     try {
-      const res = await inboxApi.createConversation({ recipient_id: recipientId });
+      const res = await inboxApi.createConversation({
+        recipient_id: recipientId,
+        context: 'university',
+        university_id: uni.id,
+      });
       const conversationId = res.data.conversation?.id;
-      navigate(`${inboxPath}${conversationId ? `?conversation=${conversationId}` : ''}`);
+      navigate(`${inboxPath}?context=university${conversationId ? `&conversation=${conversationId}` : ''}`);
     } catch (err) {
       error(err.response?.data?.message || 'Failed to open conversation');
     }

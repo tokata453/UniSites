@@ -2,15 +2,15 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-  class Program extends Model {
+  class UniversityProgram extends Model {
     static associate(db) {
-      Program.belongsTo(db.University, { foreignKey: 'university_id', as: 'University' });
-      Program.belongsTo(db.Faculty, { foreignKey: 'faculty_id', as: 'Faculty' });
-      Program.belongsTo(db.Major, { foreignKey: 'major_id', as: 'Major' });
+      UniversityProgram.belongsTo(db.University, { foreignKey: 'university_id', as: 'University' });
+      UniversityProgram.belongsTo(db.UniversityFaculty, { foreignKey: 'faculty_id', as: 'Faculty' });
+      UniversityProgram.belongsTo(db.Major, { foreignKey: 'major_id', as: 'Major' });
     }
   }
 
-  Program.init({
+  UniversityProgram.init({
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
@@ -62,10 +62,10 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'Program',
+    modelName: 'UniversityProgram',
     tableName: 'programs',
     underscored: true,
   });
 
-  return Program;
+  return UniversityProgram;
 };

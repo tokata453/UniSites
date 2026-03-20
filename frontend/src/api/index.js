@@ -99,6 +99,12 @@ export const universityApi = {
   trackClick:     (data)         => api.post('/analytics/track', data),
 };
 
+// ── Organizations ─────────────────────────────────────────────────────────────
+export const organizationApi = {
+  getMine: () => api.get('/organizations/mine'),
+  updateMine: (data) => api.put('/organizations/mine', data),
+};
+
 // ── Majors ────────────────────────────────────────────────────────────────────
 export const majorApi = {
   list:              (params) => api.get('/majors', { params }),
@@ -111,25 +117,10 @@ export const majorApi = {
   remove:            (id)     => api.delete(`/majors/${id}`),
 };
 
-// ── Forum ─────────────────────────────────────────────────────────────────────
-export const forumApi = {
-  getCategories:  ()             => api.get('/forum/categories'),
-  getThreads:     (params)       => api.get('/forum/threads', { params }),
-  getThread:      (slug)         => api.get(`/forum/threads/${slug}`),
-  createThread:   (data)         => api.post('/forum/threads', data),
-  updateThread:   (id, data)     => api.put(`/forum/threads/${id}`, data),
-  deleteThread:   (id)           => api.delete(`/forum/threads/${id}`),
-  createReply:    (threadId, d)  => api.post(`/forum/threads/${threadId}/replies`, d),
-  updateReply:    (id, data)     => api.put(`/forum/replies/${id}`, data),
-  deleteReply:    (id)           => api.delete(`/forum/replies/${id}`),
-  toggleLike:     (replyId)      => api.post(`/forum/replies/${replyId}/like`),
-  acceptReply:    (replyId)      => api.post(`/forum/replies/${replyId}/accept`),
-};
-
 // ── Inbox ─────────────────────────────────────────────────────────────────────
 export const inboxApi = {
   searchUsers:           (q)          => api.get('/inbox/users/search', { params: { q } }),
-  getConversations:      ()           => api.get('/inbox/conversations'),
+  getConversations:      (params)     => api.get('/inbox/conversations', { params }),
   createConversation:    (data)       => api.post('/inbox/conversations', data),
   getMessages:           (id)         => api.get(`/inbox/conversations/${id}/messages`),
   sendMessage:           (id, data)   => api.post(`/inbox/conversations/${id}/messages`, data),
@@ -161,6 +152,13 @@ export const adminApi = {
   createUniversity:   (data)         => api.post('/admin/universities', data),
   updateUniversity:   (id, data)     => api.put(`/admin/universities/${id}`, data),
   deleteUniversity:   (id)           => api.delete(`/admin/universities/${id}`),
+  // Organizations
+  getOrganizations:   (params)       => api.get('/admin/organizations', { params }),
+  updateOrganization: (id, data)     => api.put(`/admin/organizations/${id}`, data),
+  deleteOrganization: (id)           => api.delete(`/admin/organizations/${id}`),
+  // Feed
+  getFeed:            (params)       => api.get('/admin/feed', { params }),
+  updateFeedNews:     (id, data)     => api.put(`/admin/feed/news/${id}`, data),
   // Opportunities
   getOpportunities:   (params)       => api.get('/admin/opportunities', { params }),
   updateOpportunity:  (id, data)     => api.put(`/admin/opportunities/${id}`, data),
@@ -169,8 +167,4 @@ export const adminApi = {
   getReviews:         (params)       => api.get('/admin/reviews', { params }),
   approveReview:      (id)           => api.put(`/admin/reviews/${id}/approve`),
   deleteReview:       (id)           => api.delete(`/admin/reviews/${id}`),
-  // Forum
-  getThreads:         (params)       => api.get('/admin/threads', { params }),
-  deleteThread:       (id)           => api.delete(`/admin/threads/${id}`),
-  pinThread:          (id)           => api.put(`/admin/threads/${id}/pin`),
 };

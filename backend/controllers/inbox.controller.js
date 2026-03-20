@@ -15,7 +15,24 @@ const participantFor = (conversation, userId) => (
 const conversationInclude = [
   { model: db.User, as: 'UserOne', attributes: ['id', 'name', 'email', 'avatar_url', 'role_id'] },
   { model: db.User, as: 'UserTwo', attributes: ['id', 'name', 'email', 'avatar_url', 'role_id'] },
+  { model: db.University, as: 'University', attributes: ['id', 'name', 'slug', 'logo_url'], required: false },
+  { model: db.Organization, as: 'Organization', attributes: ['id', 'name', 'slug', 'logo_url'], required: false },
 ];
+
+const normalizeConversationContext = (value) => {
+  if (!value) return null;
+  return ['personal', 'university', 'organization', 'admin', 'all'].includes(value) ? value : 'personal';
+};
+
+const getOwnedUniversity = async (userId) => db.University.findOne({
+  where: { owner_id: userId },
+  attributes: ['id', 'name', 'slug', 'logo_url'],
+});
+
+const getOwnedOrganization = async (userId) => db.Organization.findOne({
+  where: { owner_id: userId },
+  attributes: ['id', 'name', 'slug', 'logo_url'],
+});
 
 const loadConversationSummary = async (conversationId, userId) => {
   const conversation = await db.Conversation.findByPk(conversationId, {
@@ -68,12 +85,31 @@ const emitSafe = (room, event, payload) => {
 
 exports.listConversations = async (req, res) => {
   try {
+    const requestedContext = normalizeConversationContext(req.query.context);
+    const ownedUniversity = requestedContext === 'university'
+      ? await getOwnedUniversity(req.user.id)
+      : null;
+    const ownedOrganization = requestedContext === 'organization'
+      ? await getOwnedOrganization(req.user.id)
+      : null;
+
+    if (requestedContext === 'university' && !ownedUniversity) {
+      return success(res, { conversations: [], context: 'university', university: null, organization: null });
+    }
+    if (requestedContext === 'organization' && !ownedOrganization) {
+      return success(res, { conversations: [], context: 'organization', university: null, organization: null });
+    }
+
+    const where = {
+      ...conversationWhereForUser(req.user.id),
+      ...(requestedContext && requestedContext !== 'all' ? { conversation_context: requestedContext } : {}),
+      ...(requestedContext === 'university' ? { university_id: ownedUniversity.id } : {}),
+      ...(requestedContext === 'organization' ? { organization_id: ownedOrganization.id } : {}),
+    };
+
     const conversations = await db.Conversation.findAll({
-      where: conversationWhereForUser(req.user.id),
-      include: [
-        { model: db.User, as: 'UserOne', attributes: ['id', 'name', 'email', 'avatar_url'] },
-        { model: db.User, as: 'UserTwo', attributes: ['id', 'name', 'email', 'avatar_url'] },
-      ],
+      where,
+      include: conversationInclude,
       order: [['last_message_at', 'DESC'], ['updated_at', 'DESC']],
     });
 
@@ -101,7 +137,12 @@ exports.listConversations = async (req, res) => {
       };
     }));
 
-    return success(res, { conversations: rows });
+    return success(res, {
+      conversations: rows,
+      context: requestedContext || 'all',
+      university: ownedUniversity,
+      organization: ownedOrganization,
+    });
   } catch (err) {
     return error(res, err.message, 500);
   }
@@ -134,32 +175,70 @@ exports.searchUsers = async (req, res) => {
 exports.createConversation = async (req, res) => {
   try {
     const { recipient_id, recipient_email, message, client_temp_id } = req.body;
+    const requestedContext = normalizeConversationContext(req.body.context);
     if (!recipient_id && !recipient_email) return error(res, 'Recipient is required');
 
     const recipient = await db.User.findOne({
       where: recipient_id ? { id: recipient_id } : { email: recipient_email },
-      attributes: ['id', 'name', 'email', 'avatar_url'],
+      attributes: ['id', 'name', 'email', 'avatar_url', 'role_id'],
+      include: [{ model: db.Role, as: 'Role', attributes: ['name'] }],
     });
     if (!recipient) return notFound(res, 'Recipient not found');
     if (recipient.id === req.user.id) return error(res, 'You cannot start a chat with yourself');
 
+    const effectiveContext = requestedContext
+      || (recipient.Role?.name === 'admin' && req.user?.Role?.name !== 'admin' ? 'admin' : 'personal');
+
+    let contextUniversity = null;
+    let contextOrganization = null;
+    if (effectiveContext === 'university') {
+      if (!req.body.university_id) return error(res, 'University context requires a university_id');
+
+      contextUniversity = await db.University.findOne({
+        where: { id: req.body.university_id, owner_id: recipient.id },
+        attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id'],
+      });
+
+      if (!contextUniversity) {
+        return error(res, 'This university inbox is not available for the selected recipient', 400);
+      }
+    }
+    if (effectiveContext === 'organization') {
+      if (!req.body.organization_id) return error(res, 'Organization context requires an organization_id');
+
+      contextOrganization = await db.Organization.findOne({
+        where: { id: req.body.organization_id, owner_id: recipient.id },
+        attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id'],
+      });
+
+      if (!contextOrganization) {
+        return error(res, 'This organization inbox is not available for the selected recipient', 400);
+      }
+    }
+    if (effectiveContext === 'admin' && recipient.Role?.name !== 'admin') {
+      return error(res, 'Admin context requires an admin recipient', 400);
+    }
+
     let conversation = await db.Conversation.findOne({
       where: {
+        conversation_context: effectiveContext,
+        ...(effectiveContext === 'university' ? { university_id: contextUniversity.id } : {}),
+        ...(effectiveContext === 'organization' ? { organization_id: contextOrganization.id } : {}),
         [Op.or]: [
           { user_one_id: req.user.id, user_two_id: recipient.id },
           { user_one_id: recipient.id, user_two_id: req.user.id },
         ],
       },
-      include: [
-        { model: db.User, as: 'UserOne', attributes: ['id', 'name', 'email', 'avatar_url'] },
-        { model: db.User, as: 'UserTwo', attributes: ['id', 'name', 'email', 'avatar_url'] },
-      ],
+      include: conversationInclude,
     });
 
     if (!conversation) {
       conversation = await db.Conversation.create({
         user_one_id: req.user.id,
         user_two_id: recipient.id,
+        conversation_context: effectiveContext,
+        university_id: effectiveContext === 'university' ? contextUniversity.id : null,
+        organization_id: effectiveContext === 'organization' ? contextOrganization.id : null,
         last_message_at: message?.trim() ? new Date() : null,
       });
       conversation = await db.Conversation.findByPk(conversation.id, {

@@ -19,14 +19,12 @@ module.exports = (sequelize, DataTypes) => {
     static associate(db) {
       User.belongsTo(db.Role, { foreignKey: 'role_id', as: 'Role' });
       User.hasMany(db.University, { foreignKey: 'owner_id', as: 'OwnedUniversities' });
+      User.hasOne(db.Organization, { foreignKey: 'owner_id', as: 'Organization' });
       User.hasMany(db.UniversityNews, { foreignKey: 'author_id', as: 'AuthoredNews' });
       User.hasMany(db.UniversityTestimonial, { foreignKey: 'user_id', as: 'Testimonials' });
       User.hasMany(db.Opportunity, { foreignKey: 'posted_by', as: 'PostedOpportunities' });
       User.hasMany(db.OpportunityApplication, { foreignKey: 'user_id', as: 'Applications' });
-      User.hasMany(db.ForumThread, { foreignKey: 'author_id', as: 'Threads' });
-      User.hasMany(db.ForumReply, { foreignKey: 'author_id', as: 'Replies' });
-      User.hasMany(db.ForumLike, { foreignKey: 'user_id', as: 'Likes' });
-      User.hasMany(db.Review, { foreignKey: 'author_id', as: 'Reviews' });
+      User.hasMany(db.UniversityReview, { foreignKey: 'author_id', as: 'Reviews' });
       User.hasMany(db.Notification, { foreignKey: 'user_id', as: 'Notifications' });
       User.hasMany(db.SavedItem, { foreignKey: 'user_id', as: 'SavedItems' });
     }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { authApi, inboxApi } from '@/api';
+import { useSearchParams } from 'react-router-dom';
+import { authApi, inboxApi, organizationApi, universityApi } from '@/api';
 import { useAuth, useToast } from '@/hooks';
 import { useInboxStore } from '@/store/inboxStore';
 
@@ -8,8 +9,8 @@ const input = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5
 const primaryBtn = 'inline-flex items-center justify-center rounded-xl bg-[#1B3A6B] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60';
 const secondaryBtn = 'inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50';
 const iconBtn = 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700';
-const SUMMARY_POLL_MS = 30_000;
-const MESSAGE_POLL_MS = 30_000;
+const SUMMARY_POLL_MS = 90_000;
+const MESSAGE_POLL_MS = 45_000;
 
 function EmptyBlock({ title, description }) {
   return (
@@ -74,6 +75,49 @@ function Avatar({ user, size = 'md' }) {
   );
 }
 
+function conversationEntity(conversation, viewerRole) {
+  const context = conversation?.conversation_context;
+  const isInstitutionViewer = viewerRole === 'owner' || viewerRole === 'organization' || viewerRole === 'admin';
+
+  if (!conversation) return null;
+
+  if (context === 'university') {
+    if (isInstitutionViewer) return conversation.participant || null;
+    if (conversation.University) {
+      return {
+        id: `university-${conversation.University.id}`,
+        name: conversation.University.name,
+        email: 'Official university inbox',
+        avatar_url: conversation.University.logo_url,
+      };
+    }
+  }
+
+  if (context === 'organization') {
+    if (isInstitutionViewer) return conversation.participant || null;
+    if (conversation.Organization) {
+      return {
+        id: `organization-${conversation.Organization.id}`,
+        name: conversation.Organization.name,
+        email: 'Official organization inbox',
+        avatar_url: conversation.Organization.logo_url,
+      };
+    }
+  }
+
+  if (context === 'admin') {
+    if (viewerRole === 'admin') return conversation.participant || null;
+    return {
+      id: `admin-${conversation.participant?.id || 'official'}`,
+      name: 'UniSites Admin',
+      email: 'Official admin inbox',
+      avatar_url: conversation.participant?.avatar_url || null,
+    };
+  }
+
+  return conversation.participant || null;
+}
+
 function dedupeMessages(items) {
   const seen = new Set();
   return items.filter((item) => {
@@ -133,6 +177,7 @@ const MoreIcon = () => (
 export default function InboxPage() {
   const { isAuthenticated, user } = useAuth();
   const { success, error } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const setUnreadNotifications = useInboxStore((s) => s.setUnreadNotifications);
   const setUnreadMessages = useInboxStore((s) => s.setUnreadMessages);
   const [notifications, setNotifications] = useState([]);
@@ -152,26 +197,85 @@ export default function InboxPage() {
   const [showNotifications, setShowNotifications] = useState(false);
   const [creating, setCreating] = useState(false);
   const [sending, setSending] = useState(false);
+  const [ownedUniversity, setOwnedUniversity] = useState(null);
+  const [ownedOrganization, setOwnedOrganization] = useState(null);
   const [onlineUserIds, setOnlineUserIds] = useState(new Set());
   const [typingByConversation, setTypingByConversation] = useState({});
+  const [socketConnected, setSocketConnected] = useState(false);
   const selectedIdRef = useRef(null);
   const userIdRef = useRef(user?.id || null);
   const messagesEndRef = useRef(null);
   const socketRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const typingConversationRef = useRef(null);
+  const hasUniversityInbox = user?.Role?.name === 'owner';
+  const hasOrganizationInbox = user?.Role?.name === 'organization';
+  const hasAdminInbox = user?.Role?.name === 'admin';
+  const canUseInstitutionInbox = hasUniversityInbox || hasOrganizationInbox;
+  const viewerRole = user?.Role?.name;
+  const allowedContexts = hasUniversityInbox
+    ? ['university', 'personal']
+    : hasOrganizationInbox
+    ? ['organization', 'personal']
+    : hasAdminInbox
+      ? ['admin', 'personal']
+      : ['all'];
+  const requestedContext = searchParams.get('context');
+  const defaultContext = hasUniversityInbox
+    ? 'university'
+    : hasOrganizationInbox
+      ? 'organization'
+      : hasAdminInbox
+        ? 'admin'
+        : 'personal';
+  const queryContext = allowedContexts.includes(requestedContext)
+    ? requestedContext
+    : defaultContext;
+  const [inboxContext, setInboxContext] = useState(queryContext);
 
   const selectedConversation = useMemo(
     () => conversations.find((item) => item.id === selectedId) || null,
     [conversations, selectedId]
   );
+  const selectedConversationEntity = useMemo(
+    () => conversationEntity(selectedConversation, viewerRole),
+    [selectedConversation, viewerRole]
+  );
   const selectedParticipantId = selectedConversation?.participant?.id ? String(selectedConversation.participant.id) : null;
   const selectedParticipantOnline = selectedParticipantId ? onlineUserIds.has(selectedParticipantId) : false;
   const selectedConversationTyping = selectedId && selectedParticipantId && typingByConversation[selectedId] === selectedParticipantId;
+  const institutionInboxLabel = hasUniversityInbox
+    ? ownedUniversity?.name || 'University Inbox'
+    : hasOrganizationInbox
+      ? ownedOrganization?.name || 'Organization Inbox'
+      : 'UniSites Admin';
+  const inboxPageTitle = inboxContext === 'university'
+    ? 'University Inbox'
+    : inboxContext === 'organization'
+      ? 'Organization Inbox'
+      : inboxContext === 'admin'
+        ? 'Admin Inbox'
+      : inboxContext === 'all'
+        ? 'Inbox'
+        : 'Personal Inbox';
 
   useEffect(() => {
     selectedIdRef.current = selectedId;
   }, [selectedId]);
+
+  useEffect(() => {
+    if (!canUseInstitutionInbox && !hasAdminInbox) {
+      if (inboxContext !== 'personal') setInboxContext('personal');
+      if (queryContext !== 'personal') {
+        const nextParams = new URLSearchParams(searchParams);
+        nextParams.set('context', 'personal');
+        nextParams.delete('conversation');
+        setSearchParams(nextParams, { replace: true });
+      }
+      return;
+    }
+    if (inboxContext !== queryContext) setInboxContext(queryContext);
+  }, [canUseInstitutionInbox, hasAdminInbox, inboxContext, queryContext, searchParams, setSearchParams]);
 
   useEffect(() => {
     userIdRef.current = user?.id || null;
@@ -180,6 +284,38 @@ export default function InboxPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !canUseInstitutionInbox) {
+      setOwnedUniversity(null);
+      setOwnedOrganization(null);
+      return undefined;
+    }
+
+    let active = true;
+    const loader = hasUniversityInbox ? universityApi.getMine : organizationApi.getMine;
+
+    loader()
+      .then((res) => {
+        if (!active) return;
+        if (hasUniversityInbox) {
+          setOwnedUniversity(res.data?.university || null);
+          setOwnedOrganization(null);
+        } else {
+          setOwnedOrganization(res.data?.organization || null);
+          setOwnedUniversity(null);
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setOwnedUniversity(null);
+        setOwnedOrganization(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [canUseInstitutionInbox, hasUniversityInbox, isAuthenticated]);
 
   const loadNotifications = async ({ silent = false } = {}) => {
     if (!silent) setLoadingNotifications(true);
@@ -196,12 +332,19 @@ export default function InboxPage() {
     }
   };
 
-  const loadConversations = async (nextSelectedId = null, { silent = false } = {}) => {
+  const loadConversations = async (nextSelectedId = null, { silent = false, context = inboxContext } = {}) => {
     if (!silent) setLoadingChats(true);
     try {
-      const res = await inboxApi.getConversations();
+      const params = context && context !== 'all' ? { context } : {};
+      const res = await inboxApi.getConversations(params);
       const items = res.data.conversations || [];
       const nextUnreadMessages = items.reduce((sum, item) => sum + Number(item.unreadCount || 0), 0);
+      if (Object.prototype.hasOwnProperty.call(res.data, 'university')) {
+        setOwnedUniversity(res.data.university || null);
+      }
+      if (Object.prototype.hasOwnProperty.call(res.data, 'organization')) {
+        setOwnedOrganization(res.data.organization || null);
+      }
       setConversations(items);
       const fallbackId = nextSelectedId || selectedIdRef.current || items[0]?.id || null;
       setSelectedId(fallbackId);
@@ -215,6 +358,22 @@ export default function InboxPage() {
     } finally {
       if (!silent) setLoadingChats(false);
     }
+  };
+
+  const switchInboxContext = (nextContext) => {
+    if (nextContext === inboxContext) return;
+    setInboxContext(nextContext);
+    setSelectedId(null);
+    setMessages([]);
+    setSelectedRecipient(null);
+    setComposeQuery('');
+    setComposeMessage('');
+    setDraftMessage('');
+    setUserResults([]);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('context', nextContext);
+    nextParams.delete('conversation');
+    setSearchParams(nextParams, { replace: true });
   };
 
   const upsertConversation = (nextConversation) => {
@@ -324,6 +483,10 @@ export default function InboxPage() {
     setSelectedRecipient(null);
     setComposeMessage('');
     setSelectedId(conversationId);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('context', inboxContext);
+    nextParams.set('conversation', conversationId);
+    setSearchParams(nextParams, { replace: true });
     clearTypingState(conversationId);
 
     setConversations((current) => {
@@ -346,15 +509,6 @@ export default function InboxPage() {
       setUnreadNotifications(nextUnreadNotifications);
       return nextItems;
     });
-
-    try {
-      await Promise.all([
-        inboxApi.markConversationRead(conversationId),
-        authApi.markConversationNotificationsRead(conversationId),
-      ]);
-    } catch (_) {
-      // The message loader will retry and resync if this lightweight request misses.
-    }
   };
 
   const loadMessages = async (conversationId, { silent = false, markRead = true } = {}) => {
@@ -367,13 +521,27 @@ export default function InboxPage() {
       const res = await inboxApi.getMessages(conversationId);
       setMessages(res.data.messages || []);
       if (markRead) {
-        await inboxApi.markConversationRead(conversationId);
+        await Promise.all([
+          inboxApi.markConversationRead(conversationId),
+          authApi.markConversationNotificationsRead(conversationId),
+        ]);
         setConversations((current) => {
           const nextItems = current.map((item) => (
             item.id === conversationId ? { ...item, unreadCount: 0 } : item
           ));
           const nextUnreadMessages = nextItems.reduce((sum, item) => sum + Number(item.unreadCount || 0), 0);
           setUnreadMessages(nextUnreadMessages);
+          return nextItems;
+        });
+        setNotifications((current) => {
+          const nextItems = current.map((item) => (
+            item.type === 'message' && String(item.data?.conversation_id || '') === String(conversationId)
+              ? { ...item, is_read: true }
+              : item
+          ));
+          const nextUnreadNotifications = nextItems.filter((item) => !item.is_read).length;
+          setUnreadCount(nextUnreadNotifications);
+          setUnreadNotifications(nextUnreadNotifications);
           return nextItems;
         });
       }
@@ -390,9 +558,9 @@ export default function InboxPage() {
   useEffect(() => {
     if (!isAuthenticated) return;
     loadNotifications();
-    loadConversations();
+    loadConversations(null, { context: inboxContext });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [inboxContext, isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return undefined;
@@ -432,8 +600,12 @@ export default function InboxPage() {
         socket = ioFactory(socketBase, { withCredentials: true });
         socketRef.current = socket;
         socket.on('connect', () => {
+          setSocketConnected(true);
           socket.emit('join_user', user.id);
           if (selectedIdRef.current) socket.emit('join_thread', selectedIdRef.current);
+        });
+        socket.on('disconnect', () => {
+          setSocketConnected(false);
         });
         socket.on('presence:snapshot', ({ userIds = [] }) => {
           setOnlineUserIds(new Set(userIds.map((id) => String(id))));
@@ -463,7 +635,10 @@ export default function InboxPage() {
             mergeMessageIntoThread(message, clientTempId);
             clearTypingState(conversationId);
             if (message.sender_id !== userIdRef.current) {
-              inboxApi.markConversationRead(conversationId).catch(() => {});
+              Promise.all([
+                inboxApi.markConversationRead(conversationId),
+                authApi.markConversationNotificationsRead(conversationId),
+              ]).catch(() => {});
               setConversations((current) => {
                 const nextItems = current.map((item) => (
                   item.id === conversationId ? { ...item, unreadCount: 0 } : item
@@ -482,6 +657,7 @@ export default function InboxPage() {
           markOwnMessagesRead(conversationId, readAt);
         });
         cleanup = () => {
+          setSocketConnected(false);
           socketRef.current = null;
           socket.emit('leave_user', user.id);
           socket.disconnect();
@@ -532,25 +708,38 @@ export default function InboxPage() {
 
     const interval = setInterval(() => {
       if (document.hidden) return;
-      loadConversations(selectedIdRef.current, { silent: true });
-      loadNotifications({ silent: true });
+      if (!socketConnected) {
+        loadConversations(selectedIdRef.current, { silent: true, context: inboxContext });
+      }
+      if (showNotifications || !socketConnected) {
+        loadNotifications({ silent: true });
+      }
     }, SUMMARY_POLL_MS);
 
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [inboxContext, isAuthenticated, showNotifications, socketConnected]);
 
   useEffect(() => {
     if (!isAuthenticated || !selectedId) return undefined;
 
     const interval = setInterval(() => {
-      if (document.hidden) return;
+      if (document.hidden || socketConnected) return;
       loadMessages(selectedId, { silent: true, markRead: false });
     }, MESSAGE_POLL_MS);
 
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, selectedId]);
+  }, [isAuthenticated, selectedId, socketConnected]);
+
+  useEffect(() => {
+    const requestedConversationId = searchParams.get('conversation');
+    if (!requestedConversationId || conversations.length === 0) return;
+    const matchedConversation = conversations.find((item) => String(item.id) === String(requestedConversationId));
+    if (matchedConversation && matchedConversation.id !== selectedId) {
+      setSelectedId(matchedConversation.id);
+    }
+  }, [conversations, searchParams, selectedId]);
 
   useEffect(() => {
     const socket = socketRef.current;
@@ -601,6 +790,10 @@ export default function InboxPage() {
 
     setSelectedRecipient(item);
     setSelectedId(null);
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('context', 'personal');
+    nextParams.delete('conversation');
+    setSearchParams(nextParams, { replace: true });
     setMessages([]);
     setComposeQuery(item.name);
     setUserResults([]);
@@ -625,6 +818,10 @@ export default function InboxPage() {
       if (nextConversation) upsertConversation(nextConversation);
       if (createdMessage) setMessages([createdMessage]);
       setSelectedId(conversationId);
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.set('context', 'personal');
+      nextParams.set('conversation', conversationId);
+      setSearchParams(nextParams, { replace: true });
       success('Conversation started');
     } catch (err) {
       error(err.response?.data?.message || 'Failed to start conversation');
@@ -681,11 +878,67 @@ export default function InboxPage() {
     <div className="max-w-7xl mx-auto px-4 py-6 md:px-6">
       <div className="mb-5 flex flex-col gap-4 rounded-3xl border border-slate-200 bg-white px-5 py-5 shadow-sm lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">Inbox</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">{inboxPageTitle}</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Your chats and notifications stay together here so communication feels like one flow.
+            {(canUseInstitutionInbox || hasAdminInbox)
+              ? 'Switch between official institution conversations and personal chats in one place.'
+              : 'Your inbox includes direct chats as well as official conversations with universities, organizations, and admins.'}
           </p>
         </div>
+        {(canUseInstitutionInbox || hasAdminInbox) && (
+          <div className="inline-flex w-full rounded-2xl border border-slate-200 bg-slate-50 p-1 sm:w-auto">
+            {hasUniversityInbox && (
+              <button
+                type="button"
+                onClick={() => switchInboxContext('university')}
+                className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${
+                  inboxContext === 'university'
+                    ? 'bg-[#1B3A6B] text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                University Inbox
+              </button>
+            )}
+            {hasOrganizationInbox && (
+              <button
+                type="button"
+                onClick={() => switchInboxContext('organization')}
+                className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${
+                  inboxContext === 'organization'
+                    ? 'bg-[#1B3A6B] text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Organization Inbox
+              </button>
+            )}
+            {hasAdminInbox && (
+              <button
+                type="button"
+                onClick={() => switchInboxContext('admin')}
+                className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${
+                  inboxContext === 'admin'
+                    ? 'bg-[#1B3A6B] text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Admin Inbox
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => switchInboxContext('personal')}
+              className={`flex-1 rounded-xl px-4 py-2 text-sm font-semibold transition-all sm:flex-none ${
+                inboxContext === 'personal'
+                  ? 'bg-[#1B3A6B] text-white shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              Personal Inbox
+            </button>
+          </div>
+        )}
       </div>
 
       {showNotifications && (
@@ -744,7 +997,17 @@ export default function InboxPage() {
           <div className="border-b border-slate-200 bg-slate-50/80 px-5 py-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h2 className="text-lg font-bold text-slate-800">Chats</h2>
+                <h2 className="text-lg font-bold text-slate-800">
+                  {inboxContext === 'university'
+                    ? 'University Conversations'
+                    : inboxContext === 'organization'
+                      ? 'Organization Conversations'
+                      : inboxContext === 'admin'
+                        ? 'Admin Conversations'
+                      : inboxContext === 'all'
+                        ? 'All Conversations'
+                        : 'Personal Conversations'}
+                </h2>
                 <p className="text-sm text-slate-500">{conversations.length} total conversations</p>
               </div>
             </div>
@@ -752,37 +1015,50 @@ export default function InboxPage() {
 
           <div className="space-y-5 p-5">
             <div>
-              <div className="mb-3">
-                <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                    <SearchIcon />
-                  </span>
-                  <input
-                    className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-700 outline-none transition-all focus:border-[#1B3A6B] focus:ring-2 focus:ring-[#1B3A6B]/10"
-                    value={composeQuery}
-                    onChange={(e) => {
-                      setComposeQuery(e.target.value);
-                      setSelectedRecipient(null);
-                    }}
-                    placeholder="Search users to start a conversation"
-                  />
-                  {composeQuery && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setComposeQuery('');
-                        setUserResults([]);
+              {inboxContext === 'personal' ? (
+                <div className="mb-3">
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                      <SearchIcon />
+                    </span>
+                    <input
+                      className="w-full rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-700 outline-none transition-all focus:border-[#1B3A6B] focus:ring-2 focus:ring-[#1B3A6B]/10"
+                      value={composeQuery}
+                      onChange={(e) => {
+                        setComposeQuery(e.target.value);
                         setSelectedRecipient(null);
                       }}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 hover:text-slate-700"
-                    >
-                      ×
-                    </button>
-                  )}
+                      placeholder="Search users to start a conversation"
+                    />
+                    {composeQuery && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setComposeQuery('');
+                          setUserResults([]);
+                          setSelectedRecipient(null);
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400 hover:text-slate-700"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-sm font-semibold text-slate-800">{institutionInboxLabel}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">
+                    {inboxContext === 'organization'
+                      ? 'Messages sent to your organization arrive here as official organization conversations.'
+                      : inboxContext === 'admin'
+                        ? 'Official platform conversations for the admin team appear here.'
+                        : 'Messages sent from your public university page arrive here as official institution conversations.'}
+                  </p>
+                </div>
+              )}
 
-              {(composeQuery.trim().length >= 2 || searchingUsers || userResults.length > 0 || selectedRecipient) && (
+              {inboxContext === 'personal' && (composeQuery.trim().length >= 2 || searchingUsers || userResults.length > 0 || selectedRecipient) && (
                 <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-3">
                   <div className="space-y-3">
                     {(composeQuery.trim().length >= 2 || searchingUsers || userResults.length > 0) && !selectedRecipient && (
@@ -851,7 +1127,9 @@ export default function InboxPage() {
                 ) : conversations.length === 0 ? (
                   <p className="text-sm text-slate-500">No conversations yet.</p>
                 ) : (
-                  conversations.map((conversation) => (
+                  conversations.map((conversation) => {
+                    const displayEntity = conversationEntity(conversation, viewerRole);
+                    return (
                     <button
                       key={conversation.id}
                       type="button"
@@ -863,21 +1141,49 @@ export default function InboxPage() {
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <Avatar user={conversation.participant} />
+                        <Avatar user={displayEntity} />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
-                                <p className="truncate text-sm font-semibold text-slate-800">{conversation.participant?.name || 'Unknown user'}</p>
-                                <span className={`inline-flex h-2.5 w-2.5 rounded-full ${onlineUserIds.has(String(conversation.participant?.id)) ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+                                <p className="truncate text-sm font-semibold text-slate-800">{displayEntity?.name || 'Unknown conversation'}</p>
+                                {conversation.conversation_context === 'personal' && (
+                                  <span className={`inline-flex h-2.5 w-2.5 rounded-full ${onlineUserIds.has(String(conversation.participant?.id)) ? 'bg-emerald-400' : 'bg-slate-300'}`} />
+                                )}
+                                {conversation.conversation_context !== 'personal' && (
+                                  <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#1B3A6B]">
+                                    {conversation.conversation_context === 'organization' ? 'Organization' : conversation.conversation_context === 'admin' ? 'Admin' : 'University'}
+                                  </span>
+                                )}
                               </div>
                               <p className="truncate text-xs text-slate-400">
-                                {typingByConversation[conversation.id] === String(conversation.participant?.id)
+                                {conversation.conversation_context === 'personal'
+                                  ? (
+                                    `${typingByConversation[conversation.id] === String(conversation.participant?.id)
                                   ? 'Typing...'
                                   : onlineUserIds.has(String(conversation.participant?.id))
                                     ? 'Online'
-                                    : 'Offline'} • {conversation.participant?.email}
+                                    : 'Offline'} • ${conversation.participant?.email}`
+                                  )
+                                  : viewerRole === 'owner' || viewerRole === 'organization' || viewerRole === 'admin'
+                                    ? `Chatting with ${conversation.participant?.name || 'user'}`
+                                    : displayEntity?.email || 'Official inbox'}
                               </p>
+                              {conversation.conversation_context === 'university' && conversation.University?.name && (
+                                <p className="mt-1 truncate text-[11px] font-medium text-slate-500">
+                                  {viewerRole === 'owner' ? `Replying as ${conversation.University.name}` : 'Official university profile'}
+                                </p>
+                              )}
+                              {conversation.conversation_context === 'organization' && conversation.Organization?.name && (
+                                <p className="mt-1 truncate text-[11px] font-medium text-slate-500">
+                                  {viewerRole === 'organization' ? `Replying as ${conversation.Organization.name}` : 'Official organization profile'}
+                                </p>
+                              )}
+                              {conversation.conversation_context === 'admin' && (
+                                <p className="mt-1 truncate text-[11px] font-medium text-slate-500">
+                                  {viewerRole === 'admin' ? 'Replying as UniSites Admin' : 'Official admin profile'}
+                                </p>
+                              )}
                             </div>
                             <div className="shrink-0 text-right">
                               <p className="text-[11px] font-medium text-slate-400">
@@ -891,14 +1197,14 @@ export default function InboxPage() {
                             </div>
                           </div>
                           <p className="mt-2 truncate text-sm text-slate-500">
-                            {typingByConversation[conversation.id] === String(conversation.participant?.id)
+                            {typingByConversation[conversation.id] === String(conversation.participant?.id) && conversation.conversation_context === 'personal'
                               ? 'Typing...'
                               : conversation.latestMessage?.body || 'No messages yet'}
                           </p>
                         </div>
                       </div>
                     </button>
-                  ))
+                  )})
                 )}
               </div>
             </div>
@@ -913,22 +1219,54 @@ export default function InboxPage() {
                   <div className="flex min-w-0 items-center gap-3">
                     <button
                       type="button"
-                      onClick={() => setSelectedId(null)}
+                      onClick={() => {
+                        setSelectedId(null);
+                        const nextParams = new URLSearchParams(searchParams);
+                        nextParams.delete('conversation');
+                        setSearchParams(nextParams, { replace: true });
+                      }}
                       className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700 lg:hidden"
                       aria-label="Back to chats"
                     >
                       ←
                     </button>
-                    <Avatar user={selectedConversation.participant} size="lg" />
+                    <Avatar user={selectedConversationEntity} size="lg" />
                     <div className="min-w-0">
-                      <p className="truncate text-lg font-bold text-slate-900">{selectedConversation.participant?.name}</p>
+                      <p className="truncate text-lg font-bold text-slate-900">{selectedConversationEntity?.name}</p>
                       <p className="truncate text-sm text-slate-500">
-                        {selectedConversationTyping
+                        {selectedConversation.conversation_context === 'personal'
+                          ? (selectedConversationTyping
                           ? 'Typing...'
                           : selectedParticipantOnline
                             ? 'Online now'
-                            : 'Offline'} • {selectedConversation.participant?.email}
+                            : 'Offline')
+                          : (viewerRole === 'owner' || viewerRole === 'organization' || viewerRole === 'admin'
+                            ? `Conversation with ${selectedConversation.participant?.name || 'user'}` 
+                            : selectedConversationEntity?.email || 'Official inbox')
+                        }
+                        {selectedConversation.conversation_context === 'personal' && ` • ${selectedConversation.participant?.email}`}
                       </p>
+                      {selectedConversation.conversation_context === 'university' && selectedConversation.University?.name && (
+                        <p className="mt-1 truncate text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
+                          {viewerRole === 'owner'
+                            ? `Replying as University • ${selectedConversation.University.name}`
+                            : `University Profile • ${selectedConversation.University.name}`}
+                        </p>
+                      )}
+                      {selectedConversation.conversation_context === 'organization' && selectedConversation.Organization?.name && (
+                        <p className="mt-1 truncate text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
+                          {viewerRole === 'organization'
+                            ? `Replying as Organization • ${selectedConversation.Organization.name}`
+                            : `Organization Profile • ${selectedConversation.Organization.name}`}
+                        </p>
+                      )}
+                      {selectedConversation.conversation_context === 'admin' && (
+                        <p className="mt-1 truncate text-xs font-medium uppercase tracking-[0.14em] text-slate-400">
+                          {viewerRole === 'admin'
+                            ? 'Replying as UniSites Admin'
+                            : 'Admin Profile • UniSites'}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <button type="button" className={iconBtn} title="Conversation options">
@@ -960,7 +1298,7 @@ export default function InboxPage() {
                             </div>
                           )}
                           <div className={`flex gap-3 ${mine ? 'justify-end' : 'justify-start'}`}>
-                            {!mine && <Avatar user={selectedConversation.participant} />}
+                            {!mine && <Avatar user={selectedConversationEntity} />}
                             <div className={`flex max-w-[78%] flex-col ${mine ? 'items-end' : 'items-start'}`}>
                               <div className={`rounded-[22px] px-4 py-3 text-sm leading-6 shadow-sm ${
                                 mine
@@ -974,7 +1312,16 @@ export default function InboxPage() {
                                 {mine ? ` • ${message._status === 'sending' ? 'Sending...' : message._status === 'failed' ? 'Failed to send' : message.is_read ? 'Read' : 'Delivered'}` : ''}
                               </p>
                             </div>
-                            {mine && <Avatar user={user} />}
+                            {mine && <Avatar user={selectedConversation.conversation_context === 'personal' ? user : (selectedConversation.conversation_context === 'university' ? {
+                              name: selectedConversation.University?.name,
+                              avatar_url: selectedConversation.University?.logo_url,
+                            } : selectedConversation.conversation_context === 'organization' ? {
+                              name: selectedConversation.Organization?.name,
+                              avatar_url: selectedConversation.Organization?.logo_url,
+                            } : selectedConversation.conversation_context === 'admin' ? {
+                              name: 'UniSites Admin',
+                              avatar_url: user?.avatar_url,
+                            } : user)} />}
                           </div>
                         </div>
                       );
@@ -1018,6 +1365,9 @@ export default function InboxPage() {
                         setSelectedRecipient(null);
                         setComposeQuery('');
                         setComposeMessage('');
+                        const nextParams = new URLSearchParams(searchParams);
+                        nextParams.delete('conversation');
+                        setSearchParams(nextParams, { replace: true });
                       }}
                       className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all hover:bg-slate-50 hover:text-slate-700 lg:hidden"
                       aria-label="Back to chats"
@@ -1037,6 +1387,9 @@ export default function InboxPage() {
                       setSelectedRecipient(null);
                       setComposeQuery('');
                       setComposeMessage('');
+                      const nextParams = new URLSearchParams(searchParams);
+                      nextParams.delete('conversation');
+                      setSearchParams(nextParams, { replace: true });
                     }}
                   >
                     Cancel
@@ -1087,7 +1440,13 @@ export default function InboxPage() {
                 </div>
                 <h3 className="text-xl font-bold text-slate-900">Select a conversation</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
-                  Choose a chat from the left or start a new conversation to make this inbox feel alive.
+                  {inboxContext === 'university'
+                    ? 'Open a university conversation from the left to reply as the institution.'
+                    : inboxContext === 'organization'
+                    ? 'Open an organization conversation from the left to reply as the organization.'
+                    : inboxContext === 'admin'
+                    ? 'Open an admin conversation from the left to reply as the platform.'
+                    : 'Choose a conversation from the left. Official university, organization, and admin messages appear here as profile-based chats.'}
                 </p>
               </div>
             </div>

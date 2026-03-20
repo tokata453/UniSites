@@ -4,9 +4,9 @@ const { success, created, error, notFound } = require('../utils/response.utils')
 
 const list = async (req, res) => {
   try {
-    const faculties = await db.Faculty.findAll({
+    const faculties = await db.UniversityFaculty.findAll({
       where: { university_id: req.params.universityId },
-      include: [{ model: db.Program, as: 'Programs' }],
+      include: [{ model: db.UniversityProgram, as: 'Programs' }],
       order: [['sort_order', 'ASC']],
     });
     return success(res, { faculties });
@@ -17,7 +17,7 @@ const list = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const faculty = await db.Faculty.create({ ...req.body, university_id: req.params.universityId });
+    const faculty = await db.UniversityFaculty.create({ ...req.body, university_id: req.params.universityId });
     return created(res, { faculty });
   } catch (err) {
     return error(res, err.message, 500);
@@ -26,7 +26,7 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const faculty = await db.Faculty.findByPk(req.params.id);
+    const faculty = await db.UniversityFaculty.findByPk(req.params.id);
     if (!faculty) return notFound(res);
     await faculty.update(req.body);
     return success(res, { faculty });
@@ -37,7 +37,7 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const faculty = await db.Faculty.findByPk(req.params.id);
+    const faculty = await db.UniversityFaculty.findByPk(req.params.id);
     if (!faculty) return notFound(res);
     await faculty.destroy();
     return success(res, {}, 'Faculty deleted');

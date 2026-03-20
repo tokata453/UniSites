@@ -2,14 +2,14 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-  class Faculty extends Model {
+  class UniversityFaculty extends Model {
     static associate(db) {
-      Faculty.belongsTo(db.University, { foreignKey: 'university_id', as: 'University' });
-      Faculty.hasMany(db.Program, { foreignKey: 'faculty_id', as: 'Programs', onDelete: 'CASCADE' });
+      UniversityFaculty.belongsTo(db.University, { foreignKey: 'university_id', as: 'University' });
+      UniversityFaculty.hasMany(db.UniversityProgram, { foreignKey: 'faculty_id', as: 'Programs', onDelete: 'CASCADE' });
     }
   }
 
-  Faculty.init({
+  UniversityFaculty.init({
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
@@ -44,10 +44,10 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'Faculty',
+    modelName: 'UniversityFaculty',
     tableName: 'faculties',
     underscored: true,
   });
 
-  return Faculty;
+  return UniversityFaculty;
 };

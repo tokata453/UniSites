@@ -20,22 +20,24 @@ const IC = ({ d, size = 18 }) => (
 const STAT_CARDS = [
   { key: 'users', label: 'Total Users', icon: 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M9 11a4 4 0 100-8 4 4 0 000 8z M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75', color: '#1B3A6B', bg: '#eff6ff', border: '#bfdbfe' },
   { key: 'universities', label: 'Universities', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
+  { key: 'organizations', label: 'Organizations', icon: 'M3 21h18 M5 21V7l7-4 7 4v14 M9 12h6 M9 16h6', color: '#0f766e', bg: '#f0fdfa', border: '#99f6e4' },
   { key: 'opportunities', label: 'Opportunities', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', color: '#F47B20', bg: '#fff7ed', border: '#fed7aa' },
-  { key: 'threads', label: 'Forum Threads', icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z', color: '#7c3aed', bg: '#faf5ff', border: '#e9d5ff' },
+  { key: 'reviews', label: 'Reviews', icon: 'M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11', color: '#7c3aed', bg: '#faf5ff', border: '#e9d5ff' },
 ];
 
 const PENDING_CARDS = [
   { key: 'pendingUnis', label: 'Pending Universities', link: '/admin/universities?published=false', color: '#d97706', bg: '#fefce8', border: '#fef08a' },
-  { key: 'pendingOrganizations', label: 'Pending Organizations', link: '/admin/users?role=organization', color: '#0f766e', bg: '#f0fdfa', border: '#99f6e4' },
+  { key: 'pendingOrganizations', label: 'Pending Organizations', link: '/admin/organizations?approved=false', color: '#0f766e', bg: '#f0fdfa', border: '#99f6e4' },
   { key: 'pendingOpps', label: 'Pending Opportunities', link: '/admin/opportunities?published=false', color: '#1B3A6B', bg: '#eff6ff', border: '#bfdbfe' },
 ];
 
 const QUICK_LINKS = [
   { to: '/admin/users', label: 'Manage Users', icon: 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M9 11a4 4 0 100-8 4 4 0 000 8z', color: '#1B3A6B' },
   { to: '/admin/universities', label: 'Manage Universities', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z', color: '#15803d' },
+  { to: '/admin/organizations', label: 'Manage Organizations', icon: 'M3 21h18 M5 21V7l7-4 7 4v14 M9 12h6 M9 16h6', color: '#0f766e' },
   { to: '/admin/majors', label: 'Manage Majors', icon: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20 M6.5 17A2.5 2.5 0 0 0 4 14.5V5a2 2 0 0 1 2-2h14v13.5 M6.5 17H20', color: '#4AAEE0' },
   { to: '/admin/opportunities', label: 'Manage Opportunities', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', color: '#F47B20' },
-  { to: '/admin/forum', label: 'Moderate Forum', icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z', color: '#7c3aed' },
+  { to: '/admin/feed', label: 'Open Feed', icon: 'M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v12a2 2 0 01-2 2z M7 10h10 M7 14h7', color: '#7c3aed' },
 ];
 
 const BREAKDOWN_ROWS = [
@@ -71,7 +73,7 @@ export default function AdminOverview() {
         <p className="mt-2 text-sm text-slate-500 sm:text-base">Platform overview and quick actions</p>
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
         {STAT_CARDS.map((card) => (
           <div
             key={card.key}
@@ -148,7 +150,7 @@ export default function AdminOverview() {
 
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h3 className="mb-4 text-lg font-bold text-slate-800">Quick Navigation</h3>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
           {QUICK_LINKS.map((link) => (
             <Link
               key={link.to}

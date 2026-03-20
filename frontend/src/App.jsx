@@ -44,10 +44,11 @@ import AdminOverview      from '@/pages/dashboard/admin/AdminOverview';
 import AdminUsers         from '@/pages/dashboard/admin/AdminUsers';
 import AdminUserDetail    from '@/pages/dashboard/admin/AdminUserDetail';
 import AdminUniversities  from '@/pages/dashboard/admin/AdminUniversities';
+import AdminOrganizations from '@/pages/dashboard/admin/AdminOrganizations';
 import AdminMajors        from '@/pages/dashboard/admin/AdminMajors';
 import AdminOpportunities from '@/pages/dashboard/admin/AdminOpportunities';
 import AdminReviews       from '@/pages/dashboard/admin/AdminReviews';
-import AdminForum         from '@/pages/dashboard/admin/AdminForum';
+import AdminFeed          from '@/pages/dashboard/admin/AdminFeed';
 
 // Guards
 const PrivateRoute = ({ children }) => {
@@ -149,10 +150,12 @@ export default function App() {
           <Route path="users"           element={<AdminUsers />} />
           <Route path="users/:id"       element={<AdminUserDetail />} />
           <Route path="universities"    element={<AdminUniversities />} />
+          <Route path="organizations"   element={<AdminOrganizations />} />
           <Route path="majors"          element={<AdminMajors />} />
           <Route path="opportunities"   element={<AdminOpportunities />} />
           <Route path="reviews"         element={<AdminReviews />} />
-          <Route path="forum"           element={<AdminForum />} />
+          <Route path="feed"            element={<AdminFeed />} />
+          <Route path="forum"           element={<Navigate to="/admin/feed" replace />} />
           <Route path="inbox"           element={<InboxPage />} />
         </Route>
 

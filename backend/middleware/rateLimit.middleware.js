@@ -2,6 +2,7 @@
 const rateLimit = require('express-rate-limit');
 
 const json429 = { success: false, message: 'Too many requests. Please try again later.' };
+const isProduction = process.env.NODE_ENV === 'production';
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -9,6 +10,7 @@ const apiLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: json429,
+  skip: () => !isProduction,
 });
 
 const authLimiter = rateLimit({
@@ -17,6 +19,7 @@ const authLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: json429,
+  skip: () => !isProduction,
 });
 
 const uploadLimiter = rateLimit({
@@ -25,6 +28,7 @@ const uploadLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Upload limit reached. Try again in an hour.' },
+  skip: () => !isProduction,
 });
 
 module.exports = { apiLimiter, authLimiter, uploadLimiter };

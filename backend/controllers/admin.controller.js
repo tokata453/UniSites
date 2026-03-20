@@ -11,15 +11,25 @@ const isAdmin = (req, res) => {
 const attachOwnedUniversitySummary = async (users) => {
   await Promise.all(
     users.map(async (user) => {
-      const ownedUniversity = await db.University.findOne({
-        where: { owner_id: user.id },
-        attributes: ['id', 'name', 'slug'],
-        order: [['created_at', 'ASC']],
-      });
+      const [ownedUniversity, ownedOrganization] = await Promise.all([
+        db.University.findOne({
+          where: { owner_id: user.id },
+          attributes: ['id', 'name', 'slug'],
+          order: [['created_at', 'ASC']],
+        }),
+        db.Organization.findOne({
+          where: { owner_id: user.id },
+          attributes: ['id', 'name', 'slug'],
+          order: [['created_at', 'ASC']],
+        }),
+      ]);
 
       user.setDataValue('owned_university_id', ownedUniversity?.id || null);
       user.setDataValue('owned_university_name', ownedUniversity?.name || null);
       user.setDataValue('owned_university_slug', ownedUniversity?.slug || null);
+      user.setDataValue('owned_organization_id', ownedOrganization?.id || null);
+      user.setDataValue('owned_organization_name', ownedOrganization?.name || null);
+      user.setDataValue('owned_organization_slug', ownedOrganization?.slug || null);
     }),
   );
 };
@@ -53,8 +63,37 @@ const validateOwnerAvailability = async ({ ownerId, universityId = null }) => {
   return `This owner already owns "${existingOwnedUniversity.name}". Transfer ownership from their current university first.`;
 };
 
+const validateOrganizationOwnerAvailability = async ({ ownerId, organizationId = null }) => {
+  if (!ownerId) return null;
+
+  const ownerUser = await db.User.findByPk(ownerId, {
+    include: [{ model: db.Role, as: 'Role', attributes: ['name'] }],
+    attributes: ['id'],
+  });
+
+  if (!ownerUser) {
+    return 'Selected organization owner was not found.';
+  }
+
+  if (ownerUser.Role?.name !== 'organization') {
+    return 'Only users with the organization role can own an organization profile.';
+  }
+
+  const existingOwnedOrganization = await db.Organization.findOne({
+    where: {
+      owner_id: ownerId,
+      ...(organizationId ? { id: { [Op.ne]: organizationId } } : {}),
+    },
+    attributes: ['id', 'name'],
+  });
+
+  if (!existingOwnedOrganization) return null;
+
+  return `This owner already owns "${existingOwnedOrganization.name}". Transfer ownership from their current organization first.`;
+};
+
 const recalcUniversityRating = async (universityId) => {
-  const reviews = await db.Review.findAll({
+  const reviews = await db.UniversityReview.findAll({
     where: { university_id: universityId, is_approved: true },
     attributes: ['rating'],
   });
@@ -68,31 +107,255 @@ const recalcUniversityRating = async (universityId) => {
   );
 };
 
+const attachFeedInteractionMeta = async (items) => {
+  if (!items.length) return items;
+
+  const groupedIds = items.reduce((acc, item) => {
+    acc[item.kind] ||= [];
+    acc[item.kind].push(item.id);
+    return acc;
+  }, {});
+
+  const likeWhere = [];
+  if (groupedIds.news?.length) likeWhere.push({ item_type: 'news', item_id: { [Op.in]: groupedIds.news } });
+  if (groupedIds.opportunity?.length) likeWhere.push({ item_type: 'opportunity', item_id: { [Op.in]: groupedIds.opportunity } });
+
+  const [likes, comments] = await Promise.all([
+    likeWhere.length ? db.FeedLike.findAll({ where: { [Op.or]: likeWhere }, attributes: ['item_type', 'item_id'] }) : [],
+    likeWhere.length ? db.FeedComment.findAll({ where: { [Op.or]: likeWhere }, attributes: ['item_type', 'item_id'] }) : [],
+  ]);
+
+  const countMap = (records) =>
+    records.reduce((acc, record) => {
+      const key = `${record.item_type}:${record.item_id}`;
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+  const likeCounts = countMap(likes);
+  const commentCounts = countMap(comments);
+
+  return items.map((item) => {
+    const key = `${item.kind}:${item.id}`;
+    return {
+      ...item,
+      like_count: likeCounts[key] || 0,
+      comment_count: commentCounts[key] || 0,
+    };
+  });
+};
+
 // ── Stats overview ────────────────────────────────────────────────────────────
 exports.getStats = async (req, res) => {
   try {
     if (!isAdmin(req, res)) return;
-    const [users, universities, opportunities, threads, reviews] = await Promise.all([
+    const [users, universities, opportunities, reviews] = await Promise.all([
       db.User.count(),
       db.University.count(),
       db.Opportunity.count(),
-      db.ForumThread.count(),
-      db.Review.count(),
+      db.UniversityReview.count(),
     ]);
     const [students, owners, organizations, admins] = await Promise.all([
       db.User.count({ include: [{ model: db.Role, as: 'Role', where: { name: 'student' } }] }),
       db.User.count({ include: [{ model: db.Role, as: 'Role', where: { name: 'owner' } }] }),
-      db.User.count({ include: [{ model: db.Role, as: 'Role', where: { name: 'organization' } }] }),
+      db.Organization.count(),
       db.User.count({ include: [{ model: db.Role, as: 'Role', where: { name: 'admin' } }] }),
     ]);
     const pendingUnis = await db.University.count({ where: { is_published: false } });
-    const pendingReviews = await db.Review.count({ where: { is_approved: false } });
+    const pendingReviews = await db.UniversityReview.count({ where: { is_approved: false } });
     const pendingOrganizations = await db.User.count({
       where: { is_approved: false },
       include: [{ model: db.Role, as: 'Role', where: { name: 'organization' } }],
     });
     const pendingOpps = await db.Opportunity.count({ where: { is_published: false } });
-    return success(res, { stats: { users, universities, opportunities, threads, reviews, students, owners, organizations, admins, pendingUnis, pendingReviews, pendingOrganizations, pendingOpps } });
+    return success(res, { stats: { users, universities, opportunities, reviews, students, owners, organizations, admins, pendingUnis, pendingReviews, pendingOrganizations, pendingOpps } });
+  } catch (e) { serverError(res, e.message); }
+};
+
+// ── Feed ─────────────────────────────────────────────────────────────────────
+exports.getFeedItems = async (req, res) => {
+  try {
+    if (!isAdmin(req, res)) return;
+    const { page = 1, limit = 12, kind = 'all', search = '', published } = req.query;
+    const safeLimit = Math.min(Math.max(Number(limit) || 12, 1), 50);
+    const safePage = Math.max(Number(page) || 1, 1);
+    const offset = (safePage - 1) * safeLimit;
+    const term = String(search || '').trim();
+
+    const newsWhere = {};
+    const opportunityWhere = {};
+
+    if (published !== undefined && published !== '') {
+      newsWhere.is_published = published === 'true';
+      opportunityWhere.is_published = published === 'true';
+    }
+
+    if (term) {
+      newsWhere[Op.or] = [
+        { title: { [Op.iLike]: `%${term}%` } },
+        { excerpt: { [Op.iLike]: `%${term}%` } },
+        { content: { [Op.iLike]: `%${term}%` } },
+        { '$University.name$': { [Op.iLike]: `%${term}%` } },
+      ];
+      opportunityWhere[Op.or] = [
+        { title: { [Op.iLike]: `%${term}%` } },
+        { description: { [Op.iLike]: `%${term}%` } },
+        { country: { [Op.iLike]: `%${term}%` } },
+        { '$University.name$': { [Op.iLike]: `%${term}%` } },
+        { '$PostedBy.name$': { [Op.iLike]: `%${term}%` } },
+      ];
+    }
+
+    const fetchSize = safePage * safeLimit;
+
+    const [newsResult, opportunityResult] = await Promise.all([
+      kind === 'opportunity'
+        ? { count: 0, rows: [] }
+        : db.UniversityNews.findAndCountAll({
+            where: newsWhere,
+            limit: fetchSize,
+            order: [['created_at', 'DESC']],
+            include: [
+              { model: db.University, as: 'University', attributes: ['id', 'name', 'slug', 'logo_url', 'province'], required: false },
+              { model: db.User, as: 'Author', attributes: ['id', 'name', 'avatar_url'], required: false },
+            ],
+          }),
+      kind === 'news'
+        ? { count: 0, rows: [] }
+        : db.Opportunity.findAndCountAll({
+            where: opportunityWhere,
+            limit: fetchSize,
+            order: [['created_at', 'DESC']],
+            include: [
+              { model: db.OpportunityTag, as: 'Tags', required: false },
+              { model: db.University, as: 'University', attributes: ['id', 'name', 'slug', 'logo_url', 'province'], required: false },
+              { model: db.User, as: 'PostedBy', attributes: ['id', 'name', 'avatar_url'], required: false },
+            ],
+          }),
+    ]);
+
+    const rawItems = [
+      ...(newsResult.rows || []).map((item) => ({
+        id: item.id,
+        kind: 'news',
+        created_at: item.published_at || item.created_at,
+        News: item,
+      })),
+      ...(opportunityResult.rows || []).map((item) => ({
+        id: item.id,
+        kind: 'opportunity',
+        created_at: item.created_at,
+        Opportunity: item,
+      })),
+    ];
+
+    rawItems.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    const items = await attachFeedInteractionMeta(rawItems.slice(offset, offset + safeLimit));
+    const total = Number(newsResult.count || 0) + Number(opportunityResult.count || 0);
+
+    return success(res, {
+      items,
+      meta: {
+        total,
+        page: safePage,
+        limit: safeLimit,
+        totalPages: Math.ceil(total / safeLimit),
+      },
+    });
+  } catch (e) { serverError(res, e.message); }
+};
+
+exports.updateFeedNews = async (req, res) => {
+  try {
+    if (!isAdmin(req, res)) return;
+    const news = await db.UniversityNews.findByPk(req.params.id);
+    if (!news) return notFound(res, 'News item not found');
+
+    const nextData = { ...req.body };
+    if (Object.prototype.hasOwnProperty.call(nextData, 'is_published')) {
+      nextData.published_at = nextData.is_published
+        ? (news.published_at || new Date())
+        : null;
+    }
+
+    await news.update(nextData);
+    return success(res, { news }, 'Feed news updated');
+  } catch (e) { serverError(res, e.message); }
+};
+
+// ── Organizations ─────────────────────────────────────────────────────────────
+exports.getOrganizations = async (req, res) => {
+  try {
+    if (!isAdmin(req, res)) return;
+    const { page = 1, limit = 20, search, published, approved } = req.query;
+    const where = {};
+    const ownerWhere = {};
+
+    if (search) {
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { email: { [Op.iLike]: `%${search}%` } },
+      ];
+      ownerWhere[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { email: { [Op.iLike]: `%${search}%` } },
+      ];
+    }
+
+    if (published !== undefined) where.is_published = published === 'true';
+    if (approved !== undefined) ownerWhere.is_approved = approved === 'true';
+
+    const { count, rows } = await db.Organization.findAndCountAll({
+      where,
+      limit: +limit,
+      offset: (+page - 1) * +limit,
+      include: [
+        {
+          model: db.User,
+          as: 'Owner',
+          attributes: ['id', 'name', 'email', 'avatar_url', 'is_approved', 'is_active'],
+          where: ownerWhere,
+          required: Object.keys(ownerWhere).length > 0,
+        },
+      ],
+      order: [['created_at', 'DESC']],
+    });
+
+    return success(res, {
+      organizations: rows,
+      total: count,
+      page: +page,
+      pages: Math.ceil(count / +limit),
+    });
+  } catch (e) { serverError(res, e.message); }
+};
+
+exports.updateOrganization = async (req, res) => {
+  try {
+    if (!isAdmin(req, res)) return;
+    const organization = await db.Organization.findByPk(req.params.id);
+    if (!organization) return notFound(res, 'Organization not found');
+
+    if (Object.prototype.hasOwnProperty.call(req.body, 'owner_id')) {
+      const ownerError = await validateOrganizationOwnerAvailability({
+        ownerId: req.body.owner_id || null,
+        organizationId: organization.id,
+      });
+      if (ownerError) return error(res, ownerError, 400);
+    }
+
+    await organization.update(req.body);
+    return success(res, { organization }, 'Organization updated');
+  } catch (e) { serverError(res, e.message); }
+};
+
+exports.deleteOrganization = async (req, res) => {
+  try {
+    if (!isAdmin(req, res)) return;
+    const organization = await db.Organization.findByPk(req.params.id);
+    if (!organization) return notFound(res, 'Organization not found');
+    await organization.destroy();
+    return success(res, {}, 'Organization deleted');
   } catch (e) { serverError(res, e.message); }
 };
 
@@ -302,7 +565,7 @@ exports.getReviews = async (req, res) => {
         { '$Author.email$': { [Op.iLike]: `%${search}%` } },
       ];
     }
-    const { count, rows } = await db.Review.findAndCountAll({
+    const { count, rows } = await db.UniversityReview.findAndCountAll({
       where, limit: +limit, offset: (+page - 1) * +limit,
       include: [
         { model: db.University, as: 'University', attributes: ['id', 'name'] },
@@ -317,7 +580,7 @@ exports.getReviews = async (req, res) => {
 exports.approveReview = async (req, res) => {
   try {
     if (!isAdmin(req, res)) return;
-    const review = await db.Review.findByPk(req.params.id);
+    const review = await db.UniversityReview.findByPk(req.params.id);
     if (!review) return notFound(res, 'Review not found');
     review.is_approved = !review.is_approved;
     await review.save();
@@ -329,52 +592,12 @@ exports.approveReview = async (req, res) => {
 exports.deleteReview = async (req, res) => {
   try {
     if (!isAdmin(req, res)) return;
-    const review = await db.Review.findByPk(req.params.id);
+    const review = await db.UniversityReview.findByPk(req.params.id);
     if (!review) return notFound(res, 'Review not found');
     const universityId = review.university_id;
     await review.destroy();
     await recalcUniversityRating(universityId);
     return success(res, {}, 'Review deleted');
-  } catch (e) { serverError(res, e.message); }
-};
-
-// ── Forum ─────────────────────────────────────────────────────────────────────
-exports.getThreads = async (req, res) => {
-  try {
-    if (!isAdmin(req, res)) return;
-    const { page = 1, limit = 20, search } = req.query;
-    const where = {};
-    if (search) where.title = { [Op.iLike]: `%${search}%` };
-    const { count, rows } = await db.ForumThread.findAndCountAll({
-      where, limit: +limit, offset: (+page - 1) * +limit,
-      include: [
-        { model: db.User, as: 'Author', attributes: ['id', 'name', 'email'] },
-        { model: db.ForumCategory, as: 'Category', attributes: ['id', 'name'] },
-      ],
-      order: [['created_at', 'DESC']],
-    });
-    return success(res, { threads: rows, total: count, page: +page, pages: Math.ceil(count / +limit) });
-  } catch (e) { serverError(res, e.message); }
-};
-
-exports.deleteThread = async (req, res) => {
-  try {
-    if (!isAdmin(req, res)) return;
-    const thread = await db.ForumThread.findByPk(req.params.id);
-    if (!thread) return notFound(res, 'Thread not found');
-    await thread.destroy();
-    return success(res, {}, 'Thread deleted');
-  } catch (e) { serverError(res, e.message); }
-};
-
-exports.pinThread = async (req, res) => {
-  try {
-    if (!isAdmin(req, res)) return;
-    const thread = await db.ForumThread.findByPk(req.params.id);
-    if (!thread) return notFound(res, 'Thread not found');
-    thread.is_pinned = !thread.is_pinned;
-    await thread.save();
-    return success(res, { thread }, `Thread ${thread.is_pinned ? 'pinned' : 'unpinned'}`);
   } catch (e) { serverError(res, e.message); }
 };
 

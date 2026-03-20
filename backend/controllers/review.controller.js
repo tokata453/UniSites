@@ -4,7 +4,7 @@ const { success, created, error, notFound, forbidden } = require('../utils/respo
 const { getPagination, paginateResponse } = require('../utils/pagination.utils');
 
 const recalcRating = async (universityId) => {
-  const reviews = await db.Review.findAll({
+  const reviews = await db.UniversityReview.findAll({
     where: { university_id: universityId, is_approved: true },
     attributes: ['rating'],
   });
@@ -19,7 +19,7 @@ const recalcRating = async (universityId) => {
 const list = async (req, res) => {
   try {
     const { page = 1, limit = 10 } = req.query;
-    const { count, rows } = await db.Review.findAndCountAll({
+    const { count, rows } = await db.UniversityReview.findAndCountAll({
       where: { university_id: req.params.universityId, is_approved: true },
       ...getPagination({ page, limit }),
       order: [['created_at', 'DESC']],
@@ -33,10 +33,10 @@ const list = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const existing = await db.Review.findOne({ where: { university_id: req.params.universityId, author_id: req.user.id } });
+    const existing = await db.UniversityReview.findOne({ where: { university_id: req.params.universityId, author_id: req.user.id } });
     if (existing) return error(res, 'You have already reviewed this university');
 
-    const review = await db.Review.create({
+    const review = await db.UniversityReview.create({
       ...req.body,
       university_id: req.params.universityId,
       author_id:     req.user.id,
@@ -51,7 +51,7 @@ const create = async (req, res) => {
 
 const approve = async (req, res) => {
   try {
-    const review = await db.Review.findByPk(req.params.id);
+    const review = await db.UniversityReview.findByPk(req.params.id);
     if (!review) return notFound(res);
     await review.update({ is_approved: true });
     await recalcRating(review.university_id);
@@ -63,7 +63,7 @@ const approve = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
-    const review = await db.Review.findByPk(req.params.id);
+    const review = await db.UniversityReview.findByPk(req.params.id);
     if (!review) return notFound(res);
     await review.destroy();
     await recalcRating(review.university_id);
@@ -75,7 +75,7 @@ const remove = async (req, res) => {
 
 const ownerList = async (req, res) => {
   try {
-    const reviews = await db.Review.findAll({
+    const reviews = await db.UniversityReview.findAll({
       where: { university_id: req.university.id },
       order: [['created_at', 'DESC']],
       include: [{ model: db.User, as: 'Author', attributes: ['id', 'name', 'email', 'avatar_url'] }],
@@ -88,7 +88,7 @@ const ownerList = async (req, res) => {
 
 const ownerReply = async (req, res) => {
   try {
-    const review = await db.Review.findByPk(req.params.id);
+    const review = await db.UniversityReview.findByPk(req.params.id);
     if (!review) return notFound(res, 'Review not found');
     if (review.university_id !== req.university.id) return forbidden(res, 'This review does not belong to your university');
 
@@ -105,7 +105,7 @@ const ownerReply = async (req, res) => {
 
 const ownerFlag = async (req, res) => {
   try {
-    const review = await db.Review.findByPk(req.params.id);
+    const review = await db.UniversityReview.findByPk(req.params.id);
     if (!review) return notFound(res, 'Review not found');
     if (review.university_id !== req.university.id) return forbidden(res, 'This review does not belong to your university');
 
@@ -124,7 +124,7 @@ const ownerFlag = async (req, res) => {
 
 const ownerApprove = async (req, res) => {
   try {
-    const review = await db.Review.findByPk(req.params.id);
+    const review = await db.UniversityReview.findByPk(req.params.id);
     if (!review) return notFound(res, 'Review not found');
     if (review.university_id !== req.university.id) return forbidden(res, 'This review does not belong to your university');
 
@@ -143,7 +143,7 @@ const ownerApprove = async (req, res) => {
 
 const ownerRemove = async (req, res) => {
   try {
-    const review = await db.Review.findByPk(req.params.id);
+    const review = await db.UniversityReview.findByPk(req.params.id);
     if (!review) return notFound(res, 'Review not found');
     if (review.university_id !== req.university.id) return forbidden(res, 'This review does not belong to your university');
 

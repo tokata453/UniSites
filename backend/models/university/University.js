@@ -6,10 +6,10 @@ module.exports = (sequelize, DataTypes) => {
     static associate(db) {
       University.belongsTo(db.User, { foreignKey: 'owner_id', as: 'Owner' });
       University.hasMany(db.UniversityGallery, { foreignKey: 'university_id', as: 'Gallery', onDelete: 'CASCADE' });
-      University.hasMany(db.Faculty, { foreignKey: 'university_id', as: 'Faculties', onDelete: 'CASCADE' });
-      University.hasMany(db.Program, { foreignKey: 'university_id', as: 'Programs', onDelete: 'CASCADE' });
-      University.hasMany(db.AdmissionRequirement, { foreignKey: 'university_id', as: 'AdmissionRequirements', onDelete: 'CASCADE' });
-      University.hasMany(db.CampusFacility, { foreignKey: 'university_id', as: 'CampusFacilities', onDelete: 'CASCADE' });
+      University.hasMany(db.UniversityFaculty, { foreignKey: 'university_id', as: 'Faculties', onDelete: 'CASCADE' });
+      University.hasMany(db.UniversityProgram, { foreignKey: 'university_id', as: 'Programs', onDelete: 'CASCADE' });
+      University.hasMany(db.UniversityAdmissionRequirement, { foreignKey: 'university_id', as: 'AdmissionRequirements', onDelete: 'CASCADE' });
+      University.hasMany(db.UniversityCampusFacility, { foreignKey: 'university_id', as: 'CampusFacilities', onDelete: 'CASCADE' });
       University.hasMany(db.UniversityNews, { foreignKey: 'university_id', as: 'News', onDelete: 'CASCADE' });
       University.hasMany(db.UniversityEvent, { foreignKey: 'university_id', as: 'Events', onDelete: 'CASCADE' });
       University.hasMany(db.UniversityTestimonial, { foreignKey: 'university_id', as: 'Testimonials', onDelete: 'CASCADE' });
@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
       University.hasMany(db.UniversitySource, { foreignKey: 'university_id', as: 'Sources', onDelete: 'CASCADE' });
       University.hasOne(db.UniversityContact, { foreignKey: 'university_id', as: 'Contact', onDelete: 'CASCADE' });
       University.hasOne(db.UniversityAnalytics, { foreignKey: 'university_id', as: 'Analytics', onDelete: 'CASCADE' });
-      University.hasMany(db.Review, { foreignKey: 'university_id', as: 'Reviews', onDelete: 'CASCADE' });
+      University.hasMany(db.UniversityReview, { foreignKey: 'university_id', as: 'Reviews', onDelete: 'CASCADE' });
       University.hasMany(db.Opportunity, { foreignKey: 'university_id', as: 'Opportunities' });
     }
   }

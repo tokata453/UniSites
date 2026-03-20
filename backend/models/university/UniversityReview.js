@@ -2,14 +2,14 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-  class Review extends Model {
+  class UniversityReview extends Model {
     static associate(db) {
-      Review.belongsTo(db.University, { foreignKey: 'university_id', as: 'University' });
-      Review.belongsTo(db.User, { foreignKey: 'author_id', as: 'Author' });
+      UniversityReview.belongsTo(db.University, { foreignKey: 'university_id', as: 'University' });
+      UniversityReview.belongsTo(db.User, { foreignKey: 'author_id', as: 'Author' });
     }
   }
 
-  Review.init({
+  UniversityReview.init({
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
@@ -86,10 +86,10 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'Review',
+    modelName: 'UniversityReview',
     tableName: 'reviews',
     underscored: true,
   });
 
-  return Review;
+  return UniversityReview;
 };

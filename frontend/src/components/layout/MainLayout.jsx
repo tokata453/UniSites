@@ -27,7 +27,7 @@ export default function MainLayout() {
   };
 
   const dashboardPath = isOwner ? '/owner' : isOrganization ? '/organization' : isAdmin ? '/admin' : '/dashboard';
-  const inboxPath = `${dashboardPath}/inbox`;
+  const inboxPath = `${dashboardPath}/inbox?context=personal`;
   const unreadInbox = unreadNotifications + unreadMessages;
   const navLinks = [
     { to: '/universities',  label: 'Universities'  },

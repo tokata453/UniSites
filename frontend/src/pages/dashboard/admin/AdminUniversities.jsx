@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { adminApi } from '@/api';
 import { CAMBODIA_PROVINCE_OPTIONS } from '@/constants/cambodiaLocations';
-import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, ConfirmModal, Toast, ToggleSwitch, IC } from './AdminShared';
+import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, ConfirmModal, Toast, IC } from './AdminShared';
 
 const TYPE_OPTIONS = [
   { value: '', label: 'All Types' },
@@ -83,6 +83,9 @@ function UniversityModal({ mode = 'create', university = null, onClose, onSucces
     scholarship_available: Boolean(university?.scholarship_available),
     dormitory_available: Boolean(university?.dormitory_available),
     international_students: Boolean(university?.international_students),
+    is_published: Boolean(university?.is_published),
+    is_verified: Boolean(university?.is_verified),
+    is_featured: Boolean(university?.is_featured),
     owner_id: university?.owner_id || university?.Owner?.id || '',
     owner_name: university?.Owner?.name || '',
   });
@@ -120,6 +123,9 @@ function UniversityModal({ mode = 'create', university = null, onClose, onSucces
         founded_year:  form.founded_year  ? Number(form.founded_year)  : null,
         student_count: form.student_count ? Number(form.student_count) : null,
         owner_id:      form.owner_id      || null,
+        is_published:  form.is_published,
+        is_verified:   form.is_verified,
+        is_featured:   form.is_featured,
       };
 
       if (mode === 'edit' && university?.id) {
@@ -207,6 +213,15 @@ function UniversityModal({ mode = 'create', university = null, onClose, onSucces
                 <CheckboxField label="Has Scholarship"    checked={form.scholarship_available}  onChange={() => set('scholarship_available')(!form.scholarship_available)} />
                 <CheckboxField label="Has Dormitory"      checked={form.dormitory_available}     onChange={() => set('dormitory_available')(!form.dormitory_available)} />
                 <CheckboxField label="Intl. Students"     checked={form.international_students}  onChange={() => set('international_students')(!form.international_students)} />
+              </div>
+            </div>
+
+            <div style={{ padding: 16, background: '#f8fafc', borderRadius: 12, border: '1px solid #f1f5f9' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#1B3A6B', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 14px' }}>Status</p>
+              <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+                <CheckboxField label="Published" checked={form.is_published} onChange={() => set('is_published')(!form.is_published)} />
+                <CheckboxField label="Verified" checked={form.is_verified} onChange={() => set('is_verified')(!form.is_verified)} />
+                <CheckboxField label="Featured" checked={form.is_featured} onChange={() => set('is_featured')(!form.is_featured)} />
               </div>
             </div>
 
@@ -508,11 +523,6 @@ export default function AdminUniversities() {
     })
   ), [unis, ownerSearch, verifiedFilter, featuredFilter]);
 
-  const toggle = async (uni, field) => {
-    try { await adminApi.updateUniversity(uni.id, { [field]: !uni[field] }); showToast('Updated'); load(); }
-    catch { showToast('Update failed'); }
-  };
-
   const handleDelete = async () => {
     if (!confirm) return;
     try { await adminApi.deleteUniversity(confirm.id); setConfirm(null); showToast('University deleted'); load(); }
@@ -553,15 +563,19 @@ export default function AdminUniversities() {
     ), filterRender: () => (
       <SearchBar value={ownerSearch} onChange={setOwnerSearch} placeholder="Search owners..." />
     )},
-    { key: 'published', label: 'Published', filterRender: () => (
-      <Select value={pub} onChange={setPub} options={PUB_OPTIONS} style={{ width: '100%', minWidth: 140 }} />
-    ), render: u => <ToggleSwitch checked={u.is_published} onChange={() => toggle(u, 'is_published')} color="#15803d" /> },
-    { key: 'verified',  label: 'Verified', filterRender: () => (
-      <Select value={verifiedFilter} onChange={setVerifiedFilter} options={BOOL_OPTIONS} style={{ width: '100%', minWidth: 110 }} />
-    ), render: u => <ToggleSwitch checked={u.is_verified}  onChange={() => toggle(u, 'is_verified')}  color="#1B3A6B" /> },
-    { key: 'featured',  label: 'Featured', filterRender: () => (
-      <Select value={featuredFilter} onChange={setFeaturedFilter} options={BOOL_OPTIONS} style={{ width: '100%', minWidth: 110 }} />
-    ), render: u => <ToggleSwitch checked={u.is_featured}  onChange={() => toggle(u, 'is_featured')}  color="#d97706" /> },
+    { key: 'status', label: 'Status', filterRender: () => (
+      <div style={{ display: 'grid', gap: 8 }}>
+        <Select value={pub} onChange={setPub} options={PUB_OPTIONS} style={{ width: '100%', minWidth: 140 }} />
+        <Select value={verifiedFilter} onChange={setVerifiedFilter} options={BOOL_OPTIONS} style={{ width: '100%', minWidth: 110 }} />
+        <Select value={featuredFilter} onChange={setFeaturedFilter} options={BOOL_OPTIONS} style={{ width: '100%', minWidth: 110 }} />
+      </div>
+    ), render: u => (
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+        <Badge label={u.is_published ? 'Published' : 'Hidden'} color={u.is_published ? '#15803d' : '#64748b'} />
+        <Badge label={u.is_verified ? 'Verified' : 'Unverified'} color={u.is_verified ? '#1B3A6B' : '#94a3b8'} />
+        {u.is_featured && <Badge label="Featured" color="#d97706" />}
+      </div>
+    ) },
     { key: 'actions',   label: 'Actions',   render: u => (
       <div style={{ display: 'flex', gap: 6 }}>
         <ActionBtn onClick={() => setEditingUni(u)} color="#1B3A6B">Edit</ActionBtn>

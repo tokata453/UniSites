@@ -6,6 +6,8 @@ module.exports = (sequelize, DataTypes) => {
     static associate(db) {
       Conversation.belongsTo(db.User, { foreignKey: 'user_one_id', as: 'UserOne' });
       Conversation.belongsTo(db.User, { foreignKey: 'user_two_id', as: 'UserTwo' });
+      Conversation.belongsTo(db.University, { foreignKey: 'university_id', as: 'University' });
+      Conversation.belongsTo(db.Organization, { foreignKey: 'organization_id', as: 'Organization' });
       Conversation.hasMany(db.Message, { foreignKey: 'conversation_id', as: 'Messages', onDelete: 'CASCADE' });
     }
   }
@@ -26,6 +28,19 @@ module.exports = (sequelize, DataTypes) => {
     },
     last_message_at: {
       type: DataTypes.DATE,
+      allowNull: true,
+    },
+    conversation_context: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      defaultValue: 'personal',
+    },
+    university_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    organization_id: {
+      type: DataTypes.UUID,
       allowNull: true,
     },
   }, {

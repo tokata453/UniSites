@@ -271,8 +271,8 @@ export default function AdminMajors() {
       minWidth: 130,
     },
     {
-      key: 'tags',
-      label: 'Tags',
+      key: 'status',
+      label: 'Status',
       filterRender: () => (
         <Select value={stem} onChange={setStem} options={STEM_OPTIONS} style={{ width: '100%', minWidth: 140 }} />
       ),

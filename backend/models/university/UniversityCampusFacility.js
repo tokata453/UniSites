@@ -2,13 +2,13 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-  class CampusFacility extends Model {
+  class UniversityCampusFacility extends Model {
     static associate(db) {
-      CampusFacility.belongsTo(db.University, { foreignKey: 'university_id', as: 'University' });
+      UniversityCampusFacility.belongsTo(db.University, { foreignKey: 'university_id', as: 'University' });
     }
   }
 
-  CampusFacility.init({
+  UniversityCampusFacility.init({
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
@@ -40,10 +40,10 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'CampusFacility',
+    modelName: 'UniversityCampusFacility',
     tableName: 'campus_facilities',
     underscored: true,
   });
 
-  return CampusFacility;
+  return UniversityCampusFacility;
 };

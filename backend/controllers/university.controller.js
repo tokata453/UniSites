@@ -92,21 +92,21 @@ const getBySlug = async (req, res) => {
         where: { university_id: university.id },
         order: [['sort_order', 'ASC'], ['created_at', 'ASC']],
       }),
-      db.Faculty.findAll({
+      db.UniversityFaculty.findAll({
         where: { university_id: university.id },
         order: [['sort_order', 'ASC'], ['name', 'ASC']],
         include: [{
-          model: db.Program,
+          model: db.UniversityProgram,
           as: 'Programs',
           required: false,
           order: [['name', 'ASC']],
         }],
       }),
-      db.AdmissionRequirement.findAll({
+      db.UniversityAdmissionRequirement.findAll({
         where: { university_id: university.id },
         order: [['created_at', 'ASC']],
       }),
-      db.CampusFacility.findAll({
+      db.UniversityCampusFacility.findAll({
         where: { university_id: university.id },
         order: [['category', 'ASC'], ['created_at', 'ASC']],
       }),
@@ -137,7 +137,7 @@ const getBySlug = async (req, res) => {
         attributes: ['id', 'source_name', 'source_type', 'source_url', 'confidence_score', 'import_status', 'last_verified_at', 'created_at', 'updated_at'],
         order: [['created_at', 'DESC']],
       }),
-      db.Review.findAll({
+      db.UniversityReview.findAll({
         where: { university_id: university.id, is_approved: true },
         limit: 10,
         order: [['created_at', 'DESC']],

@@ -2,14 +2,14 @@
 const { Model } = require('sequelize');
 
 module.exports = (sequelize, DataTypes) => {
-  class AdmissionRequirement extends Model {
+  class UniversityAdmissionRequirement extends Model {
     static associate(db) {
-      AdmissionRequirement.belongsTo(db.University, { foreignKey: 'university_id', as: 'University' });
-      AdmissionRequirement.belongsTo(db.Program, { foreignKey: 'program_id', as: 'Program' });
+      UniversityAdmissionRequirement.belongsTo(db.University, { foreignKey: 'university_id', as: 'University' });
+      UniversityAdmissionRequirement.belongsTo(db.UniversityProgram, { foreignKey: 'program_id', as: 'Program' });
     }
   }
 
-  AdmissionRequirement.init({
+  UniversityAdmissionRequirement.init({
     id: {
       type: DataTypes.UUID,
       defaultValue: DataTypes.UUIDV4,
@@ -48,10 +48,10 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     sequelize,
-    modelName: 'AdmissionRequirement',
+    modelName: 'UniversityAdmissionRequirement',
     tableName: 'admission_requirements',
     underscored: true,
   });
 
-  return AdmissionRequirement;
+  return UniversityAdmissionRequirement;
 };

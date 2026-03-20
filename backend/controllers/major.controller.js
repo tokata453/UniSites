@@ -44,7 +44,7 @@ const getBySlug = async (req, res) => {
       where: { slug: req.params.slug },
       // Eager-load programs + their university so frontend gets major.Programs
       include: [{
-        model: db.Program,
+        model: db.UniversityProgram,
         as: 'Programs',
         required: false,
         where: { is_available: true },

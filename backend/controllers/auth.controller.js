@@ -2,6 +2,7 @@
 const passport                    = require('passport');
 const { generateToken }           = require('../utils/jwt.utils');
 const { success, created, error } = require('../utils/response.utils');
+const { uniqueSlug }              = require('../utils/slug.utils');
 const db                          = require('../models');
 
 // ── Local Auth ────────────────────────────────────────────────────────────────
@@ -36,6 +37,12 @@ const register = async (req, res) => {
     const token = generateToken({ id: fresh.id, email: fresh.email, role: fresh.Role?.name });
 
     if (requestedRole === 'organization') {
+      await db.Organization.create({
+        owner_id: fresh.id,
+        slug: uniqueSlug(name || 'organization'),
+        name,
+        email,
+      });
       return created(
         res,
         { pendingApproval: true, token, user: fresh },
@@ -78,7 +85,10 @@ const oauthCallback = (req, res) => {
 const getMe = async (req, res) => {
   try {
     const user = await db.User.findByPk(req.user.id, {
-      include: [{ model: db.Role, as: 'Role' }],
+      include: [
+        { model: db.Role, as: 'Role' },
+        { model: db.Organization, as: 'Organization' },
+      ],
     });
     return success(res, { user });
   } catch (err) {
@@ -188,11 +198,11 @@ const getSavedItems = async (req, res) => {
       order: [['created_at', 'DESC']],
     });
 
-    const universityIds = rawItems.filter((item) => item.item_type === 'university').map((item) => item.item_id);
-    const opportunityIds = rawItems.filter((item) => item.item_type === 'opportunity').map((item) => item.item_id);
-    const threadIds = rawItems.filter((item) => item.item_type === 'thread').map((item) => item.item_id);
+    const filteredItems = rawItems.filter((item) => item.item_type !== 'thread');
+    const universityIds = filteredItems.filter((item) => item.item_type === 'university').map((item) => item.item_id);
+    const opportunityIds = filteredItems.filter((item) => item.item_type === 'opportunity').map((item) => item.item_id);
 
-    const [universities, opportunities, threads] = await Promise.all([
+    const [universities, opportunities] = await Promise.all([
       universityIds.length
         ? db.University.findAll({
             where: { id: universityIds },
@@ -206,24 +216,15 @@ const getSavedItems = async (req, res) => {
             include: [{ model: db.University, as: 'University', attributes: ['id', 'name', 'slug'] }],
           })
         : [],
-      threadIds.length
-        ? db.ForumThread.findAll({
-            where: { id: threadIds },
-            attributes: ['id', 'slug', 'title', 'reply_count', 'like_count', 'views', 'is_pinned'],
-            include: [{ model: db.ForumCategory, as: 'Category', attributes: ['id', 'name', 'slug'] }],
-          })
-        : [],
     ]);
 
     const universityMap = new Map(universities.map((item) => [item.id, item]));
     const opportunityMap = new Map(opportunities.map((item) => [item.id, item]));
-    const threadMap = new Map(threads.map((item) => [item.id, item]));
 
-    const items = rawItems.map((item) => ({
+    const items = filteredItems.map((item) => ({
       ...item.toJSON(),
       University: item.item_type === 'university' ? universityMap.get(item.item_id) || null : null,
       Opportunity: item.item_type === 'opportunity' ? opportunityMap.get(item.item_id) || null : null,
-      Thread: item.item_type === 'thread' ? threadMap.get(item.item_id) || null : null,
     }));
 
     return success(res, { items });

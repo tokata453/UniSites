@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { adminApi } from '@/api';
-import { Badge, SearchBar, Select, DeleteBtn, Table, Pagination, PageHeader, Card, ConfirmModal, Toast, ToggleSwitch, ActionBtn } from './AdminShared';
+import { Badge, SearchBar, Select, DeleteBtn, Table, Pagination, PageHeader, Card, ConfirmModal, Toast, ActionBtn } from './AdminShared';
 
 const TYPE_OPTIONS = [
   { value: '', label: 'All Types' },
@@ -67,11 +67,6 @@ export default function AdminOpportunities() {
     })
   ), [opps, orgSearch, featuredFilter, viewsMin, deadlineFilter]);
 
-  const toggle = async (opp, field) => {
-    try { await adminApi.updateOpportunity(opp.id, { [field]: !opp[field] }); showToast('Updated'); load(); }
-    catch { showToast('Failed'); }
-  };
-
   const handleDelete = async () => {
     if (!confirm) return;
     try { await adminApi.deleteOpportunity(confirm.id); setConfirm(null); showToast('Deleted'); load(); }
@@ -102,12 +97,19 @@ export default function AdminOpportunities() {
         {o.deadline ? new Date(o.deadline).toLocaleDateString() : '—'}
       </span>
     )},
-    { key: 'published', label: 'Published', filterRender: () => (
-      <Select value={pub} onChange={setPub} options={PUB_OPTIONS} style={{ width: '100%', minWidth: 140 }} />
-    ), render: o => <ToggleSwitch checked={o.is_published} onChange={() => toggle(o, 'is_published')} color="#15803d" /> },
-    { key: 'featured', label: 'Featured', filterRender: () => (
-      <Select value={featuredFilter} onChange={setFeaturedFilter} options={FEATURED_OPTIONS} style={{ width: '100%', minWidth: 125 }} />
-    ), render: o => <ToggleSwitch checked={o.is_featured}  onChange={() => toggle(o, 'is_featured')}  color="#d97706" /> },
+    { key: 'status', label: 'Status', filterRender: () => (
+      <div style={{ display: 'grid', gap: 8 }}>
+        <Select value={pub} onChange={setPub} options={PUB_OPTIONS} style={{ width: '100%', minWidth: 140 }} />
+        <Select value={featuredFilter} onChange={setFeaturedFilter} options={FEATURED_OPTIONS} style={{ width: '100%', minWidth: 125 }} />
+      </div>
+    ), render: o => (
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', minWidth: 180 }}>
+        <Badge label={o.is_published ? 'Published' : 'Hidden'} color={o.is_published ? '#15803d' : '#64748b'} />
+        {o.is_featured && <Badge label="Featured" color="#d97706" />}
+        {o.is_verified && <Badge label="Verified" color="#1B3A6B" />}
+        {o.is_fully_funded && <Badge label="Fully Funded" color="#0f766e" />}
+      </div>
+    ) },
     { key: 'views', label: 'Views', filterRender: () => (
       <input
         value={viewsMin}
