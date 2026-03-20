@@ -278,7 +278,7 @@ export function OpportunitiesPage() {
                         <div className="mb-3 flex items-center gap-2">
                           <div className="h-7 w-7 overflow-hidden rounded-full bg-teal-700 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
                             {opp.Organization.logo_url ? (
-                              <img src={avatarUrl(opp.Organization.logo_url) || opp.Organization.logo_url} alt={opp.Organization.name} className="h-full w-full object-cover" />
+                              <img src={logoUrl(opp.Organization.logo_url) || opp.Organization.logo_url} alt={opp.Organization.name} className="h-full w-full object-cover" />
                             ) : (
                               opp.Organization.name?.[0]?.toUpperCase() || 'O'
                             )}
@@ -286,6 +286,21 @@ export function OpportunitiesPage() {
                           <div className="min-w-0">
                             <p className="text-xs font-semibold text-slate-700 truncate">{opp.Organization.name}</p>
                             <p className="text-[11px] text-slate-400">Official organization</p>
+                          </div>
+                        </div>
+                      )}
+                      {!opp.University && !opp.Organization && opp.PostedBy && (
+                        <div className="mb-3 flex items-center gap-2">
+                          <div className="h-7 w-7 overflow-hidden rounded-full bg-slate-700 text-white flex items-center justify-center text-[11px] font-bold shrink-0">
+                            {opp.PostedBy.avatar_url ? (
+                              <img src={avatarUrl(opp.PostedBy.avatar_url) || opp.PostedBy.avatar_url} alt={opp.PostedBy.name} className="h-full w-full object-cover" />
+                            ) : (
+                              opp.PostedBy.name?.[0]?.toUpperCase() || 'P'
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-slate-700 truncate">{opp.PostedBy.name}</p>
+                            <p className="text-[11px] text-slate-400">Posted by organization</p>
                           </div>
                         </div>
                       )}
@@ -467,7 +482,7 @@ export function OpportunityDetail() {
                 <div className="mb-4 flex items-center gap-3 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3">
                   <div className="h-11 w-11 overflow-hidden rounded-full bg-teal-700 text-white flex items-center justify-center text-sm font-bold shrink-0">
                     {opp.Organization.logo_url ? (
-                      <img src={avatarUrl(opp.Organization.logo_url) || opp.Organization.logo_url} alt={opp.Organization.name} className="h-full w-full object-cover" />
+                      <img src={logoUrl(opp.Organization.logo_url) || opp.Organization.logo_url} alt={opp.Organization.name} className="h-full w-full object-cover" />
                     ) : (
                       opp.Organization.name?.[0]?.toUpperCase() || 'O'
                     )}
@@ -475,6 +490,21 @@ export function OpportunityDetail() {
                   <div>
                     <p className="text-sm font-semibold text-slate-800">{opp.Organization.name}</p>
                     <p className="text-xs text-teal-700">Official organization</p>
+                  </div>
+                </div>
+              )}
+              {!opp.University && !opp.Organization && opp.PostedBy && (
+                <div className="mb-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div className="h-11 w-11 overflow-hidden rounded-full bg-slate-700 text-white flex items-center justify-center text-sm font-bold shrink-0">
+                    {opp.PostedBy.avatar_url ? (
+                      <img src={avatarUrl(opp.PostedBy.avatar_url) || opp.PostedBy.avatar_url} alt={opp.PostedBy.name} className="h-full w-full object-cover" />
+                    ) : (
+                      opp.PostedBy.name?.[0]?.toUpperCase() || 'P'
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{opp.PostedBy.name}</p>
+                    <p className="text-xs text-slate-500">Posted by organization</p>
                   </div>
                 </div>
               )}
