@@ -23,6 +23,7 @@ router.delete('/universities/:id',      ctrl.deleteUniversity);
 
 // Organizations
 router.get('/organizations',            ctrl.getOrganizations);
+router.post('/organizations',           ctrl.createOrganization);
 router.put('/organizations/:id',        ctrl.updateOrganization);
 router.delete('/organizations/:id',     ctrl.deleteOrganization);
 

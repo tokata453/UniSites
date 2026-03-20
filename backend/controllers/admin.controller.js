@@ -330,6 +330,39 @@ exports.getOrganizations = async (req, res) => {
   } catch (e) { serverError(res, e.message); }
 };
 
+exports.createOrganization = async (req, res) => {
+  try {
+    if (!isAdmin(req, res)) return;
+
+    const ownerError = await validateOrganizationOwnerAvailability({
+      ownerId: req.body.owner_id || null,
+    });
+    if (ownerError) return error(res, ownerError, 400);
+
+    const organization = await db.Organization.create({
+      slug: req.body.slug,
+      name: req.body.name,
+      logo_url: req.body.logo_url || null,
+      cover_url: req.body.cover_url || null,
+      description: req.body.description || null,
+      website_url: req.body.website_url || null,
+      email: req.body.email || null,
+      contact_phone: req.body.contact_phone || null,
+      facebook_url: req.body.facebook_url || null,
+      telegram_url: req.body.telegram_url || null,
+      instagram_url: req.body.instagram_url || null,
+      linkedin_url: req.body.linkedin_url || null,
+      owner_id: req.body.owner_id,
+      is_verified: Boolean(req.body.is_verified),
+      is_published: Object.prototype.hasOwnProperty.call(req.body, 'is_published')
+        ? Boolean(req.body.is_published)
+        : true,
+    });
+
+    return success(res, { organization }, 'Organization created');
+  } catch (e) { serverError(res, e.message); }
+};
+
 exports.updateOrganization = async (req, res) => {
   try {
     if (!isAdmin(req, res)) return;

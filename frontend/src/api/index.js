@@ -154,6 +154,7 @@ export const adminApi = {
   deleteUniversity:   (id)           => api.delete(`/admin/universities/${id}`),
   // Organizations
   getOrganizations:   (params)       => api.get('/admin/organizations', { params }),
+  createOrganization: (data)         => api.post('/admin/organizations', data),
   updateOrganization: (id, data)     => api.put(`/admin/organizations/${id}`, data),
   deleteOrganization: (id)           => api.delete(`/admin/organizations/${id}`),
   // Feed

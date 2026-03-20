@@ -195,6 +195,231 @@ function EditOrganizationModal({ organization, onClose, onSuccess, showToast }) 
   );
 }
 
+function CreateOrganizationModal({ onClose, onSuccess, showToast }) {
+  const [search, setSearch] = useState('');
+  const [owners, setOwners] = useState([]);
+  const [loadingOwners, setLoadingOwners] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    name: '',
+    slug: '',
+    email: '',
+    website_url: '',
+    contact_phone: '',
+    description: '',
+    logo_url: '',
+    cover_url: '',
+    facebook_url: '',
+    telegram_url: '',
+    instagram_url: '',
+    linkedin_url: '',
+    owner_id: '',
+    is_published: true,
+    is_verified: false,
+  });
+
+  useEffect(() => {
+    setLoadingOwners(true);
+    adminApi.getUsers({ role: 'organization', limit: 8, ...(search.trim() ? { search } : {}) })
+      .then((r) => setOwners(r.data.users || []))
+      .catch(() => setOwners([]))
+      .finally(() => setLoadingOwners(false));
+  }, [search]);
+
+  const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const availableOwners = owners.filter((owner) => !owner.owned_organization_id || owner.id === form.owner_id);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await adminApi.createOrganization(form);
+      showToast('Organization created');
+      onSuccess();
+      onClose();
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Create failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 18, width: '100%', maxWidth: 760, maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 24px 80px rgba(15,23,42,0.18)' }}>
+        <form onSubmit={handleSubmit}>
+          <div style={{ padding: 24, borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+            <div>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', margin: '0 0 4px', fontFamily: "'Syne',sans-serif" }}>Create Organization</h2>
+              <p style={{ margin: 0, fontSize: 13, color: '#64748b' }}>Create a new public organization profile and assign its owner.</p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{ background: '#f8fafc', border: '1px solid #e2e8f0', cursor: 'pointer', color: '#94a3b8', padding: 8, borderRadius: 10, flexShrink: 0 }}
+            >
+              <IC d="M18 6L6 18M6 6l12 12" size={18} />
+            </button>
+          </div>
+
+          <div style={{ padding: 24, display: 'grid', gap: 18 }}>
+            <div>
+              <label style={fieldLabelStyle}>Organization Owner</label>
+              <div style={{ position: 'relative', marginBottom: 12 }}>
+                <div style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
+                  <IC d="M21 21l-4.35-4.35 M11 19a8 8 0 100-16 8 8 0 000 16z" size={15} />
+                </div>
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search organization owners..."
+                  style={{ ...fieldInputStyle, paddingLeft: 36 }}
+                />
+              </div>
+              <div style={{ display: 'grid', gap: 8, maxHeight: 200, overflowY: 'auto', padding: 2 }}>
+                {loadingOwners ? (
+                  <div style={{ fontSize: 13, color: '#94a3b8', padding: '10px 0' }}>Loading organization owners...</div>
+                ) : availableOwners.length === 0 ? (
+                  <div style={{ fontSize: 13, color: '#94a3b8', padding: '10px 0' }}>No available organization owners found.</div>
+                ) : (
+                  availableOwners.map((owner) => {
+                    const selected = form.owner_id === owner.id;
+                    return (
+                      <button
+                        key={owner.id}
+                        type="button"
+                        onClick={() => setField('owner_id', owner.id)}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 10,
+                          textAlign: 'left',
+                          padding: '10px 12px',
+                          borderRadius: 10,
+                          border: `1px solid ${selected ? '#1B3A6B' : '#e2e8f0'}`,
+                          background: selected ? '#eff6ff' : '#fff',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#e2e8f0', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
+                          {owner.avatar_url ? <img src={owner.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : owner.name?.[0]?.toUpperCase() || 'U'}
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{owner.name}</div>
+                          <div style={{ fontSize: 11, color: '#94a3b8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{owner.email}</div>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+              <div>
+                <label style={fieldLabelStyle}>Organization Name</label>
+                <input value={form.name} onChange={(e) => setField('name', e.target.value)} style={fieldInputStyle} required />
+              </div>
+              <div>
+                <label style={fieldLabelStyle}>Slug</label>
+                <input value={form.slug} onChange={(e) => setField('slug', e.target.value)} style={fieldInputStyle} required />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+              <div>
+                <label style={fieldLabelStyle}>Public Email</label>
+                <input value={form.email} onChange={(e) => setField('email', e.target.value)} style={fieldInputStyle} type="email" />
+              </div>
+              <div>
+                <label style={fieldLabelStyle}>Phone</label>
+                <input value={form.contact_phone} onChange={(e) => setField('contact_phone', e.target.value)} style={fieldInputStyle} />
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+              <div>
+                <label style={fieldLabelStyle}>Website</label>
+                <input value={form.website_url} onChange={(e) => setField('website_url', e.target.value)} style={fieldInputStyle} />
+              </div>
+              <div>
+                <label style={fieldLabelStyle}>Logo URL</label>
+                <input value={form.logo_url} onChange={(e) => setField('logo_url', e.target.value)} style={fieldInputStyle} />
+              </div>
+            </div>
+
+            <div>
+              <label style={fieldLabelStyle}>Cover URL</label>
+              <input value={form.cover_url} onChange={(e) => setField('cover_url', e.target.value)} style={fieldInputStyle} />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
+              <div>
+                <label style={fieldLabelStyle}>Publish Status</label>
+                <Select
+                  value={form.is_published ? 'true' : 'false'}
+                  onChange={(value) => setField('is_published', value === 'true')}
+                  options={EDIT_PUBLISH_OPTIONS}
+                  style={{ width: '100%', minWidth: 0 }}
+                />
+              </div>
+              <div>
+                <label style={fieldLabelStyle}>Verification Status</label>
+                <Select
+                  value={form.is_verified ? 'true' : 'false'}
+                  onChange={(value) => setField('is_verified', value === 'true')}
+                  options={EDIT_VERIFY_OPTIONS}
+                  style={{ width: '100%', minWidth: 0 }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label style={fieldLabelStyle}>Description</label>
+              <textarea
+                value={form.description}
+                onChange={(e) => setField('description', e.target.value)}
+                rows={4}
+                style={{ ...fieldInputStyle, resize: 'vertical', minHeight: 110 }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16 }}>
+              <div>
+                <label style={fieldLabelStyle}>Facebook</label>
+                <input value={form.facebook_url} onChange={(e) => setField('facebook_url', e.target.value)} style={fieldInputStyle} />
+              </div>
+              <div>
+                <label style={fieldLabelStyle}>Telegram</label>
+                <input value={form.telegram_url} onChange={(e) => setField('telegram_url', e.target.value)} style={fieldInputStyle} />
+              </div>
+              <div>
+                <label style={fieldLabelStyle}>Instagram</label>
+                <input value={form.instagram_url} onChange={(e) => setField('instagram_url', e.target.value)} style={fieldInputStyle} />
+              </div>
+              <div>
+                <label style={fieldLabelStyle}>LinkedIn</label>
+                <input value={form.linkedin_url} onChange={(e) => setField('linkedin_url', e.target.value)} style={fieldInputStyle} />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: 24, borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+            <button type="button" onClick={onClose} style={{ padding: '10px 18px', borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+              Cancel
+            </button>
+            <button type="submit" disabled={saving || !form.owner_id} style={{ padding: '10px 20px', borderRadius: 10, border: 'none', background: saving || !form.owner_id ? '#cbd5e1' : '#1B3A6B', color: '#fff', cursor: saving || !form.owner_id ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700 }}>
+              {saving ? 'Creating...' : 'Create Organization'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 function TransferOrganizationOwnerModal({ organization, onClose, onSuccess, showToast }) {
   const [search, setSearch] = useState('');
   const [owners, setOwners] = useState([]);
@@ -366,6 +591,7 @@ export default function AdminOrganizations() {
   const [confirm, setConfirm] = useState(null);
   const [transferOrganization, setTransferOrganization] = useState(null);
   const [editOrganization, setEditOrganization] = useState(null);
+  const [showCreate, setShowCreate] = useState(false);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
@@ -485,6 +711,7 @@ export default function AdminOrganizations() {
           <Select value={published} onChange={setPublished} options={PUB_OPTIONS} />
           <Select value={approved} onChange={setApproved} options={APPROVAL_OPTIONS} />
           <Select value={verifiedFilter} onChange={setVerifiedFilter} options={[{ value: '', label: 'All Verification' }, ...BOOL_OPTIONS.slice(1).map((o) => ({ ...o, label: o.value === 'true' ? 'Verified' : 'Unverified' }))]} />
+          <ActionBtn onClick={() => setShowCreate(true)} title="Create organization">Create Organization</ActionBtn>
         </div>
         <Table columns={cols} rows={rows} loading={loading} emptyMsg="No organizations found" />
       </Card>
@@ -503,6 +730,14 @@ export default function AdminOrganizations() {
         <TransferOrganizationOwnerModal
           organization={transferOrganization}
           onClose={() => setTransferOrganization(null)}
+          onSuccess={load}
+          showToast={showToast}
+        />
+      )}
+
+      {showCreate && (
+        <CreateOrganizationModal
+          onClose={() => setShowCreate(false)}
           onSuccess={load}
           showToast={showToast}
         />

@@ -41,13 +41,13 @@ const VALUES = [
 ];
 
 const TEAM = [
-  { name: 'Panhaseth SUY', role: 'Project Lead & Backend', avatar: 'PS', color: '#1B3A6B', image: '/src/assets/images/avatars/panhaseth.JPG' },
-  { name: 'Taiseng LAI', role: 'Frontend Developer', avatar: 'TL', color: '#3DAE6B', image: '/src/assets/images/avatars/taiseng.jpeg' },
-  { name: 'Narithithya PANG', role: 'UI/UX Designer', avatar: 'NP', color: '#F47B20', image: '/src/assets/images/avatars/tithya.jpg' },
-  { name: 'Vireakpanha CHAMROEUN', role: 'Backend Developer', avatar: 'VC', color: '#4AAEE0', image: '/src/assets/images/avatars/panha.png' },
-  { name: 'Chansonaza PAN', role: 'Database & API', avatar: 'CP', color: '#8b5cf6', image: '/src/assets/images/avatars/naza.jpg' },
-  { name: 'Chumsomary LOEUNG', role: 'Frontend Developer', avatar: 'CL', color: '#ec4899', image: '/src/assets/images/avatars/mary.jpg' },
-  { name: 'Kimhorng PRAK', role: 'QA & Documentation', avatar: 'KP', color: '#f59e0b', image: '/src/assets/images/avatars/kimhorng.jpeg' },
+  { name: 'Panhaseth SUY', role: 'Project Lead & Backend', avatar: 'PS', color: '#1B3A6B', image: 'src/assets/images/avatars/panhaseth.JPG' },
+  { name: 'Taiseng LAI', role: 'Frontend Developer', avatar: 'TL', color: '#3DAE6B', image: 'src/assets/images/avatars/taiseng.jpeg' },
+  { name: 'Narithtithya PANG', role: 'UI/UX Designer', avatar: 'NP', color: '#F47B20', image: 'src/assets/images/avatars/tithya.JPG' },
+  { name: 'Vireakpanha CHAMROEUN', role: 'Backend Developer', avatar: 'VC', color: '#4AAEE0', image: 'src/assets/images/avatars/panha.png' },
+  { name: 'Chansonaza PAN', role: 'Database & API', avatar: 'CP', color: '#8b5cf6', image: 'src/assets/images/avatars/naza.jpg' },
+  { name: 'Chumsomary LOEUNG', role: 'Frontend Developer', avatar: 'CL', color: '#ec4899', image: 'src/assets/images/avatars/mary.jpg' },
+  { name: 'Kimhorng PRAK', role: 'QA & Documentation', avatar: 'KP', color: '#f59e0b', image: 'src/assets/images/avatars/kimhorng.jpeg' },
 ];
 
 const FAQS = [
