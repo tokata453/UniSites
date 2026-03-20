@@ -3,7 +3,7 @@ import { BadgeCheck, Building2, CircleDollarSign, Globe2, Mail, MapPin, Messages
 import { Link } from 'react-router-dom';
 import panhasethAvatar from '@/assets/images/avatars/panhaseth.JPG';
 import taisengAvatar from '@/assets/images/avatars/taiseng.jpeg';
-import tithyaAvatar from '@/assets/images/avatars/tithya.JPG';
+import tithyaAvatar from '@/assets/images/avatars/tithya.jpg';
 import panhaAvatar from '@/assets/images/avatars/panha.png';
 import nazaAvatar from '@/assets/images/avatars/naza.jpg';
 import maryAvatar from '@/assets/images/avatars/mary.jpg';
