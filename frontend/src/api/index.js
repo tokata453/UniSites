@@ -102,6 +102,7 @@ export const universityApi = {
 // ── Organizations ─────────────────────────────────────────────────────────────
 export const organizationApi = {
   getMine: () => api.get('/organizations/mine'),
+  getBySlug: (slug) => api.get(`/organizations/${slug}`),
   updateMine: (data) => api.put('/organizations/mine', data),
 };
 

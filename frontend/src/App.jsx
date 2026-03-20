@@ -10,6 +10,7 @@ import LandingPage       from '@/pages/LandingPage';
 import FeedPage         from '@/pages/feed';
 import UniversityList    from '@/pages/universities/UniversityList';
 import UniversityDetail  from '@/pages/universities/UniversityDetail';
+import OrganizationDetail from '@/pages/organizations/OrganizationDetail';
 import OpportunitiesPage from '@/pages/opportunities/OpportunitiesPage';
 import OpportunityDetail from '@/pages/opportunities/OpportunityDetail';
 import InboxPage from '@/pages/inbox/InboxPage';
@@ -79,6 +80,7 @@ export default function App() {
           } />
           <Route path="/universities"            element={<UniversityList />} />
           <Route path="/universities/:slug"      element={<UniversityDetail />} />
+          <Route path="/organizations/:slug"     element={<OrganizationDetail />} />
           <Route path="/forum"                   element={<Navigate to="/feed" replace />} />
           <Route path="/forum/new"               element={<Navigate to="/feed" replace />} />
           <Route path="/forum/:slug"             element={<Navigate to="/feed" replace />} />

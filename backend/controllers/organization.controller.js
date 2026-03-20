@@ -24,6 +24,37 @@ const getMine = async (req, res) => {
   }
 };
 
+const getBySlug = async (req, res) => {
+  try {
+    const organization = await db.Organization.findOne({
+      where: { slug: req.params.slug, is_published: true },
+      include: [
+        { model: db.User, as: 'Owner', attributes: ['id', 'name', 'email', 'avatar_url'], required: false },
+        { model: db.OrganizationContact, as: 'Contact', required: false },
+        { model: db.OrganizationGallery, as: 'Gallery', required: false },
+        { model: db.OrganizationFAQ, as: 'FAQs', required: false },
+        {
+          model: db.Opportunity,
+          as: 'Opportunities',
+          required: false,
+          where: { is_published: true },
+          attributes: ['id', 'slug', 'title', 'type', 'deadline', 'cover_url', 'is_featured', 'is_fully_funded', 'country'],
+        },
+      ],
+      order: [
+        [{ model: db.OrganizationGallery, as: 'Gallery' }, 'sort_order', 'ASC'],
+        [{ model: db.OrganizationFAQ, as: 'FAQs' }, 'sort_order', 'ASC'],
+        [{ model: db.Opportunity, as: 'Opportunities' }, 'created_at', 'DESC'],
+      ],
+    });
+
+    if (!organization) return notFound(res, 'Organization profile not found');
+    return success(res, { organization });
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
+
 const upsertMine = async (req, res) => {
   try {
     const payload = {
@@ -80,4 +111,4 @@ const upsertMine = async (req, res) => {
   }
 };
 
-module.exports = { getMine, upsertMine };
+module.exports = { getMine, getBySlug, upsertMine };

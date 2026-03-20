@@ -52,8 +52,14 @@ const list = async (req, res) => {
           attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id'],
           include: [{ model: db.User, as: 'Owner', attributes: ['id', 'name', 'avatar_url'] }],
         },
-        { model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id'] },
-        { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'] },
+        { model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id', 'contact_phone', 'website_url'] },
+        {
+          model: db.User,
+          as: 'PostedBy',
+          required: false,
+          attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'],
+          include: [{ model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id', 'contact_phone', 'website_url'] }],
+        },
       ],
     });
     return success(res, paginateResponse(rows, count, page, limit));
@@ -76,9 +82,15 @@ const getFeatured = async (req, res) => {
           attributes: ['id', 'name', 'logo_url', 'owner_id'],
           include: [{ model: db.User, as: 'Owner', attributes: ['id', 'name', 'avatar_url'] }],
         },
-        { model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id'] },
+        { model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id', 'contact_phone', 'website_url'] },
         { model: db.OpportunityTag, as: 'Tags' },
-        { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'] },
+        {
+          model: db.User,
+          as: 'PostedBy',
+          required: false,
+          attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'],
+          include: [{ model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id', 'contact_phone', 'website_url'] }],
+        },
       ],
     });
     return success(res, { opportunities });
@@ -119,8 +131,14 @@ const getMine = async (req, res) => {
           attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id'],
           include: [{ model: db.User, as: 'Owner', attributes: ['id', 'name', 'avatar_url'] }],
         },
-        { model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id'] },
-        { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'] },
+        { model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id', 'contact_phone', 'website_url'] },
+        {
+          model: db.User,
+          as: 'PostedBy',
+          required: false,
+          attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'],
+          include: [{ model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id', 'contact_phone', 'website_url'] }],
+        },
       ],
       order: [['created_at', 'DESC']],
     });
@@ -143,8 +161,14 @@ const getBySlug = async (req, res) => {
           attributes: ['id', 'name', 'slug', 'logo_url', 'province', 'owner_id'],
           include: [{ model: db.User, as: 'Owner', attributes: ['id', 'name', 'avatar_url'] }],
         },
-        { model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id'] },
-        { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'] },
+        { model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id', 'contact_phone', 'website_url'] },
+        {
+          model: db.User,
+          as: 'PostedBy',
+          required: false,
+          attributes: ['id', 'name', 'avatar_url', 'website_url', 'contact_phone'],
+          include: [{ model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id', 'contact_phone', 'website_url'] }],
+        },
       ],
     });
     if (!opportunity) return notFound(res, 'Opportunity not found');

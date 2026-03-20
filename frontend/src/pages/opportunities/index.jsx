@@ -382,12 +382,13 @@ export function OpportunityDetail() {
   const ts      = TYPE_STYLES[opp.type] || {};
   const expired = isExpired(opp.deadline);
   const days    = opp.deadline && !expired ? daysLeft(opp.deadline) : null;
-  const messageLabel = opp.Organization
+  const sourceOrganization = opp.Organization || opp.PostedBy?.Organization || null;
+  const messageLabel = sourceOrganization
     ? 'Message Organization'
     : opp.University
     ? 'Message University'
     : 'Message Poster';
-  const messageHint = opp.Organization
+  const messageHint = sourceOrganization
     ? 'Starts a direct conversation with the organization that posted this opportunity.'
     : opp.University
     ? 'Sends your message to the university contact behind this opportunity.'
@@ -401,7 +402,7 @@ export function OpportunityDetail() {
     : '/dashboard/inbox';
 
   const handleMessage = async () => {
-    const recipientId = opp.Organization?.owner_id || opp.PostedBy?.id || opp.University?.Owner?.id || opp.University?.owner_id;
+    const recipientId = sourceOrganization?.owner_id || opp.PostedBy?.id || opp.University?.Owner?.id || opp.University?.owner_id;
     if (!isAuthenticated) {
       info('Please log in to send a message');
       navigate('/login');
@@ -412,11 +413,11 @@ export function OpportunityDetail() {
       return;
     }
     try {
-      const payload = opp.Organization
+      const payload = sourceOrganization
         ? {
             recipient_id: recipientId,
             context: 'organization',
-            organization_id: opp.Organization.id,
+            organization_id: sourceOrganization.id,
           }
         : opp.University
         ? {
@@ -427,7 +428,7 @@ export function OpportunityDetail() {
         : { recipient_id: recipientId };
       const res = await inboxApi.createConversation(payload);
       const conversationId = res.data.conversation?.id;
-      const contextQuery = opp.Organization
+      const contextQuery = sourceOrganization
         ? 'context=organization'
         : opp.University
         ? 'context=university'
@@ -478,22 +479,22 @@ export function OpportunityDetail() {
                   <GraduationCap size={15} /> {opp.University.name}
                 </Link>
               )}
-              {!opp.University && opp.Organization && (
+              {!opp.University && sourceOrganization && (
                 <div className="mb-4 flex items-center gap-3 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3">
                   <div className="h-11 w-11 overflow-hidden rounded-full bg-teal-700 text-white flex items-center justify-center text-sm font-bold shrink-0">
-                    {opp.Organization.logo_url ? (
-                      <img src={logoUrl(opp.Organization.logo_url) || opp.Organization.logo_url} alt={opp.Organization.name} className="h-full w-full object-cover" />
+                    {sourceOrganization.logo_url ? (
+                      <img src={logoUrl(sourceOrganization.logo_url) || sourceOrganization.logo_url} alt={sourceOrganization.name} className="h-full w-full object-cover" />
                     ) : (
-                      opp.Organization.name?.[0]?.toUpperCase() || 'O'
+                      sourceOrganization.name?.[0]?.toUpperCase() || 'O'
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-slate-800">{opp.Organization.name}</p>
+                    <p className="text-sm font-semibold text-slate-800">{sourceOrganization.name}</p>
                     <p className="text-xs text-teal-700">Official organization</p>
                   </div>
                 </div>
               )}
-              {!opp.University && !opp.Organization && opp.PostedBy && (
+              {!opp.University && !sourceOrganization && opp.PostedBy && (
                 <div className="mb-4 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
                   <div className="h-11 w-11 overflow-hidden rounded-full bg-slate-700 text-white flex items-center justify-center text-sm font-bold shrink-0">
                     {opp.PostedBy.avatar_url ? (
@@ -618,6 +619,24 @@ export function OpportunityDetail() {
               >
                 {messageLabel}
               </button>
+              {opp.University?.slug && (
+                <Link
+                  to={`/universities/${opp.University.slug}`}
+                  className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50"
+                >
+                  <GraduationCap size={15} />
+                  Visit University Profile
+                </Link>
+              )}
+              {!opp.University && sourceOrganization?.slug && (
+                <Link
+                  to={`/organizations/${sourceOrganization.slug}`}
+                  className="mt-3 flex w-full items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-700 transition-all hover:bg-slate-50"
+                >
+                  <Building2 size={15} />
+                  Visit Organization Profile
+                </Link>
+              )}
               <p className="mt-2 text-center text-xs leading-5 text-slate-400">
                 {messageHint}
               </p>
@@ -655,7 +674,7 @@ export function OpportunityDetail() {
             </div>
 
             {/* Contact */}
-            {(opp.contact_email || opp.Organization?.contact_phone || opp.Organization?.website_url || opp.PostedBy?.contact_phone || opp.PostedBy?.website_url) && (
+            {(opp.contact_email || sourceOrganization?.contact_phone || sourceOrganization?.website_url || opp.PostedBy?.contact_phone || opp.PostedBy?.website_url) && (
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                 <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-3">Contact</h3>
                 {opp.contact_email && (
@@ -665,12 +684,12 @@ export function OpportunityDetail() {
                     <Mail size={14} /> {opp.contact_email}
                   </a>
                 )}
-                {(opp.Organization?.contact_phone || opp.PostedBy?.contact_phone) && (
-                  <p className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-slate-600"><Phone size={14} /> {opp.Organization?.contact_phone || opp.PostedBy?.contact_phone}</p>
+                {(sourceOrganization?.contact_phone || opp.PostedBy?.contact_phone) && (
+                  <p className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-slate-600"><Phone size={14} /> {sourceOrganization?.contact_phone || opp.PostedBy?.contact_phone}</p>
                 )}
-                {(opp.Organization?.website_url || opp.PostedBy?.website_url) && (
+                {(sourceOrganization?.website_url || opp.PostedBy?.website_url) && (
                   <a
-                    href={opp.Organization?.website_url || opp.PostedBy?.website_url}
+                    href={sourceOrganization?.website_url || opp.PostedBy?.website_url}
                     target="_blank"
                     rel="noreferrer"
                     className="mt-3 inline-flex items-center gap-1 text-sm font-medium hover:underline"
