@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { BadgeCheck, BookOpen, BriefcaseBusiness, ChevronLeft, ChevronRight, CircleDollarSign, Clock3, ExternalLink, Globe2, GraduationCap, Hammer, Landmark, Mail, MapPinned, Microscope, Monitor, Phone, Pin, Search, Star, Trophy, TriangleAlert, Users, HandHeart } from 'lucide-react';
+import { BadgeCheck, BookOpen, BriefcaseBusiness, ChevronLeft, ChevronRight, CircleDollarSign, Clock3, ExternalLink, Globe2, GraduationCap, Hammer, Landmark, Mail, MapPinned, Microscope, Monitor, Phone, Pin, Search, Star, Trophy, TriangleAlert, Users, HandHeart, Building2 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { opportunityApi, inboxApi } from '@/api';
 import { Spinner, Pagination, Empty } from '@/components/common';
