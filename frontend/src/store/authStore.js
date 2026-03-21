@@ -25,11 +25,11 @@ export const useAuthStore = create(
       },
 
       // Helpers
-      isAuthenticated: () => !!get().token,
-      isStudent:       () => get().user?.Role?.name === 'student',
-      isOwner:         () => get().user?.Role?.name === 'owner',
-      isOrganization:  () => get().user?.Role?.name === 'organization',
-      isAdmin:         () => get().user?.Role?.name === 'admin',
+      isAuthenticated:     () => !!get().token,
+      isStudent:           () => get().user?.Role?.name === 'student',
+      isUniversityOwner:   () => get().user?.Role?.name === 'owner',
+      isOrganizationOwner: () => get().user?.Role?.name === 'organization',
+      isAdmin:             () => get().user?.Role?.name === 'admin',
     }),
     {
       name:    'unisites-auth',   // localStorage key

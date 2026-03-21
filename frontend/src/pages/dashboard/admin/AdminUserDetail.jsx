@@ -63,7 +63,7 @@ export default function AdminUserDetail() {
     );
   }
 
-  const isOrganization = user.Role?.name === 'organization';
+  const isOrganizationOwner = user.Role?.name === 'organization';
   const avatar = avatarUrl(user.avatar_url) || user.avatar_url;
 
   return (
@@ -93,7 +93,7 @@ export default function AdminUserDetail() {
               <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', background: user.is_active ? '#f0fdf4' : '#f8fafc', color: user.is_active ? '#15803d' : '#64748b', border: `1px solid ${user.is_active ? '#bbf7d0' : '#e2e8f0'}` }}>
                 {user.is_active ? 'Active' : 'Inactive'}
               </span>
-              {isOrganization && (
+              {isOrganizationOwner && (
                 <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', background: user.is_approved ? '#f0fdfa' : '#fff7ed', color: user.is_approved ? '#0f766e' : '#d97706', border: `1px solid ${user.is_approved ? '#99f6e4' : '#fed7aa'}` }}>
                   {user.is_approved ? 'Approved' : 'Pending approval'}
                 </span>

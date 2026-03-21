@@ -12,7 +12,7 @@ const InboxIcon = ({ size = 18 }) => (
 );
 
 export default function MainLayout() {
-  const { isAuthenticated, user, logout, isOwner, isOrganization, isAdmin } = useAuth();
+  const { isAuthenticated, user, logout, isUniversityOwner, isOrganizationOwner, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const unreadNotifications = useInboxStore((s) => s.unreadNotifications);
@@ -26,7 +26,7 @@ export default function MainLayout() {
     navigate('/');
   };
 
-  const dashboardPath = isOwner ? '/owner' : isOrganization ? '/organization' : isAdmin ? '/admin' : '/dashboard';
+  const dashboardPath = isUniversityOwner ? '/owner' : isOrganizationOwner ? '/organization' : isAdmin ? '/admin' : '/dashboard';
   const inboxPath = `${dashboardPath}/inbox?context=personal`;
   const unreadInbox = unreadNotifications + unreadMessages;
   const navLinks = [
@@ -74,7 +74,7 @@ export default function MainLayout() {
 
           {/* Right side */}
           <div className="hidden md:flex items-center gap-2">
-            {(isAdmin || isOwner || isOrganization) && (
+            {(isAdmin || isUniversityOwner || isOrganizationOwner) && (
               <Link to={dashboardPath}
                 className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 duration-150 active:scale-90 hover:bg-slate-100 transition-all">
                 Dashboard
@@ -129,6 +129,7 @@ export default function MainLayout() {
             )}
           </div>
 
+          {/* Mobile Fallback */}
           <div className="flex items-center gap-2 md:hidden">
             {isAuthenticated && (
               <>
@@ -171,11 +172,12 @@ export default function MainLayout() {
         </div>
       </header>
 
+      {/* Mobile Menu */}
       {mobileMenuOpen && (
         <>
           <button
             type="button"
-            className="fixed inset-0 z-40 bg-slate-900/20 md:hidden"
+            className="fixed inset-0 z-40 bg-slate-900/5 md:hidden"
             onClick={() => setMobileMenuOpen(false)}
             aria-label="Close navigation"
           />
@@ -201,7 +203,7 @@ export default function MainLayout() {
               </nav>
 
               <div className="grid gap-2">
-                {(isAdmin || isOwner || isOrganization) && (
+                {(isAdmin || isUniversityOwner || isOrganizationOwner) && (
                   <Link
                     to={dashboardPath}
                     onClick={() => setMobileMenuOpen(false)}
@@ -254,11 +256,9 @@ export default function MainLayout() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500 text-center md:text-left">
           <span>© {new Date().getFullYear()} UniSites. All rights reserved.</span>
           <div className="flex flex-wrap justify-center gap-4 md:justify-end md:gap-6">
-            <Link to="/universities"  className="hover:text-slate-400 hover:underline duration-150 active:scale-90 transition-all">Universities</Link>
-            <Link to="/majors"        className="hover:text-slate-400 hover:underline duration-150 active:scale-90 transition-all">Majors</Link>
-            <Link to="/opportunities" className="hover:text-slate-400 hover:underline duration-150 active:scale-90 transition-all">Opportunities</Link>
-            <Link to="/feed"          className="hover:text-slate-400 hover:underline duration-150 active:scale-90 transition-all">Feed</Link>
-            <Link to="/about"         className="hover:text-slate-400 hover:underline duration-150 active:scale-90 transition-all">About</Link>
+            {navLinks.map(({to, label}) => (
+              <Link to={to} className="hover:text-slate-400 hover:underline duration-150 active:scale-90 transition-all">{label}</Link>
+            ))}
           </div>
         </div>
       </footer>

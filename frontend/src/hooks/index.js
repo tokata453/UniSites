@@ -7,16 +7,16 @@ import { authApi }      from '@/api';
 export const useAuth = () => {
   const store = useAuthStore();
   return {
-    user:            store.user,
-    token:           store.token,
-    isAuthenticated: store.isAuthenticated(),
-    isStudent:       store.isStudent(),
-    isOwner:         store.isOwner(),
-    isOrganization:  store.isOrganization(),
-    isAdmin:         store.isAdmin(),
-    setAuth:         store.setAuth,
-    setUser:         store.setUser,
-    logout:          store.logout,
+    user:                 store.user,
+    token:                store.token,
+    isAuthenticated:      store.isAuthenticated(),
+    isStudent:            store.isStudent(),
+    isUniversityOwner:    store.isUniversityOwner(),
+    isOrganizationOwner:  store.isOrganizationOwner(),
+    isAdmin:              store.isAdmin(),
+    setAuth:              store.setAuth,
+    setUser:              store.setUser,
+    logout:               store.logout,
   };
 };
 
