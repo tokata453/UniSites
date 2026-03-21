@@ -2,7 +2,9 @@ import { Outlet, Link, useNavigate, NavLink } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks';
 import { useInboxStore } from '@/store/inboxStore';
+import ToastContainer from '../common/ToastContainer';
 import logo from '@/assets/logo/UniSites-Lanscape.png';
+
 
 const InboxIcon = ({ size = 18 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -250,6 +252,8 @@ export default function MainLayout() {
       <main className="flex-1 bg-slate-50">
         <Outlet />
       </main>
+
+      <ToastContainer />
 
       {/* ── Footer ── */}
       <footer className="border-t border-slate-200 bg-white py-8 px-4 mt-16 sm:px-6">
