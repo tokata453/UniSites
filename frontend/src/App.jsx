@@ -70,38 +70,29 @@ export default function App() {
     <BrowserRouter>
       <Routes>
 
-        {/* ── Public routes with main layout ── */}
+        {/* ── Main layout ── */}
         <Route element={<MainLayout />}>
+          {/* Public routes */}
           <Route path="/"                        element={<LandingPage />} />
-          <Route path="/feed"                    element={
-            <PrivateRoute>
-              <FeedPage />
-            </PrivateRoute>
-          } />
           <Route path="/universities"            element={<UniversityList />} />
           <Route path="/universities/:slug"      element={<UniversityDetail />} />
-          <Route path="/organizations/:slug"     element={<OrganizationDetail />} />
-          <Route path="/forum"                   element={<Navigate to="/feed" replace />} />
-          <Route path="/forum/new"               element={<Navigate to="/feed" replace />} />
-          <Route path="/forum/:slug"             element={<Navigate to="/feed" replace />} />
+          <Route path="/majors"                  element={<MajorsPage />} />
+          <Route path="/majors/quiz"             element={<MajorQuiz />} />   
+          <Route path="/majors/:slug"            element={<MajorDetail />} />
           <Route path="/opportunities"           element={<OpportunitiesPage />} />
           <Route path="/opportunities/:slug"     element={<OpportunityDetail />} />
-          <Route path="/about" element={<AboutPage />} />
-          <Route path="/majors"          element={<MajorsPage />} />
-          <Route path="/majors/quiz"     element={<MajorQuiz />} />   
-          <Route path="/majors/:slug"    element={<MajorDetail />} />
-          <Route path="/login"           element={<LoginPage />} />
-          <Route path="/register"        element={<RegisterPage />} />
-          <Route path="/auth/callback"   element={<OAuthCallback />} />
-          <Route path="/auth/error"      element={<OAuthErrorPage />} />
-        </Route>
+          <Route path="/organizations/:slug"     element={<OrganizationDetail />} />
+          <Route path="/about"                   element={<AboutPage />} />
+          <Route path="/login"                   element={<LoginPage />} />
+          <Route path="/register"                element={<RegisterPage />} />
+          <Route path="/auth/callback"           element={<OAuthCallback />} />
+          <Route path="/auth/error"              element={<OAuthErrorPage />} />
+          {/* Private routes */}
+          <Route path="/feed"                    element={<PrivateRoute> <FeedPage /> </PrivateRoute>} />
+        </Route>        
 
-        {/* ── Student dashboard ── */}
-        <Route path="/dashboard" element={
-          <PrivateRoute>
-              <DashboardLayout role="student" />
-          </PrivateRoute>
-        }>
+        {/* ── Profile dashboard ── */}
+        <Route path="/dashboard"       element={<PrivateRoute> <DashboardLayout role="student" /> </PrivateRoute>}>
           <Route index                 element={<StudentOverview />} />
           <Route path="saved"          element={<StudentSaved />} />
           <Route path="profile"        element={<StudentProfile />} />
