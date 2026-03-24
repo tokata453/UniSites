@@ -65,7 +65,9 @@ export const useRefreshUser = () => {
     try {
       const res = await authApi.getMe();
       setUser(res.data.user);
-    } catch (_) {}
+    } catch {
+      return null;
+    }
   };
 };
 

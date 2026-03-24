@@ -3,22 +3,22 @@ const passport                    = require('passport');
 const { generateToken }           = require('../utils/jwt.utils');
 const { success, created, error } = require('../utils/response.utils');
 const { uniqueSlug }              = require('../utils/slug.utils');
+const { getRegistrationApprovalState } = require('../utils/status.utils');
+const { validateRegistrationInput } = require('../utils/validation.utils');
 const db                          = require('../models');
 
 // ── Local Auth ────────────────────────────────────────────────────────────────
 const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-
-    if (!name || !email || !password)
-      return error(res, 'name, email and password are required');
-    if (password.length < 8)
-      return error(res, 'Password must be at least 8 characters');
+    const validationError = validateRegistrationInput({ name, email, password });
+    if (validationError) return error(res, validationError);
 
     const exists = await db.User.findOne({ where: { email } });
     if (exists) return error(res, 'An account with that email already exists', 409);
 
     const requestedRole = ['student', 'organization'].includes(role) ? role : 'student';
+    const approvalState = getRegistrationApprovalState(requestedRole);
     const baseRole = await db.Role.findOne({ where: { name: requestedRole } });
     const user = await db.User.create({
       name,
@@ -26,7 +26,7 @@ const register = async (req, res) => {
       password,   // hashed by beforeSave hook
       provider:  'local',
       role_id:   baseRole?.id || null,
-      is_approved: true,
+      is_approved: approvalState.userIsApproved,
       is_active: true,
     });
 
@@ -42,7 +42,7 @@ const register = async (req, res) => {
         slug: uniqueSlug('organization'),
         name: 'New Organization',
         email: 'organization@gmail.com',
-        is_approved: false,
+        is_approved: approvalState.organizationIsApproved,
         is_published: false
       });
     }

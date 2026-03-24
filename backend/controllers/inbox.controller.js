@@ -3,6 +3,7 @@ const { Op } = require('sequelize');
 const db = require('../models');
 const { success, error, notFound, forbidden, created } = require('../utils/response.utils');
 const { getIO } = require('../config/socket');
+const { canAccessConversation: canAccessConversationByPolicy } = require('../utils/policy.utils');
 
 const userPreviewAttributes = ['id', 'name', 'email', 'avatar_url', 'role_id'];
 const institutionPreviewAttributes = ['id', 'name', 'slug', 'logo_url', 'owner_id'];
@@ -130,22 +131,26 @@ const canAccessConversation = async (conversation, user) => {
   if (!conversation || !user?.id) return false;
 
   if (conversation.conversation_context === 'university') {
-    return (
-      conversation.participant_user_id === user.id
-      || await userHasUniversityAccess(user, conversation.university_id)
-      || [conversation.user_one_id, conversation.user_two_id].includes(user.id)
-    );
+    return canAccessConversationByPolicy({
+      conversation,
+      userId: user.id,
+      hasUniversityAccess: await userHasUniversityAccess(user, conversation.university_id),
+    });
   }
 
   if (conversation.conversation_context === 'organization') {
-    return (
-      conversation.participant_user_id === user.id
-      || await userHasOrganizationAccess(user, conversation.organization_id)
-      || [conversation.user_one_id, conversation.user_two_id].includes(user.id)
-    );
+    return canAccessConversationByPolicy({
+      conversation,
+      userId: user.id,
+      hasOrganizationAccess: await userHasOrganizationAccess(user, conversation.organization_id),
+    });
   }
 
-  return [conversation.user_one_id, conversation.user_two_id].includes(user.id);
+  return canAccessConversationByPolicy({
+    conversation,
+    userId: user.id,
+    isAdmin: isPlatformAdmin(user),
+  });
 };
 
 const ensureAccessibleConversation = async (conversationId, user) => {

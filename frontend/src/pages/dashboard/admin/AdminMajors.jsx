@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { majorApi } from '@/api';
 import { Badge, SearchBar, Select, Table, Pagination, PageHeader, Card, Toast, ActionBtn, DeleteBtn, ConfirmModal } from './AdminShared';
 
@@ -74,7 +74,6 @@ export default function AdminMajors() {
   const [toast, setToast] = useState('');
   const [confirm, setConfirm] = useState(null);
   const [highlightedId, setHighlightedId] = useState(null);
-  const formCardRef = useRef(null);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -184,17 +183,6 @@ export default function AdminMajors() {
       showToast(err.response?.data?.message || 'Failed to save major');
     } finally {
       setSaving(false);
-    }
-  };
-
-  const toggleFlag = async (major, fieldName) => {
-    try {
-      await majorApi.update(major.id, { [fieldName]: !major[fieldName] });
-      showToast('Major updated');
-      setHighlightedId(major.id);
-      load();
-    } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to update major');
     }
   };
 

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js",
+    "test": "node --test tests/**/*.test.js",
     "db:migrate": "dotenv -e .env -- npx sequelize-cli db:migrate",
     "db:reset": "node utils/db-reset.js",
     "db:seed": "dotenv -e .env -- npx sequelize-cli db:seed:all",

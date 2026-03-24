@@ -107,7 +107,7 @@ export default function UniversityList() {
       }
     };
     fetch();
-  }, [filters, page, showAll]);
+  }, [filters, page, showAll, limit]);
 
   useEffect(() => {
     const params = {};

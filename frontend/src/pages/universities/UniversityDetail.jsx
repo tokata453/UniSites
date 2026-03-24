@@ -3,7 +3,7 @@ import { BadgeCheck, BookOpen, Bookmark, Building2, CalendarDays, ChevronDown, C
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { universityApi, authApi, inboxApi } from '@/api';
 import { Spinner, Empty } from '@/components/common';
-import { coverUrl, logoUrl, galleryUrl, formatCurrency, formatDate, cloudinaryUrl } from '@/utils';
+import { coverUrl, logoUrl, formatCurrency, formatDate, cloudinaryUrl } from '@/utils';
 import { useAuth, useToast } from '@/hooks';
 
 const TABS = ['Overview', 'Programs', 'Gallery', 'News', 'Events', 'FAQs', 'Reviews'];
@@ -208,7 +208,7 @@ export default function UniversityDetail() {
         setLoading(false);
       }
     })();
-  }, [slug]);
+  }, [error, slug]);
 
   useEffect(() => {
     if (!isAuthenticated || !uni?.id) {
@@ -310,7 +310,7 @@ export default function UniversityDetail() {
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
     };
-  }, [galleryFocusIndex, uni]);
+  }, [activityGallery.length, galleryFocusIndex]);
 
   const handleSave = async () => {
     if (!isAuthenticated) return;

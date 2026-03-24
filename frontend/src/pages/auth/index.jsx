@@ -371,7 +371,7 @@ export function OAuthCallback() {
         setErr('Failed to load profile. Redirecting...');
         setTimeout(() => navigate('/login'), 2000);
       });
-  }, []);
+  }, [navigate, setAuth]);
 
   return (
     <>

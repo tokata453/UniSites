@@ -8,7 +8,6 @@ import { avatarUrl, coverUrl, logoUrl, formatDate, formatCurrency } from '@/util
 
 // ── StudentOverview ───────────────────────────────────────────────────────────
 export function StudentOverview() {
-  const { user } = useAuth();
   const [savedCount, setSavedCount] = useState(0);
 
   useEffect(() => {

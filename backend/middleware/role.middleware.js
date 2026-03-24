@@ -1,5 +1,7 @@
 'use strict';
 const { forbidden, notFound } = require('../utils/response.utils');
+const { canManageOpportunity } = require('../utils/policy.utils');
+const { isOrganizationApproved } = require('../utils/status.utils');
 const db = require('../models');
 
 const requireRole = (...roles) => (req, res, next) => {
@@ -25,7 +27,7 @@ const isOpportunityManager = (req, res, next) => {
     attributes: ['id', 'is_approved'],
   })
     .then((organization) => {
-      if (!organization?.is_approved) {
+      if (!isOrganizationApproved(organization)) {
         return forbidden(res, 'Organization is pending admin approval');
       }
       req.organization = req.organization || organization;
@@ -92,7 +94,12 @@ const isOpportunityOwner = () => async (req, res, next) => {
         attributes: ['id'],
       });
 
-      if (opp.posted_by === req.user.id || (ownedUniversity?.id && opp.university_id === ownedUniversity.id)) {
+      if (canManageOpportunity({
+        role: 'owner',
+        userId: req.user.id,
+        opportunity: opp,
+        ownedUniversityId: ownedUniversity?.id || null,
+      })) {
         req.opportunity = opp;
         return next();
       }
@@ -104,7 +111,12 @@ const isOpportunityOwner = () => async (req, res, next) => {
         attributes: ['id'],
       });
 
-      if (!ownedOrganization?.id || opp.organization_id !== ownedOrganization.id) {
+      if (!canManageOpportunity({
+        role: 'organization',
+        userId: req.user.id,
+        opportunity: opp,
+        ownedOrganizationId: ownedOrganization?.id || null,
+      })) {
         return forbidden(res, 'You do not own this opportunity');
       }
 

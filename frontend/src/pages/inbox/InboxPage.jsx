@@ -5,7 +5,6 @@ import { useAuth, useToast } from '@/hooks';
 import { useInboxStore } from '@/store/inboxStore';
 
 const shell = 'bg-white border border-slate-200 rounded-2xl shadow-sm';
-const input = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-700 outline-none transition-all focus:border-[#1B3A6B] focus:ring-2 focus:ring-[#1B3A6B]/10';
 const primaryBtn = 'inline-flex items-center justify-center rounded-xl bg-[#1B3A6B] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60';
 const secondaryBtn = 'inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-600 transition-all hover:bg-slate-50';
 const iconBtn = 'inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-500 transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-700';
@@ -196,7 +195,7 @@ export default function InboxPage() {
   const setUnreadNotifications = useInboxStore((s) => s.setUnreadNotifications);
   const setUnreadMessages = useInboxStore((s) => s.setUnreadMessages);
   const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [, setUnreadCount] = useState(0);
   const [conversations, setConversations] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -209,7 +208,7 @@ export default function InboxPage() {
   const [selectedRecipient, setSelectedRecipient] = useState(null);
   const [composeMessage, setComposeMessage] = useState('');
   const [draftMessage, setDraftMessage] = useState('');
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [showNotifications] = useState(false);
   const [creating, setCreating] = useState(false);
   const [sending, setSending] = useState(false);
   const [ownedUniversity, setOwnedUniversity] = useState(null);
@@ -677,7 +676,7 @@ export default function InboxPage() {
           socket.emit('leave_user', user.id);
           socket.disconnect();
         };
-      } catch (_) {
+      } catch {
         // Realtime is additive; ignore script load issues.
       }
     };
@@ -703,7 +702,7 @@ export default function InboxPage() {
       try {
         const res = await inboxApi.searchUsers(composeQuery.trim());
         setUserResults(res.data.users || []);
-      } catch (_) {
+      } catch {
         setUserResults([]);
       } finally {
         setSearchingUsers(false);

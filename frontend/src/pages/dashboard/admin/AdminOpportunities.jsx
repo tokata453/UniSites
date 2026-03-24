@@ -36,7 +36,6 @@ export default function AdminOpportunities() {
   const [editing, setEditing] = useState(null);
   const [confirm, setConfirm] = useState(null);
   const [toast,   setToast]   = useState('');
-  const [orgSearch, setOrgSearch] = useState('');
   const [deadlineFilter, setDeadlineFilter] = useState('');
   const [featuredFilter, setFeaturedFilter] = useState('');
   const [viewsMin, setViewsMin] = useState('');
@@ -55,8 +54,6 @@ export default function AdminOpportunities() {
 
   const filteredOpps = useMemo(() => (
     opps.filter((opp) => {
-      const orgLabel = opp.University?.name || opp.PostedBy?.name || 'External';
-      if (orgSearch && !orgLabel.toLowerCase().includes(orgSearch.toLowerCase())) return false;
       if (featuredFilter === 'true' && !opp.is_featured) return false;
       if (featuredFilter === 'false' && opp.is_featured) return false;
       if (viewsMin && Number(opp.views_count || 0) < Number(viewsMin)) return false;
@@ -65,7 +62,7 @@ export default function AdminOpportunities() {
       if (deadlineFilter === 'expired' && (!opp.deadline || new Date(opp.deadline) >= new Date())) return false;
       return true;
     })
-  ), [opps, orgSearch, featuredFilter, viewsMin, deadlineFilter]);
+  ), [opps, featuredFilter, viewsMin, deadlineFilter]);
 
   const handleDelete = async () => {
     if (!confirm) return;

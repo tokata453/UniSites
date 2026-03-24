@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BadgeCheck, CalendarDays, Globe2, Image as ImageIcon, Layers3, Mail, Phone, Sparkles } from 'lucide-react';
 import { opportunityApi, organizationApi } from '@/api';
@@ -108,7 +108,7 @@ export default function OrganizationProfile() {
   const [logoFile, setLogoFile] = useState(null);
   const [logoPreview, setLogoPreview] = useState('');
 
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
       const [orgRes, oppRes] = await Promise.all([
@@ -145,11 +145,11 @@ export default function OrganizationProfile() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.email]);
 
   useEffect(() => {
     loadDashboard();
-  }, [user?.email]);
+  }, [loadDashboard]);
 
   useEffect(() => {
     if (!logoFile) {

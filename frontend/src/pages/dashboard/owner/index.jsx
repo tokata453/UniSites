@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { universityApi, uploadApi, opportunityApi, majorApi } from '@/api';
 import { Spinner } from '@/components/common';
 import { useToast } from '@/hooks';
-import { formatCurrency, formatDate, galleryUrl, logoUrl, coverUrl, optimizeImageFile, cloudinaryUrl } from '@/utils';
+import { formatCurrency, formatDate, logoUrl, coverUrl, optimizeImageFile, cloudinaryUrl } from '@/utils';
 
 const TYPE_OPTIONS = [
   { value: 'public', label: 'Public' },
@@ -2552,7 +2552,7 @@ export function OwnerReviews() {
       setReviews(nextReviews);
       setReplyDrafts(Object.fromEntries(nextReviews.map((review) => [review.id, review.owner_reply || ''])));
       setOpenReplyIds((prev) => prev.filter((id) => nextReviews.some((review) => review.id === id)));
-    } catch (err) {
+    } catch {
       setReviews([]);
     } finally {
       setReviewsLoading(false);

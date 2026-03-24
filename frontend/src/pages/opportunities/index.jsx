@@ -122,7 +122,7 @@ export function OpportunitiesPage() {
         setLoading(false);
       }
     })();
-  }, [filters, page, showAll]);
+  }, [filters, page, showAll, limit]);
 
   return (
     <div className="bg-slate-50 min-h-screen">
@@ -207,7 +207,6 @@ export function OpportunitiesPage() {
               {opportunities.map((opp) => {
                 const expired = isExpired(opp.deadline);
                 const days    = opp.deadline && !expired ? daysLeft(opp.deadline) : null;
-                const ts      = TYPE_STYLES[opp.type] || {};
                 return (
                   <Link key={opp.id} to={`/opportunities/${opp.slug}`} className="group block">
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 h-full overflow-hidden flex flex-col">
@@ -379,7 +378,6 @@ export function OpportunityDetail() {
   if (loading) return <div className="flex justify-center py-32"><Spinner size="lg" /></div>;
   if (!opp)    return <div className="text-center py-32 text-slate-400">Opportunity not found.</div>;
 
-  const ts      = TYPE_STYLES[opp.type] || {};
   const expired = isExpired(opp.deadline);
   const days    = opp.deadline && !expired ? daysLeft(opp.deadline) : null;
   const sourceOrganization = opp.Organization || opp.PostedBy?.Organization || null;

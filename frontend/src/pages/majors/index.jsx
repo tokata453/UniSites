@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, BookOpen, BriefcaseBusiness, GraduationCap, Rocket, Search, School, Sparkles, Target, TriangleAlert } from 'lucide-react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { majorApi } from '@/api';
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
@@ -621,7 +621,6 @@ export function MajorDetail() {
 
 // ── MajorQuiz ─────────────────────────────────────────────────────────────────
 export function MajorQuiz() {
-  const navigate          = useNavigate();
   const [questions,  setQuestions]  = useState([]);
   const [answers,    setAnswers]    = useState({});
   const [loading,    setLoading]    = useState(true);

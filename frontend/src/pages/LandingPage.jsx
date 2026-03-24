@@ -12,7 +12,7 @@ function useInView(threshold = 0.12) {
     const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold });
     if (ref.current) obs.observe(ref.current);
     return () => obs.disconnect();
-  }, []);
+  }, [threshold]);
   return [ref, visible];
 }
 
@@ -49,7 +49,6 @@ export default function LandingPage() {
   const [type,   setType]   = useState('All');
   const [typeOpen, setTypeOpen] = useState(false);
   const [slide,  setSlide]  = useState(0);
-  const [fading, setFading] = useState(false);
   const [featuredUnis,   setFeaturedUnis]   = useState([]);
   const [featuredMajors, setFeaturedMajors] = useState([]);
   const [uniLoading,     setUniLoading]     = useState(true);
@@ -82,8 +81,6 @@ export default function LandingPage() {
     timerRef.current = setInterval(() => {
       setSlide(p => {
         const next = (p + 1) % BG_SLIDES.length;
-        setFading(true);
-        setTimeout(() => setFading(false), 700);
         return next;
       });
     }, 4500);
@@ -91,7 +88,7 @@ export default function LandingPage() {
 
   useEffect(() => { startTimer(); return () => clearInterval(timerRef.current); }, []);
 
-  const goSlide = (idx) => { setSlide(idx); setFading(true); setTimeout(() => setFading(false), 700); startTimer(); };
+  const goSlide = (idx) => { setSlide(idx); startTimer(); };
 
   const handleSearch = (e) => {
     e.preventDefault();

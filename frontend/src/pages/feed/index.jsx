@@ -329,7 +329,9 @@ export default function FeedPage() {
         liked_by_me: res.data.liked,
         like_count: res.data.like_count,
       });
-    } catch {}
+    } catch {
+      return;
+    }
   };
 
   const handleSubmitComment = async (item) => {
@@ -353,7 +355,9 @@ export default function FeedPage() {
         comment_count: Number(item.comment_count || 0) + 1,
       });
       success('Comment posted');
-    } catch {} finally {
+    } catch {
+      return;
+    } finally {
       setCommentSubmitting((prev) => ({ ...prev, [key]: false }));
     }
   };
