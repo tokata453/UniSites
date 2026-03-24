@@ -291,6 +291,7 @@ exports.getOrganizations = async (req, res) => {
     if (search) {
       where[Op.or] = [
         { name: { [Op.iLike]: `%${search}%` } },
+        { shortcut_name: { [Op.iLike]: `%${search}%` } },
         { email: { [Op.iLike]: `%${search}%` } },
       ];
       ownerWhere[Op.or] = [
@@ -480,7 +481,12 @@ exports.getUniversities = async (req, res) => {
     if (!isAdmin(req, res)) return;
     const { page = 1, limit = 20, search, type, published } = req.query;
     const where = {};
-    if (search) where.name = { [Op.iLike]: `%${search}%` };
+    if (search) {
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${search}%` } },
+        { shortcut_name: { [Op.iLike]: `%${search}%` } },
+      ];
+    }
     if (type) where.university_type = type;
     if (published !== undefined) where.is_published = published === 'true';
     const { count, rows } = await db.University.findAndCountAll({

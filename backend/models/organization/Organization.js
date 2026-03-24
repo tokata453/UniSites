@@ -32,6 +32,9 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(255),
       allowNull: false,
     },
+    shortcut_name: {
+      type: DataTypes.STRING(50),
+    },
     tagline: {
       type: DataTypes.STRING(255),
     },

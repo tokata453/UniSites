@@ -417,10 +417,21 @@ export function MajorDetail() {
   );
 
   useEffect(() => {
-    majorApi.getBySlug(slug)
+    const controller = new AbortController();
+
+    majorApi.getBySlug(slug, {
+      signal: controller.signal,
+      skipGlobalErrorToast: true,
+    })
       .then(res => setMajor(res.data?.major || res.data?.data || null))
-      .catch(() => {})
+      .catch((err) => {
+        if (err?.code === 'ERR_CANCELED') return;
+      })
       .finally(() => setLoading(false));
+
+    return () => {
+      controller.abort();
+    };
   }, [slug]);
 
   useEffect(() => {

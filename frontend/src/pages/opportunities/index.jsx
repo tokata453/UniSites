@@ -359,9 +359,21 @@ export function OpportunityDetail() {
   const [imageIndex, setImageIndex] = useState(0);
 
   useEffect(() => {
-    opportunityApi.getBySlug(slug)
+    const controller = new AbortController();
+
+    opportunityApi.getBySlug(slug, {
+      signal: controller.signal,
+      skipGlobalErrorToast: true,
+    })
       .then((res) => setOpp(res.data.opportunity))
+      .catch((err) => {
+        if (err?.code === 'ERR_CANCELED') return;
+      })
       .finally(() => setLoading(false));
+
+    return () => {
+      controller.abort();
+    };
   }, [slug]);
 
   useEffect(() => {

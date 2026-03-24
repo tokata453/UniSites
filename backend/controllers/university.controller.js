@@ -5,6 +5,35 @@ const { success, created, error, notFound } = require('../utils/response.utils')
 const { getPagination, paginateResponse } = require('../utils/pagination.utils');
 const { uniqueSlug } = require('../utils/slug.utils');
 
+const VIEW_TRACK_TTL_MS = 5 * 60 * 1000;
+const recentUniversityViews = new Map();
+
+const getUniversityViewFingerprint = (req, universityId) => {
+  const userId = req.user?.id || 'guest';
+  const ip = req.ip || req.headers['x-forwarded-for'] || 'unknown-ip';
+  const userAgent = req.get('user-agent') || 'unknown-agent';
+  return `${universityId}:${userId}:${ip}:${userAgent}`;
+};
+
+const shouldTrackUniversityView = (req, universityId) => {
+  const fingerprint = getUniversityViewFingerprint(req, universityId);
+  const now = Date.now();
+  const expiresAt = recentUniversityViews.get(fingerprint) || 0;
+
+  if (expiresAt > now) return false;
+
+  recentUniversityViews.set(fingerprint, now + VIEW_TRACK_TTL_MS);
+
+  // Light cleanup to avoid the in-memory map growing forever.
+  if (recentUniversityViews.size > 5000) {
+    for (const [key, value] of recentUniversityViews.entries()) {
+      if (value <= now) recentUniversityViews.delete(key);
+    }
+  }
+
+  return true;
+};
+
 const list = async (req, res) => {
   try {
     const { page = 1, limit = 12, search, province, type, tuition_min, tuition_max, scholarship, dormitory, sort = 'rating_avg', order = 'DESC' } = req.query;
@@ -12,8 +41,9 @@ const list = async (req, res) => {
     const where = { is_published: true };
     if (search) {
       where[Op.or] = [
-        { name:     { [Op.iLike]: `%${search}%` } },
-        { province: { [Op.iLike]: `%${search}%` } },
+        { name:          { [Op.iLike]: `%${search}%` } },
+        { shortcut_name: { [Op.iLike]: `%${search}%` } },
+        { province:      { [Op.iLike]: `%${search}%` } },
       ];
     }
     if (province)              where.province               = province;
@@ -31,7 +61,7 @@ const list = async (req, res) => {
       where,
       ...getPagination({ page, limit }),
       order: [[safeSort, safeOrder]],
-      attributes: ['id', 'slug', 'name', 'name_km', 'logo_url', 'cover_url', 'type', 'province', 'tuition_min', 'tuition_max', 'rating_avg', 'review_count', 'student_count', 'is_verified', 'is_featured', 'scholarship_available', 'dormitory_available', 'founded_year'],
+      attributes: ['id', 'slug', 'name', 'shortcut_name', 'name_km', 'logo_url', 'cover_url', 'type', 'province', 'tuition_min', 'tuition_max', 'rating_avg', 'review_count', 'student_count', 'is_verified', 'is_featured', 'scholarship_available', 'dormitory_available', 'founded_year'],
     });
     return success(res, paginateResponse(rows, count, page, limit));
   } catch (err) {
@@ -45,7 +75,7 @@ const getFeatured = async (req, res) => {
       where: { is_featured: true, is_published: true },
       limit: 6,
       order: [['rating_avg', 'DESC']],
-      attributes: ['id', 'slug', 'name', 'logo_url', 'cover_url', 'type', 'province', 'rating_avg', 'review_count', 'is_verified', 'scholarship_available'],
+      attributes: ['id', 'slug', 'name', 'shortcut_name', 'logo_url', 'cover_url', 'type', 'province', 'rating_avg', 'review_count', 'is_verified', 'scholarship_available'],
     });
     return success(res, { universities });
   } catch (err) {
@@ -159,6 +189,8 @@ const getBySlug = async (req, res) => {
     universityJson.Reviews = reviews;
 
     success(res, { university: universityJson });
+
+    if (!shouldTrackUniversityView(req, university.id)) return;
 
     Promise.resolve().then(async () => {
       await university.increment('views_count');

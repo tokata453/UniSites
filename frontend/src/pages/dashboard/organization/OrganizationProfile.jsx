@@ -82,6 +82,7 @@ export default function OrganizationProfile() {
   const { user } = useAuth();
   const [form, setForm] = useState({
     name: '',
+    shortcut_name: '',
     tagline: '',
     category: '',
     industry: '',
@@ -120,6 +121,7 @@ export default function OrganizationProfile() {
       setOpportunities(oppRes.data.opportunities || []);
       setForm({
         name: next?.name || '',
+        shortcut_name: next?.shortcut_name || '',
         tagline: next?.tagline || '',
         category: next?.category || '',
         industry: next?.industry || '',
@@ -215,6 +217,7 @@ export default function OrganizationProfile() {
     try {
       const fd = new FormData();
       fd.append('name', form.name);
+      fd.append('shortcut_name', form.shortcut_name);
       fd.append('tagline', form.tagline);
       fd.append('category', form.category);
       fd.append('industry', form.industry);
@@ -377,6 +380,7 @@ export default function OrganizationProfile() {
         <Panel title="Core Information" description="This mirrors the public organization page and should stay clear and current." action={<button type="button" onClick={save} disabled={saving} className={primaryBtn}>{saving ? 'Saving...' : 'Save Changes'}</button>}>
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Organization Name"><input className={inputClass} value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Organization name" /></Field>
+            <Field label="Shortcut Name"><input className={inputClass} value={form.shortcut_name} onChange={(e) => setForm((prev) => ({ ...prev, shortcut_name: e.target.value.toUpperCase() }))} placeholder="AUPP" maxLength={50} /></Field>
             <Field label="Tagline"><input className={inputClass} value={form.tagline} onChange={(e) => setForm((prev) => ({ ...prev, tagline: e.target.value }))} placeholder="A short one-line summary of your mission" /></Field>
             <Field label="Category"><input className={inputClass} value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="NGO, Company, Foundation, Exchange Program..." /></Field>
             <Field label="Industry"><input className={inputClass} value={form.industry} onChange={(e) => setForm((prev) => ({ ...prev, industry: e.target.value }))} placeholder="Education, Technology, Development..." /></Field>

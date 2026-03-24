@@ -42,16 +42,34 @@ export default function OrganizationDetail() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
     (async () => {
       try {
-        const res = await organizationApi.getBySlug(slug);
-        setOrganization(res.data.organization);
-      } catch {
-        setOrganization(null);
+        const res = await organizationApi.getBySlug(slug, {
+          signal: controller.signal,
+          skipGlobalErrorToast: true,
+        });
+        if (!cancelled) {
+          setOrganization(res.data.organization);
+        }
+      } catch (err) {
+        if (err?.code === 'ERR_CANCELED') return;
+        if (!cancelled) {
+          setOrganization(null);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [slug]);
 
   const gallery = useMemo(
@@ -165,6 +183,7 @@ export default function OrganizationDetail() {
               {opportunities.length > 0 && <Badge tone="blue"><Star size={12} className="fill-current" /> Active Opportunities</Badge>}
             </div>
             <h1 className="text-2xl font-bold text-slate-800 md:text-3xl">{organization.name}</h1>
+            {organization.shortcut_name && <p className="mt-1 text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">{organization.shortcut_name}</p>}
             {organization.tagline && <p className="mt-2 max-w-3xl text-sm text-slate-600 md:text-base">{organization.tagline}</p>}
             <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-500">
               {(contact.address || organization.location) && <span className="inline-flex items-center gap-1"><MapPin size={14} /> {contact.address || organization.location}</span>}

@@ -18,12 +18,20 @@ module.exports = {
       `SELECT id, email FROM users WHERE email IN ('careers@cambodiacareercenter.org', 'mobility@aseancambodia.org', 'programs@younginnovatorscambodia.org')`,
       { type: queryInterface.sequelize.QueryTypes.SELECT },
     );
+    const organizations = await queryInterface.sequelize.query(
+      `SELECT id, email FROM organizations WHERE email IN ('careers@cambodiacareercenter.org', 'mobility@aseancambodia.org', 'programs@younginnovatorscambodia.org')`,
+      { type: queryInterface.sequelize.QueryTypes.SELECT },
+    );
     const uniMap = Object.fromEntries(unis.map((u) => [u.slug, u.id]));
     const adminId = admin[0]?.id || null;
     const orgUserMap = Object.fromEntries(orgUsers.map((user) => [user.email, user.id]));
+    const organizationMap = Object.fromEntries(organizations.map((organization) => [organization.email, organization.id]));
     const careerCenterId = orgUserMap["careers@cambodiacareercenter.org"] || adminId;
     const aseanMobilityId = orgUserMap["mobility@aseancambodia.org"] || adminId;
     const youngInnovatorsId = orgUserMap["programs@younginnovatorscambodia.org"] || adminId;
+    const careerCenterOrgId = organizationMap["careers@cambodiacareercenter.org"] || null;
+    const aseanMobilityOrgId = organizationMap["mobility@aseancambodia.org"] || null;
+    const youngInnovatorsOrgId = organizationMap["programs@younginnovatorscambodia.org"] || null;
 
     const rupp = uniMap["royal-university-of-phnom-penh"];
     const itc = uniMap["institute-of-technology-of-cambodia"];
@@ -1492,6 +1500,7 @@ module.exports = {
           "Young Innovators Cambodia is running a practical digital skills bootcamp for university students and fresh graduates focused on teamwork, design thinking, presentations, spreadsheets, and digital project execution. Participants will build a real mini project and receive mentorship from local trainers.",
         type: "workshop",
         university_id: null,
+        organization_id: youngInnovatorsOrgId,
         posted_by: youngInnovatorsId,
         deadline: "2026-08-05",
         start_date: "2026-08-15",
@@ -1531,6 +1540,7 @@ module.exports = {
           "Cambodia Career Center is matching students with short-term paid internships in digital marketing, community outreach, and content support across partner companies in Phnom Penh. Interns will receive onboarding, supervision, and a completion reference letter.",
         type: "internship",
         university_id: null,
+        organization_id: careerCenterOrgId,
         posted_by: careerCenterId,
         deadline: "2026-07-25",
         start_date: "2026-08-10",
@@ -1570,6 +1580,7 @@ module.exports = {
           "ASEAN Mobility Cambodia is recruiting student volunteers to support regional student exchange briefings, airport welcome coordination, and intercultural orientation events for inbound and outbound exchange participants.",
         type: "volunteer",
         university_id: null,
+        organization_id: aseanMobilityOrgId,
         posted_by: aseanMobilityId,
         deadline: "2026-06-20",
         start_date: "2026-07-01",

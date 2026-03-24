@@ -75,6 +75,9 @@ export default function OrganizationList() {
   );
 
   useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
     const load = async () => {
       setLoading(true);
       try {
@@ -89,17 +92,32 @@ export default function OrganizationList() {
           location: filters.location || undefined,
           verified: filters.verified ? 'true' : undefined,
         };
-        const res = await organizationApi.list(params);
-        setOrganizations(res.data.organizations || []);
-        setTotal(res.data.meta?.total || res.data.total || 0);
-      } catch {
-        setOrganizations([]);
-        setTotal(0);
+        const res = await organizationApi.list(params, {
+          signal: controller.signal,
+          skipGlobalErrorToast: true,
+        });
+        if (!cancelled) {
+          setOrganizations(res.data.organizations || []);
+          setTotal(res.data.meta?.total || res.data.total || 0);
+        }
+      } catch (err) {
+        if (err?.code === 'ERR_CANCELED') return;
+        if (!cancelled) {
+          setOrganizations([]);
+          setTotal(0);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
     load();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [filters, page, showAll, limit]);
 
   useEffect(() => {

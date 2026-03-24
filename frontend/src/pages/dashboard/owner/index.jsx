@@ -67,6 +67,7 @@ const dangerBtn = 'inline-flex items-center justify-center rounded-xl border bor
 
 const emptyProfileForm = {
   name: '',
+  shortcut_name: '',
   name_km: '',
   type: 'private',
   description: '',
@@ -854,6 +855,7 @@ export function OwnerProfile() {
     setForm({
       ...emptyProfileForm,
       ...university,
+      shortcut_name: university.shortcut_name ?? '',
       type: university.type || university.university_type || 'private',
       founded_year: university.founded_year ?? '',
       student_count: university.student_count ?? '',
@@ -871,6 +873,7 @@ export function OwnerProfile() {
     try {
       await universityApi.update(university.id, {
         ...form,
+        shortcut_name: form.shortcut_name,
         founded_year: numericValue(form.founded_year),
         student_count: numericValue(form.student_count),
         tuition_min: numericValue(form.tuition_min),
@@ -923,6 +926,7 @@ export function OwnerProfile() {
         <Panel title="Core Information" description="This appears at the top of the public university page.">
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="University Name"><TextInput value={form.name} onChange={(e) => setField('name', e.target.value)} placeholder="University name" /></Field>
+            <Field label="Shortcut Name"><TextInput value={form.shortcut_name} onChange={(e) => setField('shortcut_name', e.target.value.toUpperCase())} placeholder="AUPP" /></Field>
             <Field label="Khmer Name"><TextInput value={form.name_km} onChange={(e) => setField('name_km', e.target.value)} placeholder="Khmer name" /></Field>
             <Field label="Type"><SelectInput value={form.type} onChange={(e) => setField('type', e.target.value)} options={TYPE_OPTIONS} /></Field>
             <Field label="Province"><TextInput value={form.province} onChange={(e) => setField('province', e.target.value)} placeholder="Province" /></Field>

@@ -18,6 +18,7 @@ const list = async (req, res) => {
       const q = req.query.search.trim();
       where[Op.or] = [
         { name: { [Op.iLike]: `%${q}%` } },
+        { shortcut_name: { [Op.iLike]: `%${q}%` } },
         { tagline: { [Op.iLike]: `%${q}%` } },
         { category: { [Op.iLike]: `%${q}%` } },
         { industry: { [Op.iLike]: `%${q}%` } },
@@ -37,6 +38,7 @@ const list = async (req, res) => {
         'id',
         'slug',
         'name',
+        'shortcut_name',
         'tagline',
         'category',
         'industry',
@@ -167,6 +169,7 @@ const upsertMine = async (req, res) => {
   try {
     const payload = {
       name: req.body.name,
+      shortcut_name: req.body.shortcut_name,
       tagline: req.body.tagline,
       category: req.body.category,
       industry: req.body.industry,

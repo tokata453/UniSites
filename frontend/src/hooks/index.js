@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useUIStore }   from '@/store/uiStore';
 import { authApi }      from '@/api';
@@ -23,11 +23,15 @@ export const useAuth = () => {
 // ── Toast helper ──────────────────────────────────────────────────────────────
 export const useToast = () => {
   const { toast } = useUIStore();
-  return {
-    success: (msg) => toast(msg, 'success'),
-    error:   (msg) => toast(msg, 'error'),
-    info:    (msg) => toast(msg, 'info'),
-  };
+  const success = useCallback((msg) => toast(msg, 'success'), [toast]);
+  const error = useCallback((msg) => toast(msg, 'error'), [toast]);
+  const info = useCallback((msg) => toast(msg, 'info'), [toast]);
+
+  return useMemo(() => ({
+    success,
+    error,
+    info,
+  }), [error, info, success]);
 };
 
 // ── Generic data fetcher ──────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BadgeCheck, BookOpen, Bookmark, Building2, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Clock3, Facebook, Globe2, GraduationCap, House, Mail, MapPin, MapPinned, Phone, School, Star, Trophy, Users } from 'lucide-react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { universityApi, authApi, inboxApi } from '@/api';
@@ -198,16 +198,39 @@ export default function UniversityDetail() {
   });
 
   useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+
     (async () => {
       try {
-        const res = await universityApi.getBySlug(slug);
-        setUni(res.data.university);
-      } catch {
-        error('University not found');
+        const res = await universityApi.getBySlug(slug, {
+          signal: controller.signal,
+          skipGlobalErrorToast: true,
+        });
+        if (!cancelled) {
+          setUni(res.data.university);
+        }
+      } catch (err) {
+        if (err?.code === 'ERR_CANCELED') return;
+        if (cancelled) return;
+        setUni(null);
+        const message = err?.code === 'ECONNABORTED'
+          ? 'Request timed out while loading this university.'
+          : err?.response?.status === 404
+            ? 'University not found'
+            : err?.response?.data?.message || 'Failed to load university details';
+        error(message);
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     })();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, [error, slug]);
 
   useEffect(() => {
@@ -287,6 +310,45 @@ export default function UniversityDetail() {
       return firstProgram ? { [firstProgram.id]: true } : {};
     });
   }, [uni?.Faculties]);
+
+  const activityGallery = useMemo(() => ([
+    ...((uni?.Gallery || []).map((item) => ({
+      id: item.id,
+      url: item.public_id || item.url,
+      title: item.caption || 'Gallery image',
+      kind: 'Gallery',
+      source: 'gallery',
+      uploadCategory: item.category || 'other',
+    }))),
+    ...((uni?.News || []).flatMap((item) => {
+      const images = Array.isArray(item.image_urls) && item.image_urls.length
+        ? item.image_urls
+        : item.cover_url
+          ? [item.cover_url]
+          : [];
+      return images.map((image, index) => ({
+        id: `news-${item.id}-${index}`,
+        url: image,
+        title: item.title,
+        kind: 'News',
+        source: 'news',
+      }));
+    })),
+    ...((uni?.Events || []).flatMap((item) => {
+      const images = Array.isArray(item.image_urls) && item.image_urls.length
+        ? item.image_urls
+        : item.cover_url
+          ? [item.cover_url]
+          : [];
+      return images.map((image, index) => ({
+        id: `event-${item.id}-${index}`,
+        url: image,
+        title: item.title,
+        kind: 'Event',
+        source: 'event',
+      }));
+    })),
+  ]), [uni?.Events, uni?.Gallery, uni?.News]);
 
   useEffect(() => {
     if (galleryFocusIndex === null) return undefined;
@@ -431,44 +493,6 @@ export default function UniversityDetail() {
   const testimonials = (uni.Testimonials || []).filter((item) => item.is_approved);
   const programLanguages = Array.from(new Set(allPrograms.map((program) => program.language).filter(Boolean)));
   const approvedReviews = liveReviews.length > 0 ? liveReviews : (uni.Reviews || []).filter((review) => review.is_approved);
-  const activityGallery = [
-    ...(uni.Gallery || []).map((item) => ({
-      id: item.id,
-      url: item.public_id || item.url,
-      title: item.caption || 'Gallery image',
-      kind: 'Gallery',
-      source: 'gallery',
-      uploadCategory: item.category || 'other',
-    })),
-    ...(uni.News || []).flatMap((item) => {
-      const images = Array.isArray(item.image_urls) && item.image_urls.length
-        ? item.image_urls
-        : item.cover_url
-        ? [item.cover_url]
-        : [];
-      return images.map((image, index) => ({
-        id: `news-${item.id}-${index}`,
-        url: image,
-        title: item.title,
-        kind: 'News',
-        source: 'news',
-      }));
-    }),
-    ...(uni.Events || []).flatMap((item) => {
-      const images = Array.isArray(item.image_urls) && item.image_urls.length
-        ? item.image_urls
-        : item.cover_url
-        ? [item.cover_url]
-        : [];
-      return images.map((image, index) => ({
-        id: `event-${item.id}-${index}`,
-        url: image,
-        title: item.title,
-        kind: 'Event',
-        source: 'event',
-      }));
-    }),
-  ];
   const uploadedGalleryCategoryOptions = [
     { value: 'all', label: 'All uploaded' },
     ...Object.entries(GALLERY_CATEGORY_LABELS).map(([value, label]) => ({ value, label })),
@@ -520,6 +544,7 @@ export default function UniversityDetail() {
               {uni.is_featured           && <Badge color="orange"><span className="inline-flex items-center gap-1"><Star size={12} className="fill-current" /> Featured</span></Badge>}
             </div>
             <h1 className="text-2xl md:text-3xl font-bold text-slate-800">{uni.name}</h1>
+            {uni.shortcut_name && <p className="text-slate-400 mt-0.5 text-sm font-semibold uppercase tracking-[0.2em]">{uni.shortcut_name}</p>}
             {uni.name_km && <p className="text-slate-500 mt-0.5 text-sm">{uni.name_km}</p>}
             <div className="flex flex-wrap gap-4 mt-3 text-sm text-slate-500">
               {uni.province      && <span className="inline-flex items-center gap-1"><MapPin size={14} /> {uni.province}</span>}
