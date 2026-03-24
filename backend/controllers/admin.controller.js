@@ -163,10 +163,7 @@ exports.getStats = async (req, res) => {
     ]);
     const pendingUnis = await db.University.count({ where: { is_published: false } });
     const pendingReviews = await db.UniversityReview.count({ where: { is_approved: false } });
-    const pendingOrganizations = await db.User.count({
-      where: { is_approved: false },
-      include: [{ model: db.Role, as: 'Role', where: { name: 'organization' } }],
-    });
+    const pendingOrganizations = await db.Organization.count({ where: { is_approved: false } });
     const pendingOpps = await db.Opportunity.count({ where: { is_published: false } });
     return success(res, { stats: { users, universities, opportunities, reviews, students, owners, organizations, admins, pendingUnis, pendingReviews, pendingOrganizations, pendingOpps } });
   } catch (e) { serverError(res, e.message); }
@@ -303,7 +300,7 @@ exports.getOrganizations = async (req, res) => {
     }
 
     if (published !== undefined) where.is_published = published === 'true';
-    if (approved !== undefined) ownerWhere.is_approved = approved === 'true';
+    if (approved !== undefined) where.is_approved = approved === 'true';
 
     const { count, rows } = await db.Organization.findAndCountAll({
       where,
@@ -313,7 +310,7 @@ exports.getOrganizations = async (req, res) => {
         {
           model: db.User,
           as: 'Owner',
-          attributes: ['id', 'name', 'email', 'avatar_url', 'is_approved', 'is_active'],
+          attributes: ['id', 'name', 'email', 'avatar_url', 'is_active'],
           where: ownerWhere,
           required: Object.keys(ownerWhere).length > 0,
         },
@@ -353,6 +350,9 @@ exports.createOrganization = async (req, res) => {
       instagram_url: req.body.instagram_url || null,
       linkedin_url: req.body.linkedin_url || null,
       owner_id: req.body.owner_id,
+      is_approved: Object.prototype.hasOwnProperty.call(req.body, 'is_approved')
+        ? Boolean(req.body.is_approved)
+        : false,
       is_verified: Boolean(req.body.is_verified),
       is_published: Object.prototype.hasOwnProperty.call(req.body, 'is_published')
         ? Boolean(req.body.is_published)
@@ -402,7 +402,10 @@ exports.getUsers = async (req, res) => {
     const roleWhere = role ? { name: role } : {};
     const { count, rows } = await db.User.findAndCountAll({
       where, limit: +limit, offset: (+page - 1) * +limit,
-      include: [{ model: db.Role, as: 'Role', where: roleWhere, required: !!role }],
+      include: [
+        { model: db.Role, as: 'Role', where: roleWhere, required: !!role },
+        { model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'is_approved'] },
+      ],
       attributes: { exclude: ['password', 'provider_id'] },
       order: [['created_at', 'DESC']],
     });
@@ -417,7 +420,10 @@ exports.getUser = async (req, res) => {
     if (!isAdmin(req, res)) return;
     const user = await db.User.findByPk(req.params.id, {
       attributes: { exclude: ['password', 'provider_id'] },
-      include: [{ model: db.Role, as: 'Role' }],
+      include: [
+        { model: db.Role, as: 'Role' },
+        { model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'is_approved'] },
+      ],
     });
     if (!user) return notFound(res, 'User not found');
 

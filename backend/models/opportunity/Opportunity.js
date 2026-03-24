@@ -5,8 +5,8 @@ module.exports = (sequelize, DataTypes) => {
   class Opportunity extends Model {
     static associate(db) {
       Opportunity.belongsTo(db.University, { foreignKey: 'university_id', as: 'University' });
+      Opportunity.belongsTo(db.Organization, { foreignKey: 'organization_id', as: 'Organization' });
       Opportunity.belongsTo(db.User, { foreignKey: 'posted_by', as: 'PostedBy' });
-      Opportunity.belongsTo(db.Organization, { foreignKey: 'posted_by', targetKey: 'owner_id', as: 'Organization', constraints: false });
       Opportunity.hasMany(db.OpportunityTag, { foreignKey: 'opportunity_id', as: 'Tags', onDelete: 'CASCADE' });
       Opportunity.hasMany(db.OpportunityApplication, { foreignKey: 'opportunity_id', as: 'Applications', onDelete: 'CASCADE' });
     }
@@ -74,6 +74,9 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: false,
     },
     university_id: {
+      type: DataTypes.UUID,
+    },
+    organization_id: {
       type: DataTypes.UUID,
     },
     posted_by: {

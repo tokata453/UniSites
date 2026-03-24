@@ -167,6 +167,7 @@ export default function OrganizationProfile() {
     faqs: organization?.FAQs?.length || 0,
     socialLinks: [form.facebook_url, form.telegram_url, form.instagram_url, form.linkedin_url].filter(Boolean).length,
   }), [form.facebook_url, form.instagram_url, form.linkedin_url, form.telegram_url, opportunities.length, organization]);
+  const organizationApproved = Boolean(organization?.is_approved);
 
   const profileCompletion = useMemo(() => {
     const importantFields = [
@@ -204,9 +205,9 @@ export default function OrganizationProfile() {
     form.category || form.industry || form.location
       ? `Visitors can already see stronger organization context through ${[form.category, form.industry, form.location].filter(Boolean).join(', ')}.`
       : 'Add category, industry, and location so visitors can quickly understand what kind of organization this is.',
-    user?.is_approved
-      ? 'Your account is approved, so students can interact with your organization through the full dashboard flow.'
-      : 'Your account is still pending admin approval, so full organization actions remain limited for now.',
+    organizationApproved
+      ? 'Your organization is approved, so students can interact with your profile through the full dashboard flow.'
+      : 'Your organization is still pending admin approval, so full organization actions remain limited for now.',
   ];
 
   const save = async () => {
@@ -277,7 +278,7 @@ export default function OrganizationProfile() {
                   <div className="mt-3 flex flex-wrap gap-2">
                     <StatusPill tone={organization?.is_published ? 'green' : 'amber'}>{organization?.is_published ? 'Published' : 'Draft'}</StatusPill>
                     <StatusPill tone={organization?.is_verified ? 'teal' : 'slate'}>{organization?.is_verified ? 'Verified' : 'Unverified'}</StatusPill>
-                    <StatusPill tone={user?.is_approved ? 'green' : 'amber'}>{user?.is_approved ? 'Approved account' : 'Pending approval'}</StatusPill>
+                    <StatusPill tone={organizationApproved ? 'green' : 'amber'}>{organizationApproved ? 'Approved organization' : 'Pending approval'}</StatusPill>
                   </div>
                 </div>
               </div>
@@ -429,7 +430,7 @@ export default function OrganizationProfile() {
             <div className="flex flex-wrap gap-2">
               <StatusPill tone={organization?.is_published ? 'green' : 'amber'}>{organization?.is_published ? 'Published' : 'Awaiting publication'}</StatusPill>
               <StatusPill tone={organization?.is_verified ? 'teal' : 'slate'}>{organization?.is_verified ? 'Verified' : 'Not verified'}</StatusPill>
-              <StatusPill tone={user?.is_approved ? 'green' : 'amber'}>{user?.is_approved ? 'Approved owner' : 'Pending approval'}</StatusPill>
+              <StatusPill tone={organizationApproved ? 'green' : 'amber'}>{organizationApproved ? 'Approved organization' : 'Pending approval'}</StatusPill>
             </div>
             <p className="mt-3 text-sm text-slate-500">Publication and verification are controlled by admin review, but you can keep the page ready here.</p>
           </Panel>

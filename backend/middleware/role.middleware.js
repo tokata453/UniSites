@@ -18,10 +18,20 @@ const isOpportunityManager = (req, res, next) => {
   if (!['owner', 'organization', 'admin'].includes(role)) {
     return forbidden(res, 'Requires role: owner or organization or admin');
   }
-  if (role === 'organization' && !req.user.is_approved) {
-    return forbidden(res, 'Organization account is pending admin approval');
-  }
-  next();
+  if (role !== 'organization') return next();
+
+  db.Organization.findOne({
+    where: { owner_id: req.user.id },
+    attributes: ['id', 'is_approved'],
+  })
+    .then((organization) => {
+      if (!organization?.is_approved) {
+        return forbidden(res, 'Organization is pending admin approval');
+      }
+      req.organization = req.organization || organization;
+      return next();
+    })
+    .catch((err) => forbidden(res, err.message));
 };
 
 const isUniversityOwner = (paramKey = 'universityId') => async (req, res, next) => {
@@ -86,6 +96,20 @@ const isOpportunityOwner = () => async (req, res, next) => {
         req.opportunity = opp;
         return next();
       }
+    }
+
+    if (req.user.Role?.name === 'organization') {
+      const ownedOrganization = await db.Organization.findOne({
+        where: { owner_id: req.user.id },
+        attributes: ['id'],
+      });
+
+      if (!ownedOrganization?.id || opp.organization_id !== ownedOrganization.id) {
+        return forbidden(res, 'You do not own this opportunity');
+      }
+
+      req.opportunity = opp;
+      return next();
     }
 
     if (opp.posted_by !== req.user.id) {

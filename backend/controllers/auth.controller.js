@@ -26,7 +26,7 @@ const register = async (req, res) => {
       password,   // hashed by beforeSave hook
       provider:  'local',
       role_id:   baseRole?.id || null,
-      is_approved: requestedRole === 'organization' ? false : true,
+      is_approved: true,
       is_active: true,
     });
 
@@ -39,15 +39,12 @@ const register = async (req, res) => {
     if (requestedRole === 'organization') {
       await db.Organization.create({
         owner_id: fresh.id,
-        slug: uniqueSlug(name || 'organization'),
-        name,
-        email,
+        slug: uniqueSlug('organization'),
+        name: 'New Organization',
+        email: 'organization@gmail.com',
+        is_approved: false,
+        is_published: false
       });
-      return created(
-        res,
-        { pendingApproval: true, token, user: fresh },
-        'Organization account created. Pending admin approval.'
-      );
     }
 
     return created(res, { token, user: fresh }, 'Account created successfully');

@@ -5,7 +5,7 @@ module.exports = (sequelize, DataTypes) => {
   class Organization extends Model {
     static associate(db) {
       Organization.belongsTo(db.User, { foreignKey: 'owner_id', as: 'Owner' });
-      Organization.hasMany(db.Opportunity, { foreignKey: 'posted_by', sourceKey: 'owner_id', as: 'Opportunities', constraints: false });
+      Organization.hasMany(db.Opportunity, { foreignKey: 'organization_id', as: 'Opportunities' });
       Organization.hasMany(db.Conversation, { foreignKey: 'organization_id', as: 'Conversations' });
       Organization.hasMany(db.OrganizationInboxAccess, { foreignKey: 'organization_id', as: 'InboxAccesses', onDelete: 'CASCADE' });
       Organization.hasOne(db.OrganizationContact, { foreignKey: 'organization_id', as: 'Contact', onDelete: 'CASCADE' });
@@ -94,6 +94,10 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
     },
     is_verified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+    is_approved: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
     },

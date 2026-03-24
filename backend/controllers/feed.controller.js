@@ -193,10 +193,10 @@ const list = async (req, res) => {
             where: {
               ...opportunityWhere,
               ...(wantsUniversityOpportunities && !wantsOrganizationOpportunities
-                ? { university_id: { [Op.ne]: null } }
+                ? { university_id: { [Op.ne]: null }, organization_id: null }
                 : {}),
               ...(wantsOrganizationOpportunities && !wantsUniversityOpportunities
-                ? { university_id: null }
+                ? { organization_id: { [Op.ne]: null } }
                 : {}),
             },
             limit: fetchSize,

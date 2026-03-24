@@ -3,7 +3,7 @@ import { adminApi } from '@/api';
 import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, ConfirmModal, Toast } from './AdminShared';
 
 const PUB_OPTIONS = [{ value: '', label: 'All Status' }, { value: 'true', label: 'Published' }, { value: 'false', label: 'Unpublished' }];
-const APPROVAL_OPTIONS = [{ value: '', label: 'All Owners' }, { value: 'true', label: 'Approved Owners' }, { value: 'false', label: 'Pending Owners' }];
+const APPROVAL_OPTIONS = [{ value: '', label: 'All Approval' }, { value: 'true', label: 'Approved Organizations' }, { value: 'false', label: 'Pending Organizations' }];
 const BOOL_OPTIONS = [{ value: '', label: 'All' }, { value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }];
 const EDIT_PUBLISH_OPTIONS = [{ value: 'true', label: 'Published' }, { value: 'false', label: 'Hidden' }];
 const EDIT_VERIFY_OPTIONS = [{ value: 'true', label: 'Verified' }, { value: 'false', label: 'Unverified' }];
@@ -52,6 +52,7 @@ function EditOrganizationModal({ organization, onClose, onSuccess, showToast }) 
     instagram_url: organization.instagram_url || '',
     linkedin_url: organization.linkedin_url || '',
     is_published: Boolean(organization.is_published),
+    is_approved: Boolean(organization.is_approved),
     is_verified: Boolean(organization.is_verified),
   });
   const [saving, setSaving] = useState(false);
@@ -141,6 +142,18 @@ function EditOrganizationModal({ organization, onClose, onSuccess, showToast }) 
                 />
               </div>
               <div>
+                <label style={fieldLabelStyle}>Approval Status</label>
+                <Select
+                  value={form.is_approved ? 'true' : 'false'}
+                  onChange={(value) => setField('is_approved', value === 'true')}
+                  options={[
+                    { value: 'true', label: 'Approved' },
+                    { value: 'false', label: 'Pending Approval' },
+                  ]}
+                  style={{ width: '100%', minWidth: 0 }}
+                />
+              </div>
+              <div>
                 <label style={fieldLabelStyle}>Verification Status</label>
                 <Select
                   value={form.is_verified ? 'true' : 'false'}
@@ -215,6 +228,7 @@ function CreateOrganizationModal({ onClose, onSuccess, showToast }) {
     linkedin_url: '',
     owner_id: '',
     is_published: true,
+    is_approved: false,
     is_verified: false,
   });
 
@@ -685,7 +699,7 @@ export default function AdminOrganizations() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           <Badge label={organization.is_published ? 'Published' : 'Hidden'} color={organization.is_published ? '#15803d' : '#64748b'} />
           <Badge label={organization.is_verified ? 'Verified' : 'Unverified'} color={organization.is_verified ? '#0f766e' : '#94a3b8'} />
-          <Badge label={organization.Owner?.is_approved ? 'Owner Approved' : 'Owner Pending'} color={organization.Owner?.is_approved ? '#1B3A6B' : '#d97706'} />
+          <Badge label={organization.is_approved ? 'Approved' : 'Pending Approval'} color={organization.is_approved ? '#1B3A6B' : '#d97706'} />
         </div>
       ),
     },

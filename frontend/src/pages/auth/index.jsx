@@ -20,10 +20,6 @@ const FACEBOOK_ICON = (
 );
 
 // ── Shared UI ─────────────────────────────────────────────────────────────────
-const AuthBg = () => null; // Not needed inside MainLayout
-
-const Logo = ({ sub }) => null; // Auth pages are standalone — no logo needed
-
 const EyeIcon = ({ open }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
     {open
@@ -78,6 +74,7 @@ const FloatInput = ({ label, type='text', value, onChange, error, autoComplete }
           boxSizing:'border-box', display:'block',
           boxShadow: focused ? '0 0 0 3px rgba(27,58,107,0.08)' : 'none',
         }}
+        required
       />
       {isPassword && (
         <button
@@ -183,11 +180,8 @@ export function LoginPage() {
   return (
     <>
       <style>{STYLES}</style>
-      <AuthBg />
       <div style={PAGE_STYLE}>
         <div style={{ width:'100%', maxWidth:'400px', animation:'fadeUp 0.4s ease-out both' }}>
-          <Logo sub="Discover universities in Cambodia" />
-
           <div style={CARD_STYLE}>
             <div style={{ marginBottom:'24px' }}>
               <h1 style={{ fontSize:'22px', fontWeight:800, color:'#0f172a', margin:'0 0 4px', fontFamily:"'Syne',sans-serif" }}>Welcome back</h1>
@@ -247,12 +241,6 @@ export function RegisterPage() {
     setLoading(true);
     try {
       const res = await authApi.register({ name, email, password, role });
-      if (res.data.pendingApproval) {
-        setAuth(res.data.user, res.data.token);
-        setErr('Organization account created. Your dashboard features will unlock after admin approval. Redirecting to the website...');
-        setTimeout(() => navigate('/'), 2000);
-        return;
-      }
       setAuth(res.data.user, res.data.token);
       navigate('/');
     } catch (e) {
@@ -269,10 +257,8 @@ export function RegisterPage() {
   return (
     <>
       <style>{STYLES}</style>
-      <AuthBg />
       <div style={PAGE_STYLE}>
         <div style={{ width:'100%', maxWidth:'420px', animation:'fadeUp 0.4s ease-out both' }}>
-          <Logo sub="Join thousands of Cambodian students" />
 
           <div style={CARD_STYLE}>
             <div style={{ marginBottom:'20px' }}>

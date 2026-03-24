@@ -5,6 +5,15 @@ const { success, created, error, notFound } = require('../utils/response.utils')
 const { getPagination, paginateResponse } = require('../utils/pagination.utils');
 const { uniqueSlug } = require('../utils/slug.utils');
 
+const getOwnedOrganizationId = async (userId) => {
+  const organization = await db.Organization.findOne({
+    where: { owner_id: userId },
+    attributes: ['id'],
+  });
+
+  return organization?.id || null;
+};
+
 const normalizeImages = (payload = {}) => {
   const image_urls = Array.isArray(payload.image_urls)
     ? payload.image_urls.filter(Boolean)
@@ -120,6 +129,11 @@ const getMine = async (req, res) => {
         : { posted_by: req.user.id };
     }
 
+    if (role === 'organization') {
+      const organizationId = await getOwnedOrganizationId(req.user.id);
+      where = organizationId ? { organization_id: organizationId } : { posted_by: req.user.id };
+    }
+
     const opportunities = await db.Opportunity.findAll({
       where,
       include: [
@@ -182,10 +196,19 @@ const getBySlug = async (req, res) => {
 const create = async (req, res) => {
   try {
     const { tags, ...data } = req.body;
+    const role = req.user.Role?.name;
+    const organizationId = role === 'organization' ? await getOwnedOrganizationId(req.user.id) : null;
+
+    if (role === 'organization' && !organizationId) {
+      return notFound(res, 'Organization profile not found');
+    }
+
     const opportunity = await db.Opportunity.create({
       ...normalizeImages(data),
-      slug:         uniqueSlug(data.title),
-      posted_by:    req.user.id,
+      slug: uniqueSlug(data.title),
+      posted_by: req.user.id,
+      organization_id: organizationId,
+      university_id: role === 'organization' ? null : data.university_id || null,
       is_published: false,
     });
     if (tags && tags.length > 0) {
@@ -200,7 +223,15 @@ const create = async (req, res) => {
 const update = async (req, res) => {
   try {
     const { tags, ...data } = req.body;
-    await req.opportunity.update(normalizeImages(data));
+    const payload = normalizeImages(data);
+    delete payload.posted_by;
+    delete payload.organization_id;
+
+    if (req.user.Role?.name === 'organization') {
+      payload.university_id = null;
+    }
+
+    await req.opportunity.update(payload);
     if (tags !== undefined) {
       await db.OpportunityTag.destroy({ where: { opportunity_id: req.opportunity.id } });
       if (tags.length > 0) {

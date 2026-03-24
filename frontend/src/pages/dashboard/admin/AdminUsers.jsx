@@ -31,7 +31,6 @@ function UserEditModal({ user, onClose, onSaved, showToast }) {
     email: user.email || '',
     role: user.Role?.name || 'student',
     is_active: Boolean(user.is_active),
-    is_approved: Boolean(user.is_approved),
     bio: user.bio || '',
     website_url: user.website_url || '',
     contact_phone: user.contact_phone || '',
@@ -47,7 +46,6 @@ function UserEditModal({ user, onClose, onSaved, showToast }) {
         email: form.email.trim(),
         role: form.role,
         is_active: form.is_active,
-        is_approved: form.is_approved,
         bio: form.bio.trim() || null,
         website_url: form.website_url.trim() || null,
         contact_phone: form.contact_phone.trim() || null,
@@ -79,21 +77,7 @@ function UserEditModal({ user, onClose, onSaved, showToast }) {
             <Field label="Role">
               <Select value={form.role} onChange={set('role')} options={ROLE_OPTIONS.filter((option) => option.value)} style={{ width: '100%' }} />
             </Field>
-            {form.role === 'organization' ? (
-              <Field label="Approval">
-                <Select
-                  value={form.is_approved ? 'approved' : 'pending'}
-                  onChange={(value) => set('is_approved')(value === 'approved')}
-                  options={[
-                    { value: 'approved', label: 'Approved' },
-                    { value: 'pending', label: 'Pending Approval' },
-                  ]}
-                  style={{ width: '100%' }}
-                />
-              </Field>
-            ) : (
-              <div />
-            )}
+            <div />
           </div>
           <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
             <label style={checkboxStyle}>
@@ -155,7 +139,7 @@ export default function AdminUsers() {
       const joinedText = user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '';
       if (statusFilter === 'active' && !user.is_active) return false;
       if (statusFilter === 'inactive' && user.is_active) return false;
-      if (statusFilter === 'pending_org' && !(user.Role?.name === 'organization' && !user.is_approved)) return false;
+      if (statusFilter === 'pending_org' && !(user.Role?.name === 'organization' && !user.Organization?.is_approved)) return false;
       if (providerFilter && (user.provider || 'local') !== providerFilter) return false;
       if (joinedSearch && !joinedText.includes(joinedSearch)) return false;
       return true;
@@ -172,7 +156,7 @@ export default function AdminUsers() {
 
   const handleApproveOrganization = async (user) => {
     try {
-      await adminApi.updateUser(user.id, { is_approved: true });
+      await adminApi.updateOrganization(user.Organization.id, { is_approved: true });
       showToast('Organization approved');
       load();
     } catch { showToast('Failed to approve organization'); }
@@ -245,7 +229,7 @@ export default function AdminUsers() {
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <Badge label={u.is_active ? 'Active' : 'Inactive'} color={u.is_active ? '#15803d' : '#94a3b8'} />
         {u.Role?.name === 'organization' && (
-          <Badge label={u.is_approved ? 'Approved' : 'Pending Approval'} color={u.is_approved ? '#0f766e' : '#d97706'} />
+          <Badge label={u.Organization?.is_approved ? 'Approved' : 'Pending Approval'} color={u.Organization?.is_approved ? '#0f766e' : '#d97706'} />
         )}
       </div>
     )},
@@ -269,7 +253,7 @@ export default function AdminUsers() {
         <ActionBtn onClick={() => setEditing(u)} color="#1B3A6B">
           Edit
         </ActionBtn>
-        {u.Role?.name === 'organization' && !u.is_approved && (
+        {u.Role?.name === 'organization' && u.Organization && !u.Organization.is_approved && (
           <ActionBtn onClick={() => handleApproveOrganization(u)} color="#0f766e">
             Approve
           </ActionBtn>

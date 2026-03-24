@@ -64,6 +64,7 @@ export default function AdminUserDetail() {
   }
 
   const isOrganizationOwner = user.Role?.name === 'organization';
+  const organizationApproved = Boolean(user.Organization?.is_approved);
   const avatar = avatarUrl(user.avatar_url) || user.avatar_url;
 
   return (
@@ -94,8 +95,8 @@ export default function AdminUserDetail() {
                 {user.is_active ? 'Active' : 'Inactive'}
               </span>
               {isOrganizationOwner && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', background: user.is_approved ? '#f0fdfa' : '#fff7ed', color: user.is_approved ? '#0f766e' : '#d97706', border: `1px solid ${user.is_approved ? '#99f6e4' : '#fed7aa'}` }}>
-                  {user.is_approved ? 'Approved' : 'Pending approval'}
+                <span style={{ display: 'inline-flex', alignItems: 'center', padding: '4px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', background: organizationApproved ? '#f0fdfa' : '#fff7ed', color: organizationApproved ? '#0f766e' : '#d97706', border: `1px solid ${organizationApproved ? '#99f6e4' : '#fed7aa'}` }}>
+                  {organizationApproved ? 'Organization approved' : 'Organization pending'}
                 </span>
               )}
             </div>

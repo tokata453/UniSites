@@ -56,23 +56,23 @@ const list = async (req, res) => {
       offset,
     });
 
-    const ownerIds = rows.map((item) => item.owner_id).filter(Boolean);
-    const opportunities = ownerIds.length
+    const organizationIds = rows.map((item) => item.id).filter(Boolean);
+    const opportunities = organizationIds.length
       ? await db.Opportunity.findAll({
-          where: { posted_by: ownerIds, is_published: true },
-          attributes: ['posted_by'],
+          where: { organization_id: organizationIds, is_published: true },
+          attributes: ['organization_id'],
         })
       : [];
 
     const opportunityCounts = opportunities.reduce((acc, item) => {
-      const key = String(item.posted_by);
+      const key = String(item.organization_id);
       acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
 
     const organizations = rows.map((item) => ({
       ...item.toJSON(),
-      opportunity_count: opportunityCounts[String(item.owner_id)] || 0,
+      opportunity_count: opportunityCounts[String(item.id)] || 0,
     }));
 
     return success(res, {
@@ -142,7 +142,7 @@ const getBySlug = async (req, res) => {
         include: [{ model: db.User, as: 'Author', attributes: ['id', 'name', 'avatar_url'], required: false }],
       }),
       db.Opportunity.findAll({
-        where: { posted_by: organization.owner_id, is_published: true },
+        where: { organization_id: organization.id, is_published: true },
         attributes: ['id', 'slug', 'title', 'type', 'deadline', 'cover_url', 'is_featured', 'is_fully_funded', 'country'],
         order: [['created_at', 'DESC']],
       }),
