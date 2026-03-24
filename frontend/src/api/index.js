@@ -101,6 +101,7 @@ export const universityApi = {
 
 // ── Organizations ─────────────────────────────────────────────────────────────
 export const organizationApi = {
+  list: (params) => api.get('/organizations', { params }),
   getMine: () => api.get('/organizations/mine'),
   getBySlug: (slug) => api.get(`/organizations/${slug}`),
   updateMine: (data) => api.put('/organizations/mine', data),

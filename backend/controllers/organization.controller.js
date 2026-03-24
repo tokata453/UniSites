@@ -1,8 +1,94 @@
 'use strict';
 
+const { Op } = require('sequelize');
 const { uniqueSlug } = require('../utils/slug.utils');
 const { success, created, error, notFound } = require('../utils/response.utils');
 const db = require('../models');
+
+const list = async (req, res) => {
+  try {
+    const page = Math.max(Number(req.query.page) || 1, 1);
+    const limit = Math.min(Math.max(Number(req.query.limit) || 12, 1), 100);
+    const offset = (page - 1) * limit;
+    const sort = req.query.sort || 'name';
+    const order = String(req.query.order || 'ASC').toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+
+    const where = { is_published: true };
+    if (req.query.search?.trim()) {
+      const q = req.query.search.trim();
+      where[Op.or] = [
+        { name: { [Op.iLike]: `%${q}%` } },
+        { tagline: { [Op.iLike]: `%${q}%` } },
+        { category: { [Op.iLike]: `%${q}%` } },
+        { industry: { [Op.iLike]: `%${q}%` } },
+        { location: { [Op.iLike]: `%${q}%` } },
+      ];
+    }
+    if (req.query.category?.trim()) where.category = { [Op.iLike]: `%${req.query.category.trim()}%` };
+    if (req.query.location?.trim()) where.location = { [Op.iLike]: `%${req.query.location.trim()}%` };
+    if (req.query.verified === 'true') where.is_verified = true;
+
+    const sortableFields = new Set(['name', 'created_at', 'updated_at', 'founded_year']);
+    const orderBy = sortableFields.has(sort) ? [[sort, order]] : [['name', 'ASC']];
+
+    const { rows, count } = await db.Organization.findAndCountAll({
+      where,
+      attributes: [
+        'id',
+        'slug',
+        'name',
+        'tagline',
+        'category',
+        'industry',
+        'location',
+        'team_size',
+        'founded_year',
+        'description',
+        'logo_url',
+        'cover_url',
+        'website_url',
+        'is_verified',
+        'owner_id',
+        'created_at',
+      ],
+      order: orderBy,
+      limit,
+      offset,
+    });
+
+    const ownerIds = rows.map((item) => item.owner_id).filter(Boolean);
+    const opportunities = ownerIds.length
+      ? await db.Opportunity.findAll({
+          where: { posted_by: ownerIds, is_published: true },
+          attributes: ['posted_by'],
+        })
+      : [];
+
+    const opportunityCounts = opportunities.reduce((acc, item) => {
+      const key = String(item.posted_by);
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+    const organizations = rows.map((item) => ({
+      ...item.toJSON(),
+      opportunity_count: opportunityCounts[String(item.owner_id)] || 0,
+    }));
+
+    return success(res, {
+      organizations,
+      total: count,
+      meta: {
+        total: count,
+        page,
+        limit,
+        totalPages: Math.ceil(count / limit),
+      },
+    });
+  } catch (err) {
+    return error(res, err.message, 500);
+  }
+};
 
 const getMine = async (req, res) => {
   try {
@@ -81,7 +167,16 @@ const upsertMine = async (req, res) => {
   try {
     const payload = {
       name: req.body.name,
+      tagline: req.body.tagline,
+      category: req.body.category,
+      industry: req.body.industry,
       description: req.body.description ?? req.body.bio,
+      mission: req.body.mission,
+      vision: req.body.vision,
+      location: req.body.location,
+      address: req.body.address,
+      founded_year: req.body.founded_year || null,
+      team_size: req.body.team_size,
       website_url: req.body.website_url,
       contact_phone: req.body.contact_phone,
       email: req.body.email || req.user.email,
@@ -133,4 +228,4 @@ const upsertMine = async (req, res) => {
   }
 };
 
-module.exports = { getMine, getBySlug, upsertMine };
+module.exports = { list, getMine, getBySlug, upsertMine };

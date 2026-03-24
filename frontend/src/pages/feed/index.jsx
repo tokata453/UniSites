@@ -38,12 +38,39 @@ const getPublisher = (item) => {
     };
   }
 
+  if (item.kind === 'news' && item.News?.Organization) {
+    return {
+      name: item.News.Organization.name,
+      avatar: logoUrl(item.News.Organization.logo_url) || item.News.Organization.logo_url,
+      fallback: 'O',
+      meta: item.News.Organization.location || 'Organization',
+    };
+  }
+
+  if (item.kind === 'event' && item.Event?.Organization) {
+    return {
+      name: item.Event.Organization.name,
+      avatar: logoUrl(item.Event.Organization.logo_url) || item.Event.Organization.logo_url,
+      fallback: 'O',
+      meta: item.Event.Organization.location || 'Organization event',
+    };
+  }
+
   if (item.kind === 'opportunity' && item.Opportunity?.University) {
     return {
       name: item.Opportunity.University.name,
       avatar: logoUrl(item.Opportunity.University.logo_url),
       fallback: 'U',
       meta: item.Opportunity.University.province || 'University',
+    };
+  }
+
+  if (item.kind === 'opportunity' && item.Opportunity?.Organization) {
+    return {
+      name: item.Opportunity.Organization.name,
+      avatar: logoUrl(item.Opportunity.Organization.logo_url) || item.Opportunity.Organization.logo_url,
+      fallback: 'O',
+      meta: item.Opportunity.Organization.location || 'Official organization',
     };
   }
 
@@ -60,7 +87,11 @@ const getPublisher = (item) => {
 };
 
 const getTimestamp = (item) =>
-  item.kind === 'news' ? item.News?.published_at || item.News?.created_at : item.Opportunity?.created_at;
+  item.kind === 'news'
+    ? item.News?.published_at || item.News?.created_at
+    : item.kind === 'event'
+      ? item.Event?.event_date || item.Event?.created_at
+      : item.Opportunity?.created_at;
 
 const getFeedItemKey = (item) => `${item.kind}:${item.id}`;
 
@@ -90,6 +121,12 @@ const getFeedImages = (item) => {
     const images = item.News?.image_urls;
     if (Array.isArray(images) && images.length) return images;
     return item.News?.cover_url ? [item.News.cover_url] : [];
+  }
+
+  if (item.kind === 'event') {
+    const images = item.Event?.image_urls;
+    if (Array.isArray(images) && images.length) return images;
+    return item.Event?.cover_url ? [item.Event.cover_url] : [];
   }
 
   const images = item.Opportunity?.image_urls;
@@ -233,16 +270,18 @@ export default function FeedPage() {
 
   const summary = useMemo(() => {
     const newsCount = visibleItems.filter((item) => item.kind === 'news').length;
+    const eventCount = visibleItems.filter((item) => item.kind === 'event').length;
     const opportunityCount = visibleItems.filter((item) => item.kind === 'opportunity').length;
-    const featuredCount = visibleItems.filter((item) => item.Opportunity?.is_featured || item.News?.is_pinned).length;
+    const featuredCount = visibleItems.filter((item) => item.Opportunity?.is_featured || item.News?.is_pinned || item.Event?.is_featured).length;
     const publishers = new Set(visibleItems.map((item) => getPublisher(item).name)).size;
-    return { newsCount, opportunityCount, featuredCount, publishers };
+    return { newsCount, eventCount, opportunityCount, featuredCount, publishers };
   }, [visibleItems]);
 
   const trendingTopics = useMemo(() => {
     const source = [];
     visibleItems.forEach((item) => {
       if (item.kind === 'news' && item.News?.category) source.push(item.News.category);
+      if (item.kind === 'event' && item.Event?.type) source.push(item.Event.type);
       if (item.kind === 'opportunity' && item.Opportunity?.type) source.push(item.Opportunity.type);
     });
     return Array.from(new Set(source)).slice(0, 6);
@@ -339,7 +378,7 @@ export default function FeedPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Campus activity</p>
               <h1 className="mt-1 text-2xl font-bold text-slate-900 sm:text-3xl" style={{ fontFamily: "'Syne',sans-serif" }}>Feed</h1>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                Follow official university updates and opportunities from across Cambodia in one place.
+                Follow official university and organization updates, events, and opportunities from across Cambodia in one place.
               </p>
 
               <div className="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
@@ -355,7 +394,7 @@ export default function FeedPage() {
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search universities, updates, scholarships..."
+                  placeholder="Search universities, organizations, updates, events..."
                   className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none transition-all focus:border-[#1B3A6B] focus:ring-2 focus:ring-[#1B3A6B]/10"
                 />
               </div>
@@ -401,6 +440,12 @@ export default function FeedPage() {
                                   <span>{item.News?.views_count || 0} views</span>
                                 </>
                               )}
+                              {item.kind === 'event' && item.Event?.location && (
+                                <>
+                                  <span>•</span>
+                                  <span>{item.Event.location}</span>
+                                </>
+                              )}
                               {item.kind === 'opportunity' && item.Opportunity?.deadline && (
                                 <>
                                   <span>•</span>
@@ -417,6 +462,11 @@ export default function FeedPage() {
                               <h2 className="text-lg font-semibold leading-snug text-slate-900 sm:text-xl">{item.News?.title}</h2>
                               <p className="mt-3 text-sm leading-7 text-slate-600">{truncate(item.News?.excerpt || item.News?.content, 220)}</p>
                             </>
+                          ) : item.kind === 'event' ? (
+                            <>
+                              <h2 className="text-lg font-semibold leading-snug text-slate-900 sm:text-xl">{item.Event?.title}</h2>
+                              <p className="mt-3 text-sm leading-7 text-slate-600">{truncate(item.Event?.description, 220)}</p>
+                            </>
                           ) : (
                             <>
                               <h2 className="text-lg font-semibold leading-snug text-slate-900 sm:text-xl">{item.Opportunity?.title}</h2>
@@ -428,6 +478,9 @@ export default function FeedPage() {
                         <div className="mt-4 flex flex-wrap gap-2">
                           {item.kind === 'news' && item.News?.category && <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">#{item.News.category}</span>}
                           {item.kind === 'news' && item.News?.is_pinned && <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">#pinned</span>}
+                          {item.kind === 'event' && item.Event?.type && <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">#{item.Event.type}</span>}
+                          {item.kind === 'event' && item.Event?.is_featured && <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">#featured</span>}
+                          {item.kind === 'event' && item.Event?.is_online && <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">#online</span>}
                           {item.kind === 'opportunity' && item.Opportunity?.is_featured && <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">#featured</span>}
                           {item.kind === 'opportunity' && item.Opportunity?.is_fully_funded && <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">#fullyfunded</span>}
                           {item.kind === 'opportunity' && item.Opportunity?.country && <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500">#{item.Opportunity.country.replace(/\s+/g, '').toLowerCase()}</span>}
@@ -459,14 +512,30 @@ export default function FeedPage() {
                             />
                           </div>
                           <Link
-                            to={item.kind === 'news' ? `/universities/${item.News?.University?.slug || ''}` : `/opportunities/${item.Opportunity?.slug || ''}`}
-                            className={`inline-flex w-full items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition-all sm:w-auto ${
+                            to={
                               item.kind === 'news'
+                                ? item.News?.University?.slug
+                                  ? `/universities/${item.News.University.slug}`
+                                  : item.News?.Organization?.slug
+                                    ? `/organizations/${item.News.Organization.slug}`
+                                    : '#'
+                                : item.kind === 'event'
+                                  ? item.Event?.Organization?.slug
+                                    ? `/organizations/${item.Event.Organization.slug}`
+                                    : '#'
+                                  : `/opportunities/${item.Opportunity?.slug || ''}`
+                            }
+                            className={`inline-flex w-full items-center justify-center rounded-full px-4 py-2 text-sm font-semibold transition-all sm:w-auto ${
+                              item.kind === 'news' || item.kind === 'event'
                                 ? 'border border-slate-200 bg-white text-[#1B3A6B] hover:bg-slate-50'
                                 : 'bg-[#1B3A6B] text-white shadow-sm hover:opacity-90'
                             }`}
                           >
-                            {item.kind === 'news' ? 'View university' : 'Open opportunity'}
+                            {item.kind === 'news'
+                              ? item.News?.University ? 'View university' : 'View organization'
+                              : item.kind === 'event'
+                                ? 'View organization'
+                                : 'Open opportunity'}
                           </Link>
                         </div>
 
@@ -557,6 +626,10 @@ export default function FeedPage() {
                 <div>
                   <div className="mb-1.5 flex items-center justify-between text-sm"><span className="text-slate-600">Official updates</span><span className="font-medium text-slate-800">{summary.newsCount}</span></div>
                   <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-blue-600" style={{ width: `${visibleItems.length ? (summary.newsCount / visibleItems.length) * 100 : 0}%` }} /></div>
+                </div>
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between text-sm"><span className="text-slate-600">Events</span><span className="font-medium text-slate-800">{summary.eventCount}</span></div>
+                  <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-violet-600" style={{ width: `${visibleItems.length ? (summary.eventCount / visibleItems.length) * 100 : 0}%` }} /></div>
                 </div>
                 <div>
                   <div className="mb-1.5 flex items-center justify-between text-sm"><span className="text-slate-600">Opportunities</span><span className="font-medium text-slate-800">{summary.opportunityCount}</span></div>

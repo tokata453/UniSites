@@ -33,6 +33,7 @@ export default function MainLayout() {
   const unreadInbox = unreadNotifications + unreadMessages;
   const navLinks = [
     { to: '/universities',  label: 'Universities'  },
+    { to: '/organizations', label: 'Organizations' },
     { to: '/majors',        label: 'Majors'        },
     { to: '/opportunities', label: 'Opportunities' },
     { to: '/feed',          label: 'Feed'          },

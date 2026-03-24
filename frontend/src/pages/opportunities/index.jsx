@@ -402,30 +402,27 @@ export function OpportunityDetail() {
     : '/dashboard/inbox';
 
   const handleMessage = async () => {
-    const recipientId = sourceOrganization?.owner_id || opp.PostedBy?.id || opp.University?.Owner?.id || opp.University?.owner_id;
     if (!isAuthenticated) {
       info('Please log in to send a message');
       navigate('/login');
       return;
     }
-    if (!recipientId) {
+    if (!sourceOrganization?.id && !opp.University?.id && !opp.PostedBy?.id) {
       error('No direct contact is available for this opportunity');
       return;
     }
     try {
       const payload = sourceOrganization
         ? {
-            recipient_id: recipientId,
             context: 'organization',
             organization_id: sourceOrganization.id,
           }
         : opp.University
         ? {
-            recipient_id: recipientId,
             context: 'university',
             university_id: opp.University.id,
           }
-        : { recipient_id: recipientId };
+        : { recipient_id: opp.PostedBy?.id };
       const res = await inboxApi.createConversation(payload);
       const conversationId = res.data.conversation?.id;
       const contextQuery = sourceOrganization

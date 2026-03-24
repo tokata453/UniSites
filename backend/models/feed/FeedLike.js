@@ -15,7 +15,7 @@ module.exports = (sequelize, DataTypes) => {
       primaryKey: true,
     },
     item_type: {
-      type: DataTypes.ENUM('news', 'opportunity'),
+      type: DataTypes.ENUM('news', 'opportunity', 'event'),
       allowNull: false,
     },
     item_id: {

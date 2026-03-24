@@ -6,6 +6,7 @@ module.exports = (sequelize, DataTypes) => {
     static associate(db) {
       Conversation.belongsTo(db.User, { foreignKey: 'user_one_id', as: 'UserOne' });
       Conversation.belongsTo(db.User, { foreignKey: 'user_two_id', as: 'UserTwo' });
+      Conversation.belongsTo(db.User, { foreignKey: 'participant_user_id', as: 'ParticipantUser' });
       Conversation.belongsTo(db.University, { foreignKey: 'university_id', as: 'University' });
       Conversation.belongsTo(db.Organization, { foreignKey: 'organization_id', as: 'Organization' });
       Conversation.hasMany(db.Message, { foreignKey: 'conversation_id', as: 'Messages', onDelete: 'CASCADE' });
@@ -20,11 +21,15 @@ module.exports = (sequelize, DataTypes) => {
     },
     user_one_id: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
     user_two_id: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
+    },
+    participant_user_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
     },
     last_message_at: {
       type: DataTypes.DATE,

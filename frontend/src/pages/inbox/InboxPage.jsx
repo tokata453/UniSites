@@ -77,29 +77,26 @@ function Avatar({ user, size = 'md' }) {
 
 function conversationEntity(conversation, viewerRole) {
   const context = conversation?.conversation_context;
-  const isInstitutionViewer = viewerRole === 'owner' || viewerRole === 'organization' || viewerRole === 'admin';
 
   if (!conversation) return null;
 
   if (context === 'university') {
-    if (isInstitutionViewer) return conversation.participant || null;
     if (conversation.University) {
       return {
         id: `university-${conversation.University.id}`,
         name: conversation.University.name,
-        email: 'Official university inbox',
+        email: 'Official Inbox',
         avatar_url: conversation.University.logo_url,
       };
     }
   }
 
   if (context === 'organization') {
-    if (isInstitutionViewer) return conversation.participant || null;
     if (conversation.Organization) {
       return {
         id: `organization-${conversation.Organization.id}`,
         name: conversation.Organization.name,
-        email: 'Official organization inbox',
+        email: 'Official Inbox',
         avatar_url: conversation.Organization.logo_url,
       };
     }
@@ -116,6 +113,24 @@ function conversationEntity(conversation, viewerRole) {
   }
 
   return conversation.participant || null;
+}
+
+function internalConversationLabel(conversation, viewerRole) {
+  if (!conversation) return '';
+
+  if (conversation.conversation_context === 'university' && viewerRole === 'owner') {
+    return conversation.participant?.name ? `Student contact: ${conversation.participant.name}` : '';
+  }
+
+  if (conversation.conversation_context === 'organization' && viewerRole === 'organization') {
+    return conversation.participant?.name ? `Student contact: ${conversation.participant.name}` : '';
+  }
+
+  if (conversation.conversation_context === 'admin' && viewerRole === 'admin') {
+    return conversation.participant?.name ? `User contact: ${conversation.participant.name}` : '';
+  }
+
+  return '';
 }
 
 function dedupeMessages(items) {
@@ -1129,6 +1144,7 @@ export default function InboxPage() {
                 ) : (
                   conversations.map((conversation) => {
                     const displayEntity = conversationEntity(conversation, viewerRole);
+                    const internalLabel = internalConversationLabel(conversation, viewerRole);
                     return (
                     <button
                       key={conversation.id}
@@ -1165,9 +1181,7 @@ export default function InboxPage() {
                                     ? 'Online'
                                     : 'Offline'} • ${conversation.participant?.email}`
                                   )
-                                  : viewerRole === 'owner' || viewerRole === 'organization' || viewerRole === 'admin'
-                                    ? `Chatting with ${conversation.participant?.name || 'user'}`
-                                    : displayEntity?.email || 'Official inbox'}
+                                  : displayEntity?.email || 'Official inbox'}
                               </p>
                               {conversation.conversation_context === 'university' && conversation.University?.name && (
                                 <p className="mt-1 truncate text-[11px] font-medium text-slate-500">
@@ -1182,6 +1196,11 @@ export default function InboxPage() {
                               {conversation.conversation_context === 'admin' && (
                                 <p className="mt-1 truncate text-[11px] font-medium text-slate-500">
                                   {viewerRole === 'admin' ? 'Replying as UniSites Admin' : 'Official admin profile'}
+                                </p>
+                              )}
+                              {internalLabel && (
+                                <p className="mt-1 truncate text-[11px] font-medium text-slate-400">
+                                  {internalLabel}
                                 </p>
                               )}
                             </div>
@@ -1240,9 +1259,7 @@ export default function InboxPage() {
                           : selectedParticipantOnline
                             ? 'Online now'
                             : 'Offline')
-                          : (viewerRole === 'owner' || viewerRole === 'organization' || viewerRole === 'admin'
-                            ? `Conversation with ${selectedConversation.participant?.name || 'user'}` 
-                            : selectedConversationEntity?.email || 'Official inbox')
+                          : selectedConversationEntity?.email || 'Official inbox'
                         }
                         {selectedConversation.conversation_context === 'personal' && ` • ${selectedConversation.participant?.email}`}
                       </p>
@@ -1265,6 +1282,11 @@ export default function InboxPage() {
                           {viewerRole === 'admin'
                             ? 'Replying as UniSites Admin'
                             : 'Admin Profile • UniSites'}
+                        </p>
+                      )}
+                      {internalConversationLabel(selectedConversation, viewerRole) && (
+                        <p className="mt-1 truncate text-xs font-medium text-slate-400">
+                          {internalConversationLabel(selectedConversation, viewerRole)}
                         </p>
                       )}
                     </div>

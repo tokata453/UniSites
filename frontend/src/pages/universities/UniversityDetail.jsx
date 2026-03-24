@@ -333,19 +333,17 @@ export default function UniversityDetail() {
     : '/dashboard/inbox';
 
   const handleMessageUniversity = async () => {
-    const recipientId = uni?.Owner?.id || uni?.owner_id;
     if (!isAuthenticated) {
       info('Please log in to send a message');
       navigate('/login');
       return;
     }
-    if (!recipientId) {
-      error('This university does not have a contact owner yet');
+    if (!uni?.id) {
+      error('This university is not available for messaging right now');
       return;
     }
     try {
       const res = await inboxApi.createConversation({
-        recipient_id: recipientId,
         context: 'university',
         university_id: uni.id,
       });

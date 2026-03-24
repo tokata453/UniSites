@@ -6,7 +6,7 @@ import { Empty, Spinner } from '@/components/common';
 import { useAuth, useToast } from '@/hooks';
 import { avatarUrl, coverUrl, formatDate, logoUrl } from '@/utils';
 
-const TABS = ['Overview', 'Opportunities', 'Gallery', 'FAQs', 'Reviews', 'News', 'Events'];
+const TABS = ['Overview', 'Opportunities', 'Gallery', 'News', 'Events', 'FAQs', 'Reviews'];
 
 const Card = ({ className = '', children }) => (
   <div className={`rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}>{children}</div>
@@ -76,19 +76,17 @@ export default function OrganizationDetail() {
   ].filter(Boolean);
 
   const handleMessageOrganization = async () => {
-    const recipientId = organization?.Owner?.id || organization?.owner_id;
     if (!isAuthenticated) {
       info('Please log in to send a message');
       navigate('/login');
       return;
     }
-    if (!recipientId || !organization?.id) {
+    if (!organization?.id) {
       error('This organization is not available for messaging right now');
       return;
     }
     try {
       const res = await inboxApi.createConversation({
-        recipient_id: recipientId,
         context: 'organization',
         organization_id: organization.id,
       });
@@ -162,12 +160,16 @@ export default function OrganizationDetail() {
           <div className="flex-1 pt-2 md:pt-14">
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge tone="teal">Organization</Badge>
+              {organization.category && <Badge tone="blue">{organization.category}</Badge>}
               {organization.is_verified && <Badge tone="green"><BadgeCheck size={12} /> Verified</Badge>}
               {opportunities.length > 0 && <Badge tone="blue"><Star size={12} className="fill-current" /> Active Opportunities</Badge>}
             </div>
             <h1 className="text-2xl font-bold text-slate-800 md:text-3xl">{organization.name}</h1>
+            {organization.tagline && <p className="mt-2 max-w-3xl text-sm text-slate-600 md:text-base">{organization.tagline}</p>}
             <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-500">
               {(contact.address || organization.location) && <span className="inline-flex items-center gap-1"><MapPin size={14} /> {contact.address || organization.location}</span>}
+              {organization.founded_year && <span className="inline-flex items-center gap-1"><CalendarDays size={14} /> Founded {organization.founded_year}</span>}
+              {organization.team_size && <span className="inline-flex items-center gap-1"><Users size={14} /> {organization.team_size}</span>}
               {contact.office_hours && <span className="inline-flex items-center gap-1"><CalendarDays size={14} /> {contact.office_hours}</span>}
               <span className="inline-flex items-center gap-1"><Users size={14} /> {opportunities.length} opportunit{opportunities.length === 1 ? 'y' : 'ies'}</span>
             </div>
@@ -211,6 +213,58 @@ export default function OrganizationDetail() {
                   <p className="text-sm leading-relaxed text-slate-600">{organization.description || 'This organization has not added a public description yet.'}</p>
                 </Card>
 
+                {(organization.mission || organization.vision) && (
+                  <Card className="p-6">
+                    <SectionTitle title="Mission and Vision" subtitle="The purpose behind the organization and the future it is working toward" />
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {organization.mission && (
+                        <div className="rounded-2xl border border-slate-200 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Mission</p>
+                          <p className="mt-2 text-sm leading-relaxed text-slate-600">{organization.mission}</p>
+                        </div>
+                      )}
+                      {organization.vision && (
+                        <div className="rounded-2xl border border-slate-200 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Vision</p>
+                          <p className="mt-2 text-sm leading-relaxed text-slate-600">{organization.vision}</p>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                )}
+
+                {(organization.category || organization.industry || organization.team_size || organization.founded_year || organization.location) && (
+                  <Card className="p-6">
+                    <SectionTitle title="Organization Snapshot" subtitle="Key facts that help visitors understand your background at a glance" />
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                      {organization.category && (
+                        <div className="rounded-xl border border-slate-200 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Category</p>
+                          <p className="mt-2 text-base font-bold text-slate-800">{organization.category}</p>
+                        </div>
+                      )}
+                      {organization.industry && (
+                        <div className="rounded-xl border border-slate-200 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Industry</p>
+                          <p className="mt-2 text-base font-bold text-slate-800">{organization.industry}</p>
+                        </div>
+                      )}
+                      {organization.team_size && (
+                        <div className="rounded-xl border border-slate-200 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Team Size</p>
+                          <p className="mt-2 text-base font-bold text-slate-800">{organization.team_size}</p>
+                        </div>
+                      )}
+                      {organization.founded_year && (
+                        <div className="rounded-xl border border-slate-200 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Founded</p>
+                          <p className="mt-2 text-base font-bold text-slate-800">{organization.founded_year}</p>
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                )}
+
                 {opportunities.length > 0 && (
                   <Card className="p-6">
                     <SectionTitle title="Opportunity Snapshot" subtitle="A quick preview of what this organization is currently publishing" />
@@ -251,6 +305,11 @@ export default function OrganizationDetail() {
                   <div className="space-y-3 text-sm">
                     {[
                       ['Type', 'Organization'],
+                      ['Category', organization.category],
+                      ['Industry', organization.industry],
+                      ['Location', organization.location || contact.address],
+                      ['Team Size', organization.team_size],
+                      ['Founded', organization.founded_year],
                       ['Website', organization.website_url || contact.website_url],
                       ['Email', organization.email || contact.general_email],
                       ['Phone', organization.contact_phone || contact.general_phone],
@@ -274,7 +333,7 @@ export default function OrganizationDetail() {
                       {(organization.email || contact.general_email) && <p className="flex items-center gap-2 text-slate-600"><Mail size={14} /> <span className="truncate">{organization.email || contact.general_email}</span></p>}
                       {(organization.contact_phone || contact.general_phone) && <p className="flex items-center gap-2 text-slate-600"><Phone size={14} /> {organization.contact_phone || contact.general_phone}</p>}
                       {contact.office_hours && <p className="flex items-center gap-2 text-slate-600"><Clock3 size={14} /> {contact.office_hours}</p>}
-                      {contact.address && <p className="flex items-start gap-2 text-slate-600"><MapPin size={14} className="mt-0.5 shrink-0" /> <span>{contact.address}</span></p>}
+                      {(organization.address || contact.address) && <p className="flex items-start gap-2 text-slate-600"><MapPin size={14} className="mt-0.5 shrink-0" /> <span>{organization.address || contact.address}</span></p>}
                       {contact.map_embed_url && (
                         <a href={contact.map_embed_url} target="_blank" rel="noreferrer" className="flex items-center gap-2 font-medium text-[#1B3A6B] hover:underline">
                           <ExternalLink size={14} /> View Map

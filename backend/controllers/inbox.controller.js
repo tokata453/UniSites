@@ -4,19 +4,19 @@ const db = require('../models');
 const { success, error, notFound, forbidden, created } = require('../utils/response.utils');
 const { getIO } = require('../config/socket');
 
+const userPreviewAttributes = ['id', 'name', 'email', 'avatar_url', 'role_id'];
+const institutionPreviewAttributes = ['id', 'name', 'slug', 'logo_url', 'owner_id'];
+
 const conversationWhereForUser = (userId) => ({
   [Op.or]: [{ user_one_id: userId }, { user_two_id: userId }],
 });
 
-const participantFor = (conversation, userId) => (
-  conversation.user_one_id === userId ? conversation.UserTwo : conversation.UserOne
-);
-
 const conversationInclude = [
-  { model: db.User, as: 'UserOne', attributes: ['id', 'name', 'email', 'avatar_url', 'role_id'] },
-  { model: db.User, as: 'UserTwo', attributes: ['id', 'name', 'email', 'avatar_url', 'role_id'] },
-  { model: db.University, as: 'University', attributes: ['id', 'name', 'slug', 'logo_url'], required: false },
-  { model: db.Organization, as: 'Organization', attributes: ['id', 'name', 'slug', 'logo_url'], required: false },
+  { model: db.User, as: 'UserOne', attributes: userPreviewAttributes, required: false },
+  { model: db.User, as: 'UserTwo', attributes: userPreviewAttributes, required: false },
+  { model: db.User, as: 'ParticipantUser', attributes: userPreviewAttributes, required: false },
+  { model: db.University, as: 'University', attributes: institutionPreviewAttributes, required: false },
+  { model: db.Organization, as: 'Organization', attributes: institutionPreviewAttributes, required: false },
 ];
 
 const normalizeConversationContext = (value) => {
@@ -24,15 +24,139 @@ const normalizeConversationContext = (value) => {
   return ['personal', 'university', 'organization', 'admin', 'all'].includes(value) ? value : 'personal';
 };
 
-const getOwnedUniversity = async (userId) => db.University.findOne({
-  where: { owner_id: userId },
-  attributes: ['id', 'name', 'slug', 'logo_url'],
-});
+const isPlatformAdmin = (user) => user?.Role?.name === 'admin';
 
-const getOwnedOrganization = async (userId) => db.Organization.findOne({
-  where: { owner_id: userId },
-  attributes: ['id', 'name', 'slug', 'logo_url'],
-});
+const participantFor = (conversation, userId) => {
+  if (!conversation) return null;
+
+  if (['university', 'organization'].includes(conversation.conversation_context)) {
+    return conversation.ParticipantUser
+      || (conversation.user_one_id === userId ? conversation.UserTwo : null)
+      || (conversation.user_two_id === userId ? conversation.UserOne : null)
+      || conversation.UserOne
+      || conversation.UserTwo
+      || null;
+  }
+
+  if (conversation.user_one_id === userId) return conversation.UserTwo || null;
+  if (conversation.user_two_id === userId) return conversation.UserOne || null;
+  return conversation.ParticipantUser || null;
+};
+
+const legacyInstitutionUserId = (entity, fallbackUserId) => entity?.owner_id || fallbackUserId || null;
+
+const emitSafe = (room, event, payload) => {
+  try {
+    const io = getIO();
+    io.to(room).emit(event, payload);
+  } catch (_) {
+    // Socket delivery is optional.
+  }
+};
+
+const getManagedUniversity = async (user) => {
+  if (!user?.id) return null;
+
+  const ownedUniversity = await db.University.findOne({
+    where: { owner_id: user.id },
+    attributes: institutionPreviewAttributes,
+  });
+  if (ownedUniversity) return ownedUniversity;
+
+  const access = await db.UniversityInboxAccess.findOne({
+    where: { user_id: user.id },
+    include: [{ model: db.University, as: 'University', attributes: institutionPreviewAttributes }],
+    order: [['created_at', 'ASC']],
+  });
+
+  return access?.University || null;
+};
+
+const getManagedOrganization = async (user) => {
+  if (!user?.id) return null;
+
+  const ownedOrganization = await db.Organization.findOne({
+    where: { owner_id: user.id },
+    attributes: institutionPreviewAttributes,
+  });
+  if (ownedOrganization) return ownedOrganization;
+
+  const access = await db.OrganizationInboxAccess.findOne({
+    where: { user_id: user.id },
+    include: [{ model: db.Organization, as: 'Organization', attributes: institutionPreviewAttributes }],
+    order: [['created_at', 'ASC']],
+  });
+
+  return access?.Organization || null;
+};
+
+const userHasUniversityAccess = async (user, universityId) => {
+  if (!user?.id || !universityId) return false;
+  if (isPlatformAdmin(user)) return true;
+
+  const university = await db.University.findByPk(universityId, {
+    attributes: ['id', 'owner_id'],
+  });
+  if (!university) return false;
+  if (university.owner_id === user.id) return true;
+
+  const access = await db.UniversityInboxAccess.findOne({
+    where: { university_id: universityId, user_id: user.id },
+    attributes: ['id'],
+  });
+
+  return Boolean(access);
+};
+
+const userHasOrganizationAccess = async (user, organizationId) => {
+  if (!user?.id || !organizationId) return false;
+  if (isPlatformAdmin(user)) return true;
+
+  const organization = await db.Organization.findByPk(organizationId, {
+    attributes: ['id', 'owner_id'],
+  });
+  if (!organization) return false;
+  if (organization.owner_id === user.id) return true;
+
+  const access = await db.OrganizationInboxAccess.findOne({
+    where: { organization_id: organizationId, user_id: user.id },
+    attributes: ['id'],
+  });
+
+  return Boolean(access);
+};
+
+const canAccessConversation = async (conversation, user) => {
+  if (!conversation || !user?.id) return false;
+
+  if (conversation.conversation_context === 'university') {
+    return (
+      conversation.participant_user_id === user.id
+      || await userHasUniversityAccess(user, conversation.university_id)
+      || [conversation.user_one_id, conversation.user_two_id].includes(user.id)
+    );
+  }
+
+  if (conversation.conversation_context === 'organization') {
+    return (
+      conversation.participant_user_id === user.id
+      || await userHasOrganizationAccess(user, conversation.organization_id)
+      || [conversation.user_one_id, conversation.user_two_id].includes(user.id)
+    );
+  }
+
+  return [conversation.user_one_id, conversation.user_two_id].includes(user.id);
+};
+
+const ensureAccessibleConversation = async (conversationId, user) => {
+  const conversation = await db.Conversation.findByPk(conversationId, {
+    include: conversationInclude,
+  });
+
+  if (!conversation) return null;
+  if (!(await canAccessConversation(conversation, user))) return false;
+  return conversation;
+};
 
 const loadConversationSummary = async (conversationId, userId) => {
   const conversation = await db.Conversation.findByPk(conversationId, {
@@ -64,48 +188,143 @@ const loadConversationSummary = async (conversationId, userId) => {
   };
 };
 
-const ensureParticipant = async (conversationId, userId) => {
-  const conversation = await db.Conversation.findByPk(conversationId, {
-    include: conversationInclude,
-  });
+const createMessageNotification = async (userId, sender, message, conversationId) => {
+  if (!userId) return;
 
-  if (!conversation) return null;
-  if (![conversation.user_one_id, conversation.user_two_id].includes(userId)) return false;
-  return conversation;
+  await db.Notification.create({
+    user_id: userId,
+    type: 'message',
+    title: `New message from ${sender.name}`,
+    message: message.body.slice(0, 160),
+    link: '/dashboard/inbox',
+    data: { conversation_id: conversationId, sender_id: sender.id },
+  });
 };
 
-const emitSafe = (room, event, payload) => {
-  try {
-    const io = getIO();
-    io.to(room).emit(event, payload);
-  } catch (_) {
-    // Socket delivery is optional
+const getInstitutionRecipients = async (conversation, excludeUserId = null) => {
+  const recipients = new Map();
+
+  if (conversation.conversation_context === 'university' && conversation.university_id) {
+    const [university, accessRows] = await Promise.all([
+      conversation.University
+        ? Promise.resolve(conversation.University)
+        : db.University.findByPk(conversation.university_id, { attributes: institutionPreviewAttributes }),
+      db.UniversityInboxAccess.findAll({
+        where: { university_id: conversation.university_id },
+        include: [{ model: db.User, as: 'User', attributes: userPreviewAttributes }],
+      }),
+    ]);
+
+    if (university?.owner_id) {
+      const owner = await db.User.findByPk(university.owner_id, { attributes: userPreviewAttributes });
+      if (owner) recipients.set(String(owner.id), owner);
+    }
+
+    accessRows.forEach((row) => {
+      if (row.User?.id) recipients.set(String(row.User.id), row.User);
+    });
   }
+
+  if (conversation.conversation_context === 'organization' && conversation.organization_id) {
+    const [organization, accessRows] = await Promise.all([
+      conversation.Organization
+        ? Promise.resolve(conversation.Organization)
+        : db.Organization.findByPk(conversation.organization_id, { attributes: institutionPreviewAttributes }),
+      db.OrganizationInboxAccess.findAll({
+        where: { organization_id: conversation.organization_id },
+        include: [{ model: db.User, as: 'User', attributes: userPreviewAttributes }],
+      }),
+    ]);
+
+    if (organization?.owner_id) {
+      const owner = await db.User.findByPk(organization.owner_id, { attributes: userPreviewAttributes });
+      if (owner) recipients.set(String(owner.id), owner);
+    }
+
+    accessRows.forEach((row) => {
+      if (row.User?.id) recipients.set(String(row.User.id), row.User);
+    });
+  }
+
+  if (excludeUserId) recipients.delete(String(excludeUserId));
+  return Array.from(recipients.values());
+};
+
+const getConversationDeliveryTargets = async (conversation, senderId) => {
+  if (conversation.conversation_context === 'university' || conversation.conversation_context === 'organization') {
+    const institutionRecipients = await getInstitutionRecipients(conversation, senderId);
+    const participant = conversation.ParticipantUser
+      || (conversation.participant_user_id
+        ? await db.User.findByPk(conversation.participant_user_id, { attributes: userPreviewAttributes })
+        : null);
+
+    const targets = new Map();
+    institutionRecipients.forEach((user) => {
+      targets.set(String(user.id), user);
+    });
+    if (participant?.id && String(participant.id) !== String(senderId)) {
+      targets.set(String(participant.id), participant);
+    }
+    return Array.from(targets.values());
+  }
+
+  const recipient = participantFor(conversation, senderId);
+  return recipient?.id ? [recipient] : [];
+};
+
+const dispatchConversationUpdate = async ({ conversation, sender, message, clientTempId = null }) => {
+  const deliveryTargets = await getConversationDeliveryTargets(conversation, sender.id);
+  const targetIds = Array.from(new Set([sender.id, ...deliveryTargets.map((user) => user.id)]));
+  const summaries = await Promise.all(targetIds.map(async (userId) => ([
+    userId,
+    await loadConversationSummary(conversation.id, userId),
+  ])));
+  const summaryMap = new Map(summaries);
+
+  emitSafe(`user_${sender.id}`, 'message:new', {
+    conversationId: conversation.id,
+    conversation: summaryMap.get(sender.id),
+    message,
+    clientTempId,
+  });
+
+  await Promise.all(deliveryTargets.map(async (targetUser) => {
+    await createMessageNotification(targetUser.id, sender, message, conversation.id);
+    emitSafe(`user_${targetUser.id}`, 'message:new', {
+      conversationId: conversation.id,
+      conversation: summaryMap.get(targetUser.id),
+      message,
+      clientTempId,
+    });
+  }));
 };
 
 exports.listConversations = async (req, res) => {
   try {
     const requestedContext = normalizeConversationContext(req.query.context);
-    const ownedUniversity = requestedContext === 'university'
-      ? await getOwnedUniversity(req.user.id)
-      : null;
-    const ownedOrganization = requestedContext === 'organization'
-      ? await getOwnedOrganization(req.user.id)
-      : null;
+    const [managedUniversity, managedOrganization] = await Promise.all([
+      requestedContext === 'university' ? getManagedUniversity(req.user) : Promise.resolve(null),
+      requestedContext === 'organization' ? getManagedOrganization(req.user) : Promise.resolve(null),
+    ]);
 
-    if (requestedContext === 'university' && !ownedUniversity) {
+    if (requestedContext === 'university' && !managedUniversity) {
       return success(res, { conversations: [], context: 'university', university: null, organization: null });
     }
-    if (requestedContext === 'organization' && !ownedOrganization) {
+    if (requestedContext === 'organization' && !managedOrganization) {
       return success(res, { conversations: [], context: 'organization', university: null, organization: null });
     }
 
-    const where = {
-      ...conversationWhereForUser(req.user.id),
-      ...(requestedContext && requestedContext !== 'all' ? { conversation_context: requestedContext } : {}),
-      ...(requestedContext === 'university' ? { university_id: ownedUniversity.id } : {}),
-      ...(requestedContext === 'organization' ? { organization_id: ownedOrganization.id } : {}),
-    };
+    let where;
+    if (requestedContext === 'university') {
+      where = { conversation_context: 'university', university_id: managedUniversity.id };
+    } else if (requestedContext === 'organization') {
+      where = { conversation_context: 'organization', organization_id: managedOrganization.id };
+    } else {
+      where = {
+        ...conversationWhereForUser(req.user.id),
+        ...(requestedContext && requestedContext !== 'all' ? { conversation_context: requestedContext } : {}),
+      };
+    }
 
     const conversations = await db.Conversation.findAll({
       where,
@@ -140,8 +359,8 @@ exports.listConversations = async (req, res) => {
     return success(res, {
       conversations: rows,
       context: requestedContext || 'all',
-      university: ownedUniversity,
-      organization: ownedOrganization,
+      university: managedUniversity,
+      organization: managedOrganization,
     });
   } catch (err) {
     return error(res, err.message, 500);
@@ -175,75 +394,128 @@ exports.searchUsers = async (req, res) => {
 exports.createConversation = async (req, res) => {
   try {
     const { recipient_id, recipient_email, message, client_temp_id } = req.body;
-    const requestedContext = normalizeConversationContext(req.body.context);
-    if (!recipient_id && !recipient_email) return error(res, 'Recipient is required');
+    const requestedContext = normalizeConversationContext(req.body.context) || 'personal';
 
-    const recipient = await db.User.findOne({
-      where: recipient_id ? { id: recipient_id } : { email: recipient_email },
-      attributes: ['id', 'name', 'email', 'avatar_url', 'role_id'],
-      include: [{ model: db.Role, as: 'Role', attributes: ['name'] }],
-    });
-    if (!recipient) return notFound(res, 'Recipient not found');
-    if (recipient.id === req.user.id) return error(res, 'You cannot start a chat with yourself');
+    let conversation;
 
-    const effectiveContext = requestedContext
-      || (recipient.Role?.name === 'admin' && req.user?.Role?.name !== 'admin' ? 'admin' : 'personal');
-
-    let contextUniversity = null;
-    let contextOrganization = null;
-    if (effectiveContext === 'university') {
+    if (requestedContext === 'university') {
       if (!req.body.university_id) return error(res, 'University context requires a university_id');
 
-      contextUniversity = await db.University.findOne({
-        where: { id: req.body.university_id, owner_id: recipient.id },
-        attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id'],
+      const contextUniversity = await db.University.findByPk(req.body.university_id, {
+        attributes: institutionPreviewAttributes,
       });
+      if (!contextUniversity) return notFound(res, 'University not found');
+      const institutionUserId = legacyInstitutionUserId(contextUniversity, req.user.id);
 
-      if (!contextUniversity) {
-        return error(res, 'This university inbox is not available for the selected recipient', 400);
-      }
-    }
-    if (effectiveContext === 'organization') {
-      if (!req.body.organization_id) return error(res, 'Organization context requires an organization_id');
-
-      contextOrganization = await db.Organization.findOne({
-        where: { id: req.body.organization_id, owner_id: recipient.id },
-        attributes: ['id', 'name', 'slug', 'logo_url', 'owner_id'],
-      });
-
-      if (!contextOrganization) {
-        return error(res, 'This organization inbox is not available for the selected recipient', 400);
-      }
-    }
-    if (effectiveContext === 'admin' && recipient.Role?.name !== 'admin') {
-      return error(res, 'Admin context requires an admin recipient', 400);
-    }
-
-    let conversation = await db.Conversation.findOne({
-      where: {
-        conversation_context: effectiveContext,
-        ...(effectiveContext === 'university' ? { university_id: contextUniversity.id } : {}),
-        ...(effectiveContext === 'organization' ? { organization_id: contextOrganization.id } : {}),
-        [Op.or]: [
-          { user_one_id: req.user.id, user_two_id: recipient.id },
-          { user_one_id: recipient.id, user_two_id: req.user.id },
-        ],
-      },
-      include: conversationInclude,
-    });
-
-    if (!conversation) {
-      conversation = await db.Conversation.create({
-        user_one_id: req.user.id,
-        user_two_id: recipient.id,
-        conversation_context: effectiveContext,
-        university_id: effectiveContext === 'university' ? contextUniversity.id : null,
-        organization_id: effectiveContext === 'organization' ? contextOrganization.id : null,
-        last_message_at: message?.trim() ? new Date() : null,
-      });
-      conversation = await db.Conversation.findByPk(conversation.id, {
+      conversation = await db.Conversation.findOne({
+        where: {
+          conversation_context: 'university',
+          university_id: contextUniversity.id,
+          [Op.or]: [
+            { participant_user_id: req.user.id },
+            {
+              [Op.or]: [
+                { user_one_id: req.user.id, user_two_id: institutionUserId },
+                { user_one_id: institutionUserId, user_two_id: req.user.id },
+              ],
+            },
+          ],
+        },
         include: conversationInclude,
       });
+
+      if (!conversation) {
+        conversation = await db.Conversation.create({
+          user_one_id: req.user.id,
+          user_two_id: institutionUserId,
+          participant_user_id: req.user.id,
+          conversation_context: 'university',
+          university_id: contextUniversity.id,
+          organization_id: null,
+          last_message_at: message?.trim() ? new Date() : null,
+        });
+        conversation = await db.Conversation.findByPk(conversation.id, { include: conversationInclude });
+      }
+    } else if (requestedContext === 'organization') {
+      if (!req.body.organization_id) return error(res, 'Organization context requires an organization_id');
+
+      const contextOrganization = await db.Organization.findByPk(req.body.organization_id, {
+        attributes: institutionPreviewAttributes,
+      });
+      if (!contextOrganization) return notFound(res, 'Organization not found');
+      const institutionUserId = legacyInstitutionUserId(contextOrganization, req.user.id);
+
+      conversation = await db.Conversation.findOne({
+        where: {
+          conversation_context: 'organization',
+          organization_id: contextOrganization.id,
+          [Op.or]: [
+            { participant_user_id: req.user.id },
+            {
+              [Op.or]: [
+                { user_one_id: req.user.id, user_two_id: institutionUserId },
+                { user_one_id: institutionUserId, user_two_id: req.user.id },
+              ],
+            },
+          ],
+        },
+        include: conversationInclude,
+      });
+
+      if (!conversation) {
+        conversation = await db.Conversation.create({
+          user_one_id: req.user.id,
+          user_two_id: institutionUserId,
+          participant_user_id: req.user.id,
+          conversation_context: 'organization',
+          organization_id: contextOrganization.id,
+          university_id: null,
+          last_message_at: message?.trim() ? new Date() : null,
+        });
+        conversation = await db.Conversation.findByPk(conversation.id, { include: conversationInclude });
+      }
+    } else {
+      if (!recipient_id && !recipient_email) return error(res, 'Recipient is required');
+
+      const recipient = await db.User.findOne({
+        where: recipient_id ? { id: recipient_id } : { email: recipient_email },
+        attributes: ['id', 'name', 'email', 'avatar_url', 'role_id'],
+        include: [{ model: db.Role, as: 'Role', attributes: ['name'] }],
+      });
+      if (!recipient) return notFound(res, 'Recipient not found');
+      if (recipient.id === req.user.id) return error(res, 'You cannot start a chat with yourself');
+
+      const effectiveContext = requestedContext === 'admin'
+        ? 'admin'
+        : (recipient.Role?.name === 'admin' && req.user?.Role?.name !== 'admin' ? 'admin' : 'personal');
+
+      if (effectiveContext === 'admin' && recipient.Role?.name !== 'admin') {
+        return error(res, 'Admin context requires an admin recipient', 400);
+      }
+
+      conversation = await db.Conversation.findOne({
+        where: {
+          conversation_context: effectiveContext,
+          [Op.or]: [
+            { user_one_id: req.user.id, user_two_id: recipient.id },
+            { user_one_id: recipient.id, user_two_id: req.user.id },
+          ],
+        },
+        include: conversationInclude,
+      });
+
+      if (!conversation) {
+        conversation = await db.Conversation.create({
+          user_one_id: req.user.id,
+          user_two_id: recipient.id,
+          participant_user_id: null,
+          conversation_context: effectiveContext,
+          university_id: null,
+          organization_id: null,
+          last_message_at: message?.trim() ? new Date() : null,
+        });
+        conversation = await db.Conversation.findByPk(conversation.id, { include: conversationInclude });
+      }
     }
 
     let createdMessage = null;
@@ -255,33 +527,13 @@ exports.createConversation = async (req, res) => {
         body: message.trim(),
       });
       await conversation.update({ last_message_at: createdMessage.createdAt });
-
-      await db.Notification.create({
-        user_id: recipient.id,
-        type: 'message',
-        title: `New message from ${req.user.name}`,
-        message: message.trim().slice(0, 160),
-        link: '/inbox',
-        data: { conversation_id: conversation.id, sender_id: req.user.id },
-      });
       createdMessageWithSender = await db.Message.findByPk(createdMessage.id, {
         include: [{ model: db.User, as: 'Sender', attributes: ['id', 'name', 'avatar_url'] }],
       });
 
-      const [senderConversation, recipientConversation] = await Promise.all([
-        loadConversationSummary(conversation.id, req.user.id),
-        loadConversationSummary(conversation.id, recipient.id),
-      ]);
-
-      emitSafe(`user_${req.user.id}`, 'message:new', {
-        conversationId: conversation.id,
-        conversation: senderConversation,
-        message: createdMessageWithSender,
-        clientTempId: client_temp_id || null,
-      });
-      emitSafe(`user_${recipient.id}`, 'message:new', {
-        conversationId: conversation.id,
-        conversation: recipientConversation,
+      await dispatchConversationUpdate({
+        conversation,
+        sender: req.user,
         message: createdMessageWithSender,
         clientTempId: client_temp_id || null,
       });
@@ -299,7 +551,7 @@ exports.createConversation = async (req, res) => {
 
 exports.getMessages = async (req, res) => {
   try {
-    const conversation = await ensureParticipant(req.params.id, req.user.id);
+    const conversation = await ensureAccessibleConversation(req.params.id, req.user);
     if (conversation === null) return notFound(res, 'Conversation not found');
     if (conversation === false) return forbidden(res, 'You do not have access to this conversation');
 
@@ -323,7 +575,7 @@ exports.getMessages = async (req, res) => {
 
 exports.sendMessage = async (req, res) => {
   try {
-    const conversation = await ensureParticipant(req.params.id, req.user.id);
+    const conversation = await ensureAccessibleConversation(req.params.id, req.user);
     if (conversation === null) return notFound(res, 'Conversation not found');
     if (conversation === false) return forbidden(res, 'You do not have access to this conversation');
     if (!req.body.body?.trim()) return error(res, 'Message body is required');
@@ -336,34 +588,13 @@ exports.sendMessage = async (req, res) => {
     });
     await conversation.update({ last_message_at: message.createdAt });
 
-    const recipient = participantFor(conversation, req.user.id);
-    await db.Notification.create({
-      user_id: recipient.id,
-      type: 'message',
-      title: `New message from ${req.user.name}`,
-      message: message.body.slice(0, 160),
-      link: '/inbox',
-      data: { conversation_id: conversation.id, sender_id: req.user.id },
-    });
-
     const withSender = await db.Message.findByPk(message.id, {
       include: [{ model: db.User, as: 'Sender', attributes: ['id', 'name', 'avatar_url'] }],
     });
 
-    const [senderConversation, recipientConversation] = await Promise.all([
-      loadConversationSummary(conversation.id, req.user.id),
-      loadConversationSummary(conversation.id, recipient.id),
-    ]);
-
-    emitSafe(`user_${req.user.id}`, 'message:new', {
-      conversationId: conversation.id,
-      conversation: senderConversation,
-      message: withSender,
-      clientTempId,
-    });
-    emitSafe(`user_${recipient.id}`, 'message:new', {
-      conversationId: conversation.id,
-      conversation: recipientConversation,
+    await dispatchConversationUpdate({
+      conversation,
+      sender: req.user,
       message: withSender,
       clientTempId,
     });
@@ -376,7 +607,7 @@ exports.sendMessage = async (req, res) => {
 
 exports.markConversationRead = async (req, res) => {
   try {
-    const conversation = await ensureParticipant(req.params.id, req.user.id);
+    const conversation = await ensureAccessibleConversation(req.params.id, req.user);
     if (conversation === null) return notFound(res, 'Conversation not found');
     if (conversation === false) return forbidden(res, 'You do not have access to this conversation');
 
@@ -393,16 +624,15 @@ exports.markConversationRead = async (req, res) => {
     );
 
     if (updatedCount > 0) {
-      const otherParticipant = participantFor(conversation, req.user.id);
-      emitSafe(`user_${otherParticipant.id}`, 'conversation:read', {
-        conversationId: conversation.id,
-        readerId: req.user.id,
-        readAt,
-      });
-      emitSafe(`user_${req.user.id}`, 'conversation:read', {
-        conversationId: conversation.id,
-        readerId: req.user.id,
-        readAt,
+      const deliveryTargets = await getConversationDeliveryTargets(conversation, req.user.id);
+      const recipientIds = new Set([req.user.id, ...deliveryTargets.map((user) => user.id)]);
+
+      recipientIds.forEach((userId) => {
+        emitSafe(`user_${userId}`, 'conversation:read', {
+          conversationId: conversation.id,
+          readerId: req.user.id,
+          readAt,
+        });
       });
     }
 

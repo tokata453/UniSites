@@ -3,7 +3,7 @@ const { Op } = require('sequelize');
 const db = require('../models');
 const { success, created, error } = require('../utils/response.utils');
 
-const VALID_TYPES = new Set(['news', 'opportunity']);
+const VALID_TYPES = new Set(['news', 'opportunity', 'event']);
 
 const ensureValidType = (itemType) => {
   if (!VALID_TYPES.has(itemType)) {
@@ -13,12 +13,18 @@ const ensureValidType = (itemType) => {
   }
 };
 
-const getItemModel = (itemType) => (itemType === 'news' ? db.UniversityNews : db.Opportunity);
-
 const ensureItemExists = async (itemType, itemId) => {
   ensureValidType(itemType);
-  const Model = getItemModel(itemType);
-  const item = await Model.findByPk(itemId);
+
+  let item = null;
+  if (itemType === 'news') {
+    item = await db.UniversityNews.findByPk(itemId) || await db.OrganizationNews.findByPk(itemId);
+  } else if (itemType === 'event') {
+    item = await db.OrganizationEvent.findByPk(itemId);
+  } else {
+    item = await db.Opportunity.findByPk(itemId);
+  }
+
   if (!item) {
     const err = new Error('Feed item not found');
     err.statusCode = 404;
@@ -39,6 +45,7 @@ const attachInteractionMeta = async (items, userId = null) => {
   const likeWhere = [];
   if (groupedIds.news?.length) likeWhere.push({ item_type: 'news', item_id: { [Op.in]: groupedIds.news } });
   if (groupedIds.opportunity?.length) likeWhere.push({ item_type: 'opportunity', item_id: { [Op.in]: groupedIds.opportunity } });
+  if (groupedIds.event?.length) likeWhere.push({ item_type: 'event', item_id: { [Op.in]: groupedIds.event } });
 
   const [likes, comments, myLikes] = await Promise.all([
     likeWhere.length ? db.FeedLike.findAll({ where: { [Op.or]: likeWhere }, attributes: ['item_type', 'item_id', 'user_id'] }) : [],
@@ -70,21 +77,29 @@ const attachInteractionMeta = async (items, userId = null) => {
   });
 };
 
-const getItemTimestamp = (item) =>
-  new Date(item.kind === 'news' ? (item.News?.published_at || item.News?.created_at) : item.Opportunity?.created_at);
+const getItemTimestamp = (item) => new Date(
+  item.kind === 'news'
+    ? (item.News?.published_at || item.News?.created_at)
+    : item.kind === 'event'
+      ? (item.Event?.event_date || item.Event?.created_at)
+      : item.Opportunity?.created_at
+);
 
 const getRankingScore = (item) => {
   const createdAt = getItemTimestamp(item);
   const ageHours = Math.max((Date.now() - createdAt.getTime()) / (1000 * 60 * 60), 1);
   const views = item.kind === 'news'
     ? Number(item.News?.views_count || 0)
-    : Number(item.Opportunity?.views_count || 0);
+    : item.kind === 'event'
+      ? 0
+      : Number(item.Opportunity?.views_count || 0);
   const popularityScore =
     (Number(item.comment_count || 0) * 4) +
     (Number(item.like_count || 0) * 2) +
     Math.min(views / 20, 12);
   const editorialBoost =
     (item.kind === 'news' && item.News?.is_pinned ? 8 : 0) +
+    (item.kind === 'event' && item.Event?.is_featured ? 8 : 0) +
     (item.kind === 'opportunity' && item.Opportunity?.is_featured ? 8 : 0);
   const freshnessScore = 36 / Math.pow(ageHours + 2, 0.55);
 
@@ -100,13 +115,28 @@ const list = async (req, res) => {
     const term = String(search || '').trim();
 
     const newsWhere = { is_published: true };
+    const eventWhere = { is_published: true };
     const opportunityWhere = { is_published: true };
+    const kindFilter = String(kind || 'all');
+
+    const wantsAnyNews = ['all', 'news', 'university-news', 'organization-news'].includes(kindFilter);
+    const wantsUniversityNews = ['all', 'news', 'university-news'].includes(kindFilter);
+    const wantsOrganizationNews = ['all', 'news', 'organization-news'].includes(kindFilter);
+    const wantsEvents = ['all', 'event', 'organization-event'].includes(kindFilter);
+    const wantsAnyOpportunities = ['all', 'opportunity', 'university-opportunity', 'organization-opportunity'].includes(kindFilter);
+    const wantsUniversityOpportunities = ['all', 'opportunity', 'university-opportunity'].includes(kindFilter);
+    const wantsOrganizationOpportunities = ['all', 'opportunity', 'organization-opportunity'].includes(kindFilter);
 
     if (term) {
       newsWhere[Op.or] = [
         { title: { [Op.iLike]: `%${term}%` } },
         { excerpt: { [Op.iLike]: `%${term}%` } },
         { content: { [Op.iLike]: `%${term}%` } },
+      ];
+      eventWhere[Op.or] = [
+        { title: { [Op.iLike]: `%${term}%` } },
+        { description: { [Op.iLike]: `%${term}%` } },
+        { location: { [Op.iLike]: `%${term}%` } },
       ];
       opportunityWhere[Op.or] = [
         { title: { [Op.iLike]: `%${term}%` } },
@@ -117,43 +147,83 @@ const list = async (req, res) => {
 
     const fetchSize = safePage * safeLimit;
 
-    const [newsResult, opportunityResult] = await Promise.all([
-      kind === 'opportunity'
+    const [newsResult, eventResult, opportunityResult] = await Promise.all([
+      !wantsAnyNews
         ? { count: 0, rows: [] }
-        : db.UniversityNews.findAndCountAll({
-            where: newsWhere,
+        : Promise.all([
+            wantsUniversityNews
+              ? db.UniversityNews.findAll({
+                  where: newsWhere,
+                  limit: fetchSize,
+                  order: [['is_pinned', 'DESC'], ['published_at', 'DESC'], ['created_at', 'DESC']],
+                  include: [
+                    { model: db.University, as: 'University', attributes: ['id', 'name', 'slug', 'logo_url', 'province'] },
+                    { model: db.User, as: 'Author', attributes: ['id', 'name', 'avatar_url'] },
+                  ],
+                })
+              : [],
+            wantsOrganizationNews
+              ? db.OrganizationNews.findAll({
+                  where: newsWhere,
+                  limit: fetchSize,
+                  order: [['is_pinned', 'DESC'], ['published_at', 'DESC'], ['created_at', 'DESC']],
+                  include: [
+                    { model: db.Organization, as: 'Organization', attributes: ['id', 'name', 'slug', 'logo_url', 'location'] },
+                    { model: db.User, as: 'Author', attributes: ['id', 'name', 'avatar_url'] },
+                  ],
+                })
+              : [],
+          ]).then(([universityNews, organizationNews]) => ({
+            count: universityNews.length + organizationNews.length,
+            rows: [...universityNews, ...organizationNews],
+          })),
+      !wantsEvents
+        ? { count: 0, rows: [] }
+        : db.OrganizationEvent.findAndCountAll({
+            where: eventWhere,
             limit: fetchSize,
-            order: [['is_pinned', 'DESC'], ['published_at', 'DESC'], ['created_at', 'DESC']],
+            order: [['is_featured', 'DESC'], ['event_date', 'ASC'], ['created_at', 'DESC']],
             include: [
-              { model: db.University, as: 'University', attributes: ['id', 'name', 'slug', 'logo_url', 'province'] },
-              { model: db.User, as: 'Author', attributes: ['id', 'name', 'avatar_url'] },
+              { model: db.Organization, as: 'Organization', attributes: ['id', 'name', 'slug', 'logo_url', 'location'] },
             ],
           }),
-      kind === 'news'
+      !wantsAnyOpportunities
         ? { count: 0, rows: [] }
         : db.Opportunity.findAndCountAll({
-            where: opportunityWhere,
+            where: {
+              ...opportunityWhere,
+              ...(wantsUniversityOpportunities && !wantsOrganizationOpportunities
+                ? { university_id: { [Op.ne]: null } }
+                : {}),
+              ...(wantsOrganizationOpportunities && !wantsUniversityOpportunities
+                ? { university_id: null }
+                : {}),
+            },
             limit: fetchSize,
             order: [['is_featured', 'DESC'], ['created_at', 'DESC']],
             include: [
               { model: db.OpportunityTag, as: 'Tags' },
               { model: db.University, as: 'University', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'province'] },
+              { model: db.Organization, as: 'Organization', required: false, attributes: ['id', 'name', 'slug', 'logo_url', 'location'] },
               { model: db.User, as: 'PostedBy', required: false, attributes: ['id', 'name', 'avatar_url'] },
             ],
           }),
     ]);
 
-    const newsItems = newsResult.rows || [];
-    const opportunityItems = opportunityResult.rows || [];
-
     const rawItems = [
-      ...newsItems.map((item) => ({
+      ...(newsResult.rows || []).map((item) => ({
         id: item.id,
         kind: 'news',
         created_at: item.published_at || item.created_at,
         News: item,
       })),
-      ...opportunityItems.map((item) => ({
+      ...(eventResult.rows || []).map((item) => ({
+        id: item.id,
+        kind: 'event',
+        created_at: item.event_date || item.created_at,
+        Event: item,
+      })),
+      ...(opportunityResult.rows || []).map((item) => ({
         id: item.id,
         kind: 'opportunity',
         created_at: item.created_at,
@@ -161,7 +231,7 @@ const list = async (req, res) => {
       })),
     ];
 
-    const total = Number(newsResult.count || 0) + Number(opportunityResult.count || 0);
+    const total = Number(newsResult.count || 0) + Number(eventResult.count || 0) + Number(opportunityResult.count || 0);
     const rankedItems = await attachInteractionMeta(rawItems, req.user?.id || null);
     rankedItems.sort((a, b) => {
       const scoreDiff = getRankingScore(b) - getRankingScore(a);

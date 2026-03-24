@@ -20,6 +20,9 @@ module.exports = (sequelize, DataTypes) => {
       User.belongsTo(db.Role, { foreignKey: 'role_id', as: 'Role' });
       User.hasMany(db.University, { foreignKey: 'owner_id', as: 'OwnedUniversities' });
       User.hasOne(db.Organization, { foreignKey: 'owner_id', as: 'Organization' });
+      User.hasMany(db.Conversation, { foreignKey: 'participant_user_id', as: 'InstitutionConversations' });
+      User.hasMany(db.UniversityInboxAccess, { foreignKey: 'user_id', as: 'UniversityInboxAccesses' });
+      User.hasMany(db.OrganizationInboxAccess, { foreignKey: 'user_id', as: 'OrganizationInboxAccesses' });
       User.hasMany(db.UniversityNews, { foreignKey: 'author_id', as: 'AuthoredNews' });
       User.hasMany(db.OrganizationNews, { foreignKey: 'author_id', as: 'AuthoredOrganizationNews' });
       User.hasMany(db.UniversityTestimonial, { foreignKey: 'user_id', as: 'Testimonials' });

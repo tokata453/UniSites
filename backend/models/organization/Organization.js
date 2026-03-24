@@ -7,6 +7,7 @@ module.exports = (sequelize, DataTypes) => {
       Organization.belongsTo(db.User, { foreignKey: 'owner_id', as: 'Owner' });
       Organization.hasMany(db.Opportunity, { foreignKey: 'posted_by', sourceKey: 'owner_id', as: 'Opportunities', constraints: false });
       Organization.hasMany(db.Conversation, { foreignKey: 'organization_id', as: 'Conversations' });
+      Organization.hasMany(db.OrganizationInboxAccess, { foreignKey: 'organization_id', as: 'InboxAccesses', onDelete: 'CASCADE' });
       Organization.hasOne(db.OrganizationContact, { foreignKey: 'organization_id', as: 'Contact', onDelete: 'CASCADE' });
       Organization.hasMany(db.OrganizationGallery, { foreignKey: 'organization_id', as: 'Gallery', onDelete: 'CASCADE' });
       Organization.hasMany(db.OrganizationFAQ, { foreignKey: 'organization_id', as: 'FAQs', onDelete: 'CASCADE' });
@@ -31,6 +32,15 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(255),
       allowNull: false,
     },
+    tagline: {
+      type: DataTypes.STRING(255),
+    },
+    category: {
+      type: DataTypes.STRING(120),
+    },
+    industry: {
+      type: DataTypes.STRING(120),
+    },
     logo_url: {
       type: DataTypes.TEXT,
     },
@@ -39,6 +49,24 @@ module.exports = (sequelize, DataTypes) => {
     },
     description: {
       type: DataTypes.TEXT,
+    },
+    mission: {
+      type: DataTypes.TEXT,
+    },
+    vision: {
+      type: DataTypes.TEXT,
+    },
+    location: {
+      type: DataTypes.STRING(255),
+    },
+    address: {
+      type: DataTypes.TEXT,
+    },
+    founded_year: {
+      type: DataTypes.INTEGER,
+    },
+    team_size: {
+      type: DataTypes.STRING(80),
     },
     website_url: {
       type: DataTypes.STRING(255),

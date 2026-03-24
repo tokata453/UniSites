@@ -42,12 +42,12 @@ const OWNER_NAV = [
 ];
 
 const ORGANIZATION_NAV = [
-  { to: '/organization', label: 'Dashboard', icon: 'M3 13h8V3H3v10z M13 21h8V11h-8v10z M13 3v6h8V3h-8z M3 21h8v-6H3v6z', end: true },
+  { to: '/organization', label: 'Overview', icon: 'M3 13h8V3H3v10z M13 21h8V11h-8v10z M13 3v6h8V3h-8z M3 21h8v-6H3v6z', end: true },
   { to: '/organization/opportunities', label: 'Opportunities', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z' },
-  { to: '/organization/faq', label: 'FAQ', icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z' },
-  { to: '/organization/reviews', label: 'Reviews', icon: 'M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11' },
   { to: '/organization/news', label: 'News', icon: 'M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2' },
   { to: '/organization/events', label: 'Events', icon: 'M8 2v4 M16 2v4 M3 10h18 M5 6h14a2 2 0 012 2v11a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z' },
+  { to: '/organization/faq', label: 'FAQ & Contact', icon: 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z' },
+  { to: '/organization/reviews', label: 'Reviews', icon: 'M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11' },
   { to: '/organization/inbox?context=organization', label: 'Organization Inbox', icon: 'M22 12.08V19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h12.93 M22 6l-10 7L2 6' },
 ];
 

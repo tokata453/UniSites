@@ -82,7 +82,16 @@ export default function OrganizationProfile() {
   const { user } = useAuth();
   const [form, setForm] = useState({
     name: '',
+    tagline: '',
+    category: '',
+    industry: '',
     description: '',
+    mission: '',
+    vision: '',
+    location: '',
+    address: '',
+    founded_year: '',
+    team_size: '',
     website_url: '',
     contact_phone: '',
     email: '',
@@ -111,7 +120,16 @@ export default function OrganizationProfile() {
       setOpportunities(oppRes.data.opportunities || []);
       setForm({
         name: next?.name || '',
+        tagline: next?.tagline || '',
+        category: next?.category || '',
+        industry: next?.industry || '',
         description: next?.description || '',
+        mission: next?.mission || '',
+        vision: next?.vision || '',
+        location: next?.location || '',
+        address: next?.address || '',
+        founded_year: next?.founded_year || '',
+        team_size: next?.team_size || '',
         website_url: next?.website_url || '',
         contact_phone: next?.contact_phone || '',
         email: next?.email || user?.email || '',
@@ -154,6 +172,9 @@ export default function OrganizationProfile() {
     const importantFields = [
       form.name,
       form.description,
+      form.tagline,
+      form.category || form.industry,
+      form.location,
       form.website_url,
       form.contact_phone,
       form.email,
@@ -167,10 +188,11 @@ export default function OrganizationProfile() {
   const actionItems = useMemo(() => [
     { label: 'Add your logo', done: Boolean(logoPreview || organization?.logo_url), to: '/organization' },
     { label: 'Write a strong organization description', done: Boolean(form.description), to: '/organization' },
+    { label: 'Add category, location, and team details', done: Boolean(form.category && form.location && form.team_size), to: '/organization' },
     { label: 'Add direct contact details', done: Boolean(form.email && form.contact_phone), to: '/organization' },
     { label: 'Link your website or social presence', done: Boolean(form.website_url || summary.socialLinks), to: '/organization' },
     { label: 'Publish at least one opportunity', done: summary.opportunities > 0, to: '/organization/opportunities' },
-  ], [form.description, form.email, form.contact_phone, form.website_url, logoPreview, organization?.logo_url, summary.opportunities, summary.socialLinks]);
+  ], [form.category, form.contact_phone, form.description, form.email, form.location, form.team_size, form.website_url, logoPreview, organization?.logo_url, summary.opportunities, summary.socialLinks]);
 
   const performanceNotes = [
     summary.opportunities > 0
@@ -179,6 +201,9 @@ export default function OrganizationProfile() {
     summary.gallery > 0
       ? `Your public profile includes ${summary.gallery} gallery item${summary.gallery === 1 ? '' : 's'}, which helps the page feel more complete.`
       : 'There are no gallery visuals yet, so the public page relies mostly on text and contact details.',
+    form.category || form.industry || form.location
+      ? `Visitors can already see stronger organization context through ${[form.category, form.industry, form.location].filter(Boolean).join(', ')}.`
+      : 'Add category, industry, and location so visitors can quickly understand what kind of organization this is.',
     user?.is_approved
       ? 'Your account is approved, so students can interact with your organization through the full dashboard flow.'
       : 'Your account is still pending admin approval, so full organization actions remain limited for now.',
@@ -189,7 +214,16 @@ export default function OrganizationProfile() {
     try {
       const fd = new FormData();
       fd.append('name', form.name);
+      fd.append('tagline', form.tagline);
+      fd.append('category', form.category);
+      fd.append('industry', form.industry);
       fd.append('description', form.description);
+      fd.append('mission', form.mission);
+      fd.append('vision', form.vision);
+      fd.append('location', form.location);
+      fd.append('address', form.address);
+      fd.append('founded_year', form.founded_year);
+      fd.append('team_size', form.team_size);
       fd.append('website_url', form.website_url);
       fd.append('contact_phone', form.contact_phone);
       fd.append('email', form.email);
@@ -252,6 +286,8 @@ export default function OrganizationProfile() {
             <div className="rounded-2xl bg-slate-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Public Presence</p>
               <div className="mt-3 space-y-2 text-sm text-slate-600">
+                <p>Category: <span className="font-semibold text-slate-800">{form.category || form.industry || 'Missing'}</span></p>
+                <p>Location: <span className="font-semibold text-slate-800">{form.location || 'Missing'}</span></p>
                 <p>Website: <span className="font-semibold text-slate-800">{form.website_url ? 'Added' : 'Missing'}</span></p>
                 <p>Contact phone: <span className="font-semibold text-slate-800">{form.contact_phone || 'Missing'}</span></p>
                 <p>Social links: <span className="font-semibold text-slate-800">{summary.socialLinks}</span></p>
@@ -340,11 +376,26 @@ export default function OrganizationProfile() {
         <Panel title="Core Information" description="This mirrors the public organization page and should stay clear and current." action={<button type="button" onClick={save} disabled={saving} className={primaryBtn}>{saving ? 'Saving...' : 'Save Changes'}</button>}>
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Organization Name"><input className={inputClass} value={form.name} onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Organization name" /></Field>
+            <Field label="Tagline"><input className={inputClass} value={form.tagline} onChange={(e) => setForm((prev) => ({ ...prev, tagline: e.target.value }))} placeholder="A short one-line summary of your mission" /></Field>
+            <Field label="Category"><input className={inputClass} value={form.category} onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))} placeholder="NGO, Company, Foundation, Exchange Program..." /></Field>
+            <Field label="Industry"><input className={inputClass} value={form.industry} onChange={(e) => setForm((prev) => ({ ...prev, industry: e.target.value }))} placeholder="Education, Technology, Development..." /></Field>
             <Field label="Public Email"><input className={inputClass} type="email" value={form.email} onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))} placeholder="hello@organization.org" /></Field>
             <Field label="Website"><input className={inputClass} type="url" value={form.website_url} onChange={(e) => setForm((prev) => ({ ...prev, website_url: e.target.value }))} placeholder="https://organization.org" /></Field>
             <Field label="Phone"><input className={inputClass} value={form.contact_phone} onChange={(e) => setForm((prev) => ({ ...prev, contact_phone: e.target.value }))} placeholder="+855 ..." /></Field>
+            <Field label="Location"><input className={inputClass} value={form.location} onChange={(e) => setForm((prev) => ({ ...prev, location: e.target.value }))} placeholder="Phnom Penh, Cambodia" /></Field>
+            <Field label="Founded Year"><input className={inputClass} type="number" min="1900" max="2100" value={form.founded_year} onChange={(e) => setForm((prev) => ({ ...prev, founded_year: e.target.value }))} placeholder="2020" /></Field>
+            <Field label="Team Size"><input className={inputClass} value={form.team_size} onChange={(e) => setForm((prev) => ({ ...prev, team_size: e.target.value }))} placeholder="11-50 employees / 30 volunteers" /></Field>
             <div className="md:col-span-2">
               <Field label="Description"><textarea className={`${inputClass} resize-y`} rows={5} value={form.description} onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))} placeholder="Tell students what your organization does and what opportunities it provides." /></Field>
+            </div>
+            <div className="md:col-span-2">
+              <Field label="Address"><textarea className={`${inputClass} resize-y`} rows={3} value={form.address} onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))} placeholder="Street address, district, city, country" /></Field>
+            </div>
+            <div className="md:col-span-2">
+              <Field label="Mission"><textarea className={`${inputClass} resize-y`} rows={4} value={form.mission} onChange={(e) => setForm((prev) => ({ ...prev, mission: e.target.value }))} placeholder="What is your organization trying to achieve?" /></Field>
+            </div>
+            <div className="md:col-span-2">
+              <Field label="Vision"><textarea className={`${inputClass} resize-y`} rows={4} value={form.vision} onChange={(e) => setForm((prev) => ({ ...prev, vision: e.target.value }))} placeholder="What long-term future is your organization working toward?" /></Field>
             </div>
             <Field label="Facebook URL"><input className={inputClass} value={form.facebook_url} onChange={(e) => setForm((prev) => ({ ...prev, facebook_url: e.target.value }))} placeholder="https://facebook.com/..." /></Field>
             <Field label="Telegram URL"><input className={inputClass} value={form.telegram_url} onChange={(e) => setForm((prev) => ({ ...prev, telegram_url: e.target.value }))} placeholder="https://t.me/..." /></Field>
@@ -394,8 +445,16 @@ export default function OrganizationProfile() {
                 <span>{form.email || 'No public email set yet'}</span>
               </div>
               <div className="flex items-center gap-3">
+                <Layers3 size={16} className="text-teal-700" />
+                <span>{form.category || form.industry || 'No category set yet'}</span>
+              </div>
+              <div className="flex items-center gap-3">
                 <Phone size={16} className="text-teal-700" />
                 <span>{form.contact_phone || 'No phone set yet'}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <CalendarDays size={16} className="text-teal-700" />
+                <span>{form.founded_year ? `Founded in ${form.founded_year}` : 'Founded year not set yet'}</span>
               </div>
               <div className="flex items-center gap-3">
                 <Globe2 size={16} className="text-teal-700" />

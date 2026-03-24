@@ -15,6 +15,8 @@ module.exports = (sequelize, DataTypes) => {
       University.hasMany(db.UniversityTestimonial, { foreignKey: 'university_id', as: 'Testimonials', onDelete: 'CASCADE' });
       University.hasMany(db.UniversityFAQ, { foreignKey: 'university_id', as: 'FAQs', onDelete: 'CASCADE' });
       University.hasMany(db.UniversitySource, { foreignKey: 'university_id', as: 'Sources', onDelete: 'CASCADE' });
+      University.hasMany(db.Conversation, { foreignKey: 'university_id', as: 'Conversations' });
+      University.hasMany(db.UniversityInboxAccess, { foreignKey: 'university_id', as: 'InboxAccesses', onDelete: 'CASCADE' });
       University.hasOne(db.UniversityContact, { foreignKey: 'university_id', as: 'Contact', onDelete: 'CASCADE' });
       University.hasOne(db.UniversityAnalytics, { foreignKey: 'university_id', as: 'Analytics', onDelete: 'CASCADE' });
       University.hasMany(db.UniversityReview, { foreignKey: 'university_id', as: 'Reviews', onDelete: 'CASCADE' });
