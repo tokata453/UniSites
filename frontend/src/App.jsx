@@ -39,6 +39,10 @@ import OwnerNews         from '@/pages/dashboard/owner/OwnerNews';
 import OwnerFAQ          from '@/pages/dashboard/owner/OwnerFAQ';
 import OrganizationOpportunities from '@/pages/dashboard/organization/OrganizationOpportunities';
 import OrganizationProfile from '@/pages/dashboard/organization/OrganizationProfile';
+import OrganizationFAQ from '@/pages/dashboard/organization/OrganizationFAQ';
+import OrganizationReviews from '@/pages/dashboard/organization/OrganizationReviews';
+import OrganizationNews from '@/pages/dashboard/organization/OrganizationNews';
+import OrganizationEvents from '@/pages/dashboard/organization/OrganizationEvents';
 
 // Admin dashboard
 import AdminOverview      from '@/pages/dashboard/admin/AdminOverview';
@@ -128,6 +132,10 @@ export default function App() {
         }>
           <Route index element={<OrganizationProfile />} />
           <Route path="opportunities" element={<OrganizationOpportunities />} />
+          <Route path="faq" element={<OrganizationFAQ />} />
+          <Route path="reviews" element={<OrganizationReviews />} />
+          <Route path="news" element={<OrganizationNews />} />
+          <Route path="events" element={<OrganizationEvents />} />
           <Route path="inbox" element={<InboxPage />} />
         </Route>
 

@@ -79,6 +79,31 @@ function Panel({ title, description, children, action }) {
   );
 }
 
+function ModalPanel({ open, title, description, children, onClose, wide = false }) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-3 sm:items-center sm:p-6">
+      <button type="button" className="absolute inset-0" onClick={onClose} aria-label="Close panel" />
+      <div className={`relative z-10 max-h-[90vh] w-full overflow-y-auto rounded-[28px] border border-slate-200 bg-white p-5 shadow-2xl sm:p-6 ${wide ? 'max-w-3xl' : 'max-w-2xl'}`}>
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-xl font-bold text-slate-800">{title}</h3>
+            {description && <p className="mt-1 text-sm text-slate-500">{description}</p>}
+          </div>
+          <button type="button" onClick={onClose} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700" aria-label="Close panel">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function Field({ label, children, hint }) {
   return (
     <label className="block">
@@ -212,6 +237,7 @@ export default function OrganizationOpportunities() {
   const [imageIndexes, setImageIndexes] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [opportunityModalOpen, setOpportunityModalOpen] = useState(false);
 
   const loadOpportunities = useCallback(async () => {
     setItemsLoading(true);
@@ -234,6 +260,7 @@ export default function OrganizationOpportunities() {
   const resetForm = () => {
     setForm(emptyForm);
     setEditingId(null);
+    setOpportunityModalOpen(false);
   };
 
   const startEdit = (item) => {
@@ -251,7 +278,13 @@ export default function OrganizationOpportunities() {
       start_date: item.start_date || '',
       end_date: item.end_date || '',
     });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setOpportunityModalOpen(true);
+  };
+
+  const startCreateOpportunity = () => {
+    setForm(emptyForm);
+    setEditingId(null);
+    setOpportunityModalOpen(true);
   };
 
   const handleImageUpload = async (files) => {
@@ -355,14 +388,15 @@ export default function OrganizationOpportunities() {
     <Section
       title="Organization Opportunities"
       subtitle="Create and manage official scholarships, internships, programs, and events from your organization."
-      action={editingId ? <button type="button" onClick={resetForm} className={secondaryBtn}>Cancel Editing</button> : null}
+      action={<button type="button" onClick={startCreateOpportunity} className={primaryBtn}>Create Opportunity</button>}
     >
-      <div className="grid gap-5 xl:grid-cols-[1.05fr_1.2fr]">
-        <Panel
+      <ModalPanel
+        open={opportunityModalOpen}
+        onClose={resetForm}
           title={editingId ? 'Edit Opportunity' : 'Create Opportunity'}
           description="Organization-created opportunities are reviewed before public publication."
-          action={<button type="button" onClick={handleSave} disabled={saving} className={primaryBtn}>{saving ? 'Saving...' : editingId ? 'Update Opportunity' : 'Create Opportunity'}</button>}
-        >
+          wide
+      >
           <div className="grid gap-4 md:grid-cols-2">
             <div className="md:col-span-2">
               <Field label="Title">
@@ -420,9 +454,13 @@ export default function OrganizationOpportunities() {
               <ToggleField label="Online opportunity" checked={!!form.is_online} onChange={(value) => setField('is_online', value)} />
             </div>
           </div>
-        </Panel>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button type="button" onClick={handleSave} disabled={saving} className={primaryBtn}>{saving ? 'Saving...' : editingId ? 'Update Opportunity' : 'Create Opportunity'}</button>
+            <button type="button" onClick={resetForm} className={secondaryBtn}>Cancel</button>
+          </div>
+      </ModalPanel>
 
-        <Panel title="Your Opportunities" description={`${items.length} opportunity listing(s) created by your account.`}>
+      <Panel title="Your Opportunities" description={`${items.length} opportunity listing(s) created by your account.`}>
           {itemsLoading ? (
             <div className="flex justify-center py-20"><Spinner /></div>
           ) : items.length === 0 ? (
@@ -461,8 +499,7 @@ export default function OrganizationOpportunities() {
               ))}
             </div>
           )}
-        </Panel>
-      </div>
+      </Panel>
     </Section>
   );
 }

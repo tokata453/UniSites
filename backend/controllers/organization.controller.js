@@ -30,26 +30,48 @@ const getBySlug = async (req, res) => {
       where: { slug: req.params.slug, is_published: true },
       include: [
         { model: db.User, as: 'Owner', attributes: ['id', 'name', 'email', 'avatar_url'], required: false },
-        { model: db.OrganizationContact, as: 'Contact', required: false },
-        { model: db.OrganizationGallery, as: 'Gallery', required: false },
-        { model: db.OrganizationFAQ, as: 'FAQs', required: false },
-        {
-          model: db.Opportunity,
-          as: 'Opportunities',
-          required: false,
-          where: { is_published: true },
-          attributes: ['id', 'slug', 'title', 'type', 'deadline', 'cover_url', 'is_featured', 'is_fully_funded', 'country'],
-        },
-      ],
-      order: [
-        [{ model: db.OrganizationGallery, as: 'Gallery' }, 'sort_order', 'ASC'],
-        [{ model: db.OrganizationFAQ, as: 'FAQs' }, 'sort_order', 'ASC'],
-        [{ model: db.Opportunity, as: 'Opportunities' }, 'created_at', 'DESC'],
       ],
     });
 
     if (!organization) return notFound(res, 'Organization profile not found');
-    return success(res, { organization });
+    const [contact, gallery, faqs, news, events, reviews, opportunities] = await Promise.all([
+      db.OrganizationContact.findOne({ where: { organization_id: organization.id } }),
+      db.OrganizationGallery.findAll({ where: { organization_id: organization.id }, order: [['sort_order', 'ASC'], ['created_at', 'ASC']] }),
+      db.OrganizationFAQ.findAll({ where: { organization_id: organization.id, is_published: true }, order: [['sort_order', 'ASC'], ['created_at', 'ASC']] }),
+      db.OrganizationNews.findAll({
+        where: { organization_id: organization.id, is_published: true },
+        limit: 10,
+        order: [['is_pinned', 'DESC'], ['published_at', 'DESC'], ['created_at', 'DESC']],
+        include: [{ model: db.User, as: 'Author', attributes: ['id', 'name', 'avatar_url'], required: false }],
+      }),
+      db.OrganizationEvent.findAll({
+        where: { organization_id: organization.id, is_published: true },
+        limit: 10,
+        order: [['is_featured', 'DESC'], ['event_date', 'ASC']],
+      }),
+      db.OrganizationReview.findAll({
+        where: { organization_id: organization.id, is_approved: true },
+        limit: 10,
+        order: [['created_at', 'DESC']],
+        include: [{ model: db.User, as: 'Author', attributes: ['id', 'name', 'avatar_url'], required: false }],
+      }),
+      db.Opportunity.findAll({
+        where: { posted_by: organization.owner_id, is_published: true },
+        attributes: ['id', 'slug', 'title', 'type', 'deadline', 'cover_url', 'is_featured', 'is_fully_funded', 'country'],
+        order: [['created_at', 'DESC']],
+      }),
+    ]);
+
+    const organizationJson = organization.toJSON();
+    organizationJson.Contact = contact;
+    organizationJson.Gallery = gallery;
+    organizationJson.FAQs = faqs;
+    organizationJson.News = news;
+    organizationJson.Events = events;
+    organizationJson.Reviews = reviews;
+    organizationJson.Opportunities = opportunities;
+
+    return success(res, { organization: organizationJson });
   } catch (err) {
     return error(res, err.message, 500);
   }

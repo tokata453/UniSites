@@ -5,11 +5,14 @@ module.exports = (sequelize, DataTypes) => {
   class Organization extends Model {
     static associate(db) {
       Organization.belongsTo(db.User, { foreignKey: 'owner_id', as: 'Owner' });
-      Organization.hasMany(db.Opportunity, { foreignKey: 'posted_by', sourceKey: 'owner_id', as: 'Opportunities' });
+      Organization.hasMany(db.Opportunity, { foreignKey: 'posted_by', sourceKey: 'owner_id', as: 'Opportunities', constraints: false });
       Organization.hasMany(db.Conversation, { foreignKey: 'organization_id', as: 'Conversations' });
       Organization.hasOne(db.OrganizationContact, { foreignKey: 'organization_id', as: 'Contact', onDelete: 'CASCADE' });
       Organization.hasMany(db.OrganizationGallery, { foreignKey: 'organization_id', as: 'Gallery', onDelete: 'CASCADE' });
       Organization.hasMany(db.OrganizationFAQ, { foreignKey: 'organization_id', as: 'FAQs', onDelete: 'CASCADE' });
+      Organization.hasMany(db.OrganizationNews, { foreignKey: 'organization_id', as: 'News', onDelete: 'CASCADE' });
+      Organization.hasMany(db.OrganizationEvent, { foreignKey: 'organization_id', as: 'Events', onDelete: 'CASCADE' });
+      Organization.hasMany(db.OrganizationReview, { foreignKey: 'organization_id', as: 'Reviews', onDelete: 'CASCADE' });
     }
   }
 

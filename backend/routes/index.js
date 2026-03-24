@@ -16,6 +16,11 @@ router.use('/universities/:universityId/events',              require('./event.r
 router.use('/universities/:universityId/faqs',                require('./faq.routes'));
 router.use('/universities/:universityId/contact',             require('./contact.routes'));
 router.use('/universities/:universityId/reviews',             require('./review.routes'));
+router.use('/organizations/:organizationId/faqs',             require('./organization-faq.routes'));
+router.use('/organizations/:organizationId/contact',          require('./organization-contact.routes'));
+router.use('/organizations/:organizationId/news',             require('./organization-news.routes'));
+router.use('/organizations/:organizationId/events',           require('./organization-event.routes'));
+router.use('/organizations/:organizationId/reviews',          require('./organization-review.routes'));
 
 router.use('/opportunities', require('./opportunity.routes'));
 router.use('/organizations', require('./organization.routes'));

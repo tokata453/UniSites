@@ -5,7 +5,11 @@ const path = require('path');
 const Sequelize = require('sequelize');
 const process = require('process');
 const env = process.env.NODE_ENV || 'development';
-const config = require(__dirname + '/../config/config.json')[env];
+const baseConfig = require(__dirname + '/../config/config.json')[env];
+const config = {
+  ...baseConfig,
+  logging: baseConfig.logging === true ? console.log : baseConfig.logging,
+};
 const db = {};
 
 const collectModelFiles = (dir) => {

@@ -45,6 +45,27 @@ const isUniversityOwner = (paramKey = 'universityId') => async (req, res, next) 
   }
 };
 
+const isOrganizationOwner = (paramKey = 'organizationId') => async (req, res, next) => {
+  try {
+    const organization = await db.Organization.findByPk(req.params[paramKey]);
+    if (!organization) return notFound(res, 'Organization not found');
+
+    if (req.user.Role?.name === 'admin') {
+      req.organization = organization;
+      return next();
+    }
+
+    if (organization.owner_id !== req.user.id) {
+      return forbidden(res, 'You do not own this organization');
+    }
+
+    req.organization = organization;
+    next();
+  } catch (err) {
+    return forbidden(res, err.message);
+  }
+};
+
 const isOpportunityOwner = () => async (req, res, next) => {
   try {
     const opp = await db.Opportunity.findByPk(req.params.id);
@@ -78,4 +99,4 @@ const isOpportunityOwner = () => async (req, res, next) => {
   }
 };
 
-module.exports = { requireRole, isAdmin, isOwner, isOpportunityManager, isUniversityOwner, isOpportunityOwner };
+module.exports = { requireRole, isAdmin, isOwner, isOpportunityManager, isUniversityOwner, isOrganizationOwner, isOpportunityOwner };

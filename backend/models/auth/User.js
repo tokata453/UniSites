@@ -21,10 +21,12 @@ module.exports = (sequelize, DataTypes) => {
       User.hasMany(db.University, { foreignKey: 'owner_id', as: 'OwnedUniversities' });
       User.hasOne(db.Organization, { foreignKey: 'owner_id', as: 'Organization' });
       User.hasMany(db.UniversityNews, { foreignKey: 'author_id', as: 'AuthoredNews' });
+      User.hasMany(db.OrganizationNews, { foreignKey: 'author_id', as: 'AuthoredOrganizationNews' });
       User.hasMany(db.UniversityTestimonial, { foreignKey: 'user_id', as: 'Testimonials' });
       User.hasMany(db.Opportunity, { foreignKey: 'posted_by', as: 'PostedOpportunities' });
       User.hasMany(db.OpportunityApplication, { foreignKey: 'user_id', as: 'Applications' });
       User.hasMany(db.UniversityReview, { foreignKey: 'author_id', as: 'Reviews' });
+      User.hasMany(db.OrganizationReview, { foreignKey: 'author_id', as: 'OrganizationReviews' });
       User.hasMany(db.Notification, { foreignKey: 'user_id', as: 'Notifications' });
       User.hasMany(db.SavedItem, { foreignKey: 'user_id', as: 'SavedItems' });
     }
