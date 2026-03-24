@@ -92,6 +92,17 @@ module.exports = {
     ].filter((organization) => organization.owner_id);
 
     await queryInterface.bulkInsert('organizations', organizations, { ignoreDuplicates: true });
+
+    for (const organization of organizations) {
+      await queryInterface.bulkUpdate(
+        'organizations',
+        {
+          shortcut_name: organization.shortcut_name,
+          updated_at: now,
+        },
+        { slug: organization.slug }
+      );
+    }
   },
 
   async down(queryInterface) {

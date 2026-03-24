@@ -22,7 +22,6 @@ const STAT_CARDS = [
   { key: 'universities', label: 'Universities', icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10', color: '#15803d', bg: '#f0fdf4', border: '#bbf7d0' },
   { key: 'organizations', label: 'Organizations', icon: 'M3 21h18 M5 21V7l7-4 7 4v14 M9 12h6 M9 16h6', color: '#0f766e', bg: '#f0fdfa', border: '#99f6e4' },
   { key: 'opportunities', label: 'Opportunities', icon: 'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z', color: '#F47B20', bg: '#fff7ed', border: '#fed7aa' },
-  { key: 'reviews', label: 'Reviews', icon: 'M9 11l3 3L22 4 M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11', color: '#7c3aed', bg: '#faf5ff', border: '#e9d5ff' },
 ];
 
 const PENDING_CARDS = [
@@ -73,7 +72,7 @@ export default function AdminOverview() {
         <p className="mt-2 text-sm text-slate-500 sm:text-base">Platform overview and quick actions</p>
       </div>
 
-      <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {STAT_CARDS.map((card) => (
           <div
             key={card.key}

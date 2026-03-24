@@ -457,6 +457,17 @@ module.exports = {
 
     await queryInterface.bulkInsert('universities', universities, { ignoreDuplicates: true });
 
+    for (const university of universities) {
+      await queryInterface.bulkUpdate(
+        'universities',
+        {
+          shortcut_name: university.shortcut_name,
+          updated_at: now,
+        },
+        { slug: university.slug }
+      );
+    }
+
     // Reload inserted universities to ensure we use the correct IDs (avoids FK issues when rerunning seeds)
     const insertedUnis = await queryInterface.sequelize.query(
       `SELECT id, slug FROM universities WHERE slug IN (
