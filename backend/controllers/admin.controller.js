@@ -448,12 +448,13 @@ exports.updateUser = async (req, res) => {
     if (!isAdmin(req, res)) return;
     const user = await db.User.findByPk(req.params.id);
     if (!user) return notFound(res, 'User not found');
-    const { name, email, bio, website_url, contact_phone, is_active, is_approved, role } = req.body;
+    const { name, email, bio, website_url, contact_phone, avatar_url, is_active, is_approved, role } = req.body;
     if (name !== undefined) user.name = name;
     if (email !== undefined) user.email = email;
     if (bio !== undefined) user.bio = bio;
     if (website_url !== undefined) user.website_url = website_url;
     if (contact_phone !== undefined) user.contact_phone = contact_phone;
+    if (avatar_url !== undefined) user.avatar_url = avatar_url || null;
     if (is_active !== undefined) user.is_active = is_active;
     if (is_approved !== undefined) user.is_approved = is_approved;
     if (role) {
@@ -491,7 +492,7 @@ exports.getUniversities = async (req, res) => {
     if (published !== undefined) where.is_published = published === 'true';
     const { count, rows } = await db.University.findAndCountAll({
       where, limit: +limit, offset: (+page - 1) * +limit,
-      include: [{ model: db.User, as: 'Owner', attributes: ['id', 'name', 'email'] }],
+      include: [{ model: db.User, as: 'Owner', attributes: ['id', 'name', 'email', 'avatar_url'] }],
       order: [['created_at', 'DESC']],
     });
     return success(res, { universities: rows, total: count, page: +page, pages: Math.ceil(count / +limit) });
@@ -652,6 +653,7 @@ exports.createUniversity = async (req, res) => {
     const { name, university_type, province, description, website_url, email, phone,
             facebook_url, tuition_min, tuition_max, founded_year, student_count,
             scholarship_available, dormitory_available, international_students,
+            logo_url, cover_url,
             owner_id } = req.body;
 
     if (!name || !university_type) return error(res, 'Name and type are required');
@@ -666,6 +668,8 @@ exports.createUniversity = async (req, res) => {
       name, slug: uniqueSlug(name),
       university_type, province, description,
       website_url, email, phone, facebook_url,
+      logo_url: logo_url || null,
+      cover_url: cover_url || null,
       tuition_min: tuition_min || null,
       tuition_max: tuition_max || null,
       tuition_currency: 'USD',

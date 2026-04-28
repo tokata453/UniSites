@@ -29,6 +29,7 @@ export const feedApi = {
 
 // ── Uploads ───────────────────────────────────────────────────────────────────
 export const uploadApi = {
+  avatar: (data) => api.post('/upload/image', data, { timeout: 60000 }),
   image: (data) => api.post('/upload/image', data, { timeout: 60000 }),
   images: (data) => api.post('/upload/images', data, { timeout: 120000 }),
   cover: (data) => api.post('/upload/cover', data, { timeout: 60000 }),

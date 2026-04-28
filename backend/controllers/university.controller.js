@@ -61,7 +61,8 @@ const list = async (req, res) => {
       where,
       ...getPagination({ page, limit }),
       order: [[safeSort, safeOrder]],
-      attributes: ['id', 'slug', 'name', 'shortcut_name', 'name_km', 'logo_url', 'cover_url', 'type', 'province', 'tuition_min', 'tuition_max', 'rating_avg', 'review_count', 'student_count', 'is_verified', 'is_featured', 'scholarship_available', 'dormitory_available', 'founded_year'],
+      attributes: ['id', 'slug', 'name', 'shortcut_name', 'name_km', 'logo_url', 'cover_url', 'type', 'province', 'tuition_min', 'tuition_max', 
+        'rating_avg', 'review_count', 'student_count', 'is_verified', 'is_featured', 'scholarship_available', 'dormitory_available', 'founded_year'],
     });
     return success(res, paginateResponse(rows, count, page, limit));
   } catch (err) {
@@ -105,18 +106,7 @@ const getBySlug = async (req, res) => {
     });
     if (!university) return notFound(res, 'University not found');
 
-    const [
-      gallery,
-      faculties,
-      admissionRequirements,
-      campusFacilities,
-      news,
-      events,
-      testimonials,
-      faqs,
-      contact,
-      sources,
-      reviews,
+    const [ gallery, faculties, admissionRequirements, campusFacilities, news, events, testimonials, faqs, contact, sources, reviews,
     ] = await Promise.all([
       db.UniversityGallery.findAll({
         where: { university_id: university.id },

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { adminApi } from '@/api';
+import { adminApi, uploadApi } from '@/api';
 import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, ConfirmModal, Toast } from './AdminShared';
+import { avatarUrl, coverUrl, logoUrl } from '@/utils';
 
 const PUB_OPTIONS = [{ value: '', label: 'All Status' }, { value: 'true', label: 'Published' }, { value: 'false', label: 'Unpublished' }];
 const APPROVAL_OPTIONS = [{ value: '', label: 'All Approval' }, { value: 'true', label: 'Approved Organizations' }, { value: 'false', label: 'Pending Organizations' }];
@@ -56,8 +57,29 @@ function EditOrganizationModal({ organization, onClose, onSuccess, showToast }) 
     is_verified: Boolean(organization.is_verified),
   });
   const [saving, setSaving] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
 
   const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const uploadImage = async (kind, file) => {
+    if (!file) return;
+    const setUploading = kind === 'logo' ? setUploadingLogo : setUploadingCover;
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append(kind, file);
+      const res = kind === 'logo'
+        ? await uploadApi.logo(body)
+        : await uploadApi.cover(body);
+      setField(kind === 'logo' ? 'logo_url' : 'cover_url', res.data?.public_id || res.data?.url || '');
+      showToast(`${kind === 'logo' ? 'Logo' : 'Cover'} uploaded. Save changes to keep it.`);
+    } catch (err) {
+      showToast(err.response?.data?.message || `Failed to upload ${kind}`);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -121,14 +143,36 @@ function EditOrganizationModal({ organization, onClose, onSuccess, showToast }) 
                 <input value={form.website_url} onChange={(e) => setField('website_url', e.target.value)} style={fieldInputStyle} />
               </div>
               <div>
-                <label style={fieldLabelStyle}>Logo URL</label>
-                <input value={form.logo_url} onChange={(e) => setField('logo_url', e.target.value)} style={fieldInputStyle} />
+                <label style={fieldLabelStyle}>Logo</label>
+                <div style={{ display: 'grid', gap: 10 }}>
+                  <div style={{ width: '100%', height: 110, borderRadius: 12, border: '1px dashed #cbd5e1', background: '#f8fafc', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {form.logo_url ? <img src={logoUrl(form.logo_url) || form.logo_url} alt="Organization logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 12, color: '#94a3b8' }}>No logo uploaded yet</span>}
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                    <label style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#fff', cursor: uploadingLogo ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 700, color: '#334155', opacity: uploadingLogo ? 0.6 : 1 }}>
+                      <input type="file" accept="image/*" disabled={uploadingLogo} onChange={(e) => { uploadImage('logo', e.target.files?.[0]); e.target.value = ''; }} style={{ display: 'none' }} />
+                      {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                    </label>
+                    {form.logo_url ? <button type="button" onClick={() => setField('logo_url', '')} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca', background: '#fff5f5', color: '#dc2626', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Remove</button> : null}
+                  </div>
+                </div>
               </div>
             </div>
 
             <div>
-              <label style={fieldLabelStyle}>Cover URL</label>
-              <input value={form.cover_url} onChange={(e) => setField('cover_url', e.target.value)} style={fieldInputStyle} />
+              <label style={fieldLabelStyle}>Cover</label>
+              <div style={{ display: 'grid', gap: 10 }}>
+                <div style={{ width: '100%', height: 180, borderRadius: 12, border: '1px dashed #cbd5e1', background: '#f8fafc', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {form.cover_url ? <img src={coverUrl(form.cover_url) || form.cover_url} alt="Organization cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 12, color: '#94a3b8' }}>No cover uploaded yet</span>}
+                </div>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <label style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #cbd5e1', background: '#fff', cursor: uploadingCover ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 700, color: '#334155', opacity: uploadingCover ? 0.6 : 1 }}>
+                    <input type="file" accept="image/*" disabled={uploadingCover} onChange={(e) => { uploadImage('cover', e.target.files?.[0]); e.target.value = ''; }} style={{ display: 'none' }} />
+                    {uploadingCover ? 'Uploading...' : 'Upload Cover'}
+                  </label>
+                  {form.cover_url ? <button type="button" onClick={() => setField('cover_url', '')} style={{ padding: '10px 12px', borderRadius: 10, border: '1px solid #fecaca', background: '#fff5f5', color: '#dc2626', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>Remove</button> : null}
+                </div>
+              </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
@@ -318,7 +362,7 @@ function CreateOrganizationModal({ onClose, onSuccess, showToast }) {
                         }}
                       >
                         <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#e2e8f0', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>
-                          {owner.avatar_url ? <img src={owner.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : owner.name?.[0]?.toUpperCase() || 'U'}
+                          {owner.avatar_url ? <img src={avatarUrl(owner.avatar_url) || owner.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : owner.name?.[0]?.toUpperCase() || 'U'}
                         </div>
                         <div style={{ minWidth: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: 700, color: '#0f172a' }}>{owner.name}</div>
@@ -484,7 +528,7 @@ function TransferOrganizationOwnerModal({ organization, onClose, onSuccess, show
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', marginBottom: 20 }}>
           <div style={{ width: 36, height: 36, borderRadius: 8, background: '#f0fdfa', border: '1px solid #99f6e4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0, overflow: 'hidden', color: '#0f766e', fontWeight: 700 }}>
             {organization.logo_url
-              ? <img src={organization.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} onError={e => e.target.style.display='none'} />
+              ? <img src={logoUrl(organization.logo_url) || organization.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} onError={e => e.target.style.display='none'} />
               : (organization.name?.[0]?.toUpperCase() || 'O')}
           </div>
           <div>
@@ -539,7 +583,7 @@ function TransferOrganizationOwnerModal({ organization, onClose, onSuccess, show
                   >
                     <div style={{ width: 34, height: 34, borderRadius: '50%', background: isSelected ? '#0f766e' : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: isSelected ? '#fff' : '#64748b', flexShrink: 0, transition: 'all 0.15s', overflow: 'hidden' }}>
                       {owner.avatar_url
-                        ? <img src={owner.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => e.target.style.display='none'} />
+                        ? <img src={avatarUrl(owner.avatar_url) || owner.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => e.target.style.display='none'} />
                         : owner.name?.[0]?.toUpperCase() || 'U'}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -657,7 +701,7 @@ export default function AdminOrganizations() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 40, height: 40, borderRadius: 10, background: '#f8fafc', border: '1px solid #e2e8f0', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#0f766e' }}>
             {organization.logo_url ? (
-              <img src={organization.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              <img src={logoUrl(organization.logo_url) || organization.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : (
               organization.name?.[0]?.toUpperCase() || 'O'
             )}
@@ -675,7 +719,14 @@ export default function AdminOrganizations() {
       key: 'owner',
       label: 'Owner',
       render: (organization) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#e2e8f0', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+            {organization.Owner?.avatar_url ? (
+              <img src={avatarUrl(organization.Owner.avatar_url) || organization.Owner.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              organization.Owner?.name?.[0]?.toUpperCase() || 'U'
+            )}
+          </div>
           <div>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#0f172a' }}>{organization.Owner?.name || 'Unassigned'}</div>
             <div style={{ fontSize: 11, color: '#94a3b8' }}>{organization.Owner?.email || 'No email'}</div>

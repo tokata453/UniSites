@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { adminApi } from '@/api';
+import { adminApi, uploadApi } from '@/api';
 import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, ConfirmModal, Toast } from './AdminShared';
+import { avatarUrl } from '@/utils';
 
 const ROLE_COLORS  = { admin: '#d97706', owner: '#15803d', organization: '#0f766e', student: '#1B3A6B' };
 const ROLE_OPTIONS = [
@@ -26,17 +27,38 @@ const PROVIDER_OPTIONS = [
 
 function UserEditModal({ user, onClose, onSaved, showToast }) {
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [form, setForm] = useState({
     name: user.name || '',
     email: user.email || '',
     role: user.Role?.name || 'student',
     is_active: Boolean(user.is_active),
+    avatar_url: user.avatar_url || '',
     bio: user.bio || '',
     website_url: user.website_url || '',
     contact_phone: user.contact_phone || '',
   });
 
   const set = (key) => (value) => setForm((prev) => ({ ...prev, [key]: value }));
+
+  const handleAvatarUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setUploadingAvatar(true);
+    try {
+      const body = new FormData();
+      body.append('image', file);
+      const res = await uploadApi.avatar(body);
+      set('avatar_url')(res.data?.public_id || res.data?.url || '');
+      showToast('Avatar uploaded. Save changes to keep it.');
+    } catch (err) {
+      showToast(err.response?.data?.message || 'Failed to upload avatar');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -46,6 +68,7 @@ function UserEditModal({ user, onClose, onSaved, showToast }) {
         email: form.email.trim(),
         role: form.role,
         is_active: form.is_active,
+        avatar_url: form.avatar_url || null,
         bio: form.bio.trim() || null,
         website_url: form.website_url.trim() || null,
         contact_phone: form.contact_phone.trim() || null,
@@ -71,6 +94,28 @@ function UserEditModal({ user, onClose, onSaved, showToast }) {
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 6, borderRadius: 8, fontSize: 18, lineHeight: 1 }}>×</button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'grid', gap: 14 }}>
+          <Field label="Profile Image">
+            <div style={{ display: 'grid', gap: 10 }}>
+              <div style={{ width: 84, height: 84, borderRadius: '50%', border: '1px dashed #cbd5e1', background: '#f8fafc', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {form.avatar_url ? (
+                  <img src={avatarUrl(form.avatar_url) || form.avatar_url} alt="User avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  <span style={{ fontSize: 24, fontWeight: 700, color: '#94a3b8' }}>{form.name?.[0]?.toUpperCase() || 'U'}</span>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <label style={{ padding: '9px 12px', borderRadius: 9, border: '1px solid #cbd5e1', background: '#fff', cursor: uploadingAvatar ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 700, color: '#334155', opacity: uploadingAvatar ? 0.6 : 1 }}>
+                  <input type="file" accept="image/*" disabled={uploadingAvatar} onChange={handleAvatarUpload} style={{ display: 'none' }} />
+                  {uploadingAvatar ? 'Uploading...' : 'Upload Avatar'}
+                </label>
+                {form.avatar_url ? (
+                  <button type="button" onClick={() => set('avatar_url')('')} style={{ padding: '9px 12px', borderRadius: 9, border: '1px solid #fecaca', background: '#fff5f5', color: '#dc2626', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+                    Remove
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </Field>
           <Field label="Name"><Input value={form.name} onChange={set('name')} placeholder="Full name" /></Field>
           <Field label="Email"><Input value={form.email} onChange={set('email')} placeholder="email@example.com" type="email" /></Field>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -186,8 +231,12 @@ export default function AdminUsers() {
       <SearchBar value={search} onChange={setSearch} placeholder="Search users..." />
     ), render: u => (
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1B3A6B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-          {u.name?.[0]?.toUpperCase() || 'U'}
+        <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#1B3A6B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
+          {u.avatar_url ? (
+            <img src={avatarUrl(u.avatar_url) || u.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            u.name?.[0]?.toUpperCase() || 'U'
+          )}
         </div>
         <div>
           <div style={{ fontWeight: 600, color: '#0f172a', fontSize: 13 }}>{u.name}</div>

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { adminApi } from '@/api';
+import { adminApi, uploadApi } from '@/api';
 import { CAMBODIA_PROVINCE_OPTIONS } from '@/constants/cambodiaLocations';
 import { Badge, SearchBar, Select, ActionBtn, DeleteBtn, Table, Pagination, PageHeader, Card, ConfirmModal, Toast, IC } from './AdminShared';
+import { avatarUrl, coverUrl, logoUrl } from '@/utils';
 
 const TYPE_OPTIONS = [
   { value: '', label: 'All Types' },
@@ -60,6 +61,61 @@ const CheckboxField = ({ label, checked, onChange }) => (
   </label>
 );
 
+function ImageUploadField({ label, kind, value, onChange, uploading, setUploading, showToast }) {
+  const preview = kind === 'logo'
+    ? (logoUrl(value) || value)
+    : (coverUrl(value) || value);
+
+  const handleUpload = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append(kind, file);
+      const res = kind === 'logo'
+        ? await uploadApi.logo(body)
+        : await uploadApi.cover(body);
+      onChange(res.data?.public_id || res.data?.url || '');
+      showToast(`${label} uploaded. Save changes to keep it.`);
+    } catch (err) {
+      showToast(err.response?.data?.message || `Failed to upload ${label.toLowerCase()}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>
+        {label}
+      </label>
+      <div style={{ display: 'grid', gap: 10 }}>
+        <div style={{ width: '100%', height: kind === 'logo' ? 96 : 152, borderRadius: 12, border: '1px dashed #cbd5e1', background: '#f8fafc', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {value ? (
+            <img src={preview} alt={label} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <span style={{ fontSize: 12, color: '#94a3b8' }}>No {label.toLowerCase()} uploaded yet</span>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <label style={{ padding: '9px 14px', borderRadius: 9, border: '1px solid #cbd5e1', background: '#fff', color: '#334155', cursor: uploading ? 'not-allowed' : 'pointer', fontSize: 12, fontWeight: 700, opacity: uploading ? 0.6 : 1 }}>
+            <input type="file" accept="image/*" disabled={uploading} onChange={handleUpload} style={{ display: 'none' }} />
+            {uploading ? 'Uploading...' : `Upload ${label}`}
+          </label>
+          {value ? (
+            <button type="button" onClick={() => onChange('')} style={{ padding: '9px 14px', borderRadius: 9, border: '1px solid #fecaca', background: '#fff5f5', color: '#dc2626', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+              Remove
+            </button>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── University Modal ──────────────────────────────────────────────────────────
 function UniversityModal({ mode = 'create', university = null, onClose, onSuccess, showToast }) {
   const [saving, setSaving] = useState(false);
@@ -67,6 +123,8 @@ function UniversityModal({ mode = 'create', university = null, onClose, onSucces
   const [ownerSearch,  setOwnerSearch]  = useState('');
   const [ownerResults, setOwnerResults] = useState([]);
   const [ownerLoading, setOwnerLoading] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [form, setForm] = useState({
     name: university?.name || '',
     university_type: university?.type || university?.university_type || '',
@@ -83,6 +141,8 @@ function UniversityModal({ mode = 'create', university = null, onClose, onSucces
     scholarship_available: Boolean(university?.scholarship_available),
     dormitory_available: Boolean(university?.dormitory_available),
     international_students: Boolean(university?.international_students),
+    logo_url: university?.logo_url || '',
+    cover_url: university?.cover_url || '',
     is_published: Boolean(university?.is_published),
     is_verified: Boolean(university?.is_verified),
     is_featured: Boolean(university?.is_featured),
@@ -200,6 +260,30 @@ function UniversityModal({ mode = 'create', university = null, onClose, onSucces
               </div>
             </div>
 
+            <div style={{ padding: 16, background: '#f8fafc', borderRadius: 12, border: '1px solid #f1f5f9' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: '#1B3A6B', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 14px' }}>Images</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <ImageUploadField
+                  label="Logo"
+                  kind="logo"
+                  value={form.logo_url}
+                  onChange={set('logo_url')}
+                  uploading={uploadingLogo}
+                  setUploading={setUploadingLogo}
+                  showToast={showToast}
+                />
+                <ImageUploadField
+                  label="Cover"
+                  kind="cover"
+                  value={form.cover_url}
+                  onChange={set('cover_url')}
+                  uploading={uploadingCover}
+                  setUploading={setUploadingCover}
+                  showToast={showToast}
+                />
+              </div>
+            </div>
+
             {/* Stats */}
             <div style={{ padding: 16, background: '#f8fafc', borderRadius: 12, border: '1px solid #f1f5f9' }}>
               <p style={{ fontSize: 11, fontWeight: 700, color: '#1B3A6B', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 14px' }}>Details</p>
@@ -231,8 +315,8 @@ function UniversityModal({ mode = 'create', university = null, onClose, onSucces
               {form.owner_id ? (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#1B3A6B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff' }}>
-                      {form.owner_name?.[0]?.toUpperCase()}
+                    <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#1B3A6B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', overflow: 'hidden' }}>
+                      {university?.Owner?.avatar_url ? <img src={avatarUrl(university.Owner.avatar_url) || university.Owner.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : form.owner_name?.[0]?.toUpperCase()}
                     </div>
                     <div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: '#1B3A6B' }}>{form.owner_name}</div>
@@ -268,8 +352,8 @@ function UniversityModal({ mode = 'create', university = null, onClose, onSucces
                               style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 8, border: '1px solid #e2e8f0', background: ownsAnotherUniversity ? '#f8fafc' : '#fff', cursor: ownsAnotherUniversity ? 'not-allowed' : 'pointer', transition: 'background 0.1s', opacity: ownsAnotherUniversity ? 0.6 : 1 }}
                               onMouseEnter={e => { if (!ownsAnotherUniversity) e.currentTarget.style.background = '#f8fafc'; }}
                               onMouseLeave={e => { if (!ownsAnotherUniversity) e.currentTarget.style.background = '#fff'; }}>
-                              <div style={{ width: 28, height: 28, borderRadius: '50%', background: ownsAnotherUniversity ? '#cbd5e1' : '#1B3A6B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-                                {o.name?.[0]?.toUpperCase()}
+                              <div style={{ width: 28, height: 28, borderRadius: '50%', background: ownsAnotherUniversity ? '#cbd5e1' : '#1B3A6B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0, overflow: 'hidden' }}>
+                                {o.avatar_url ? <img src={avatarUrl(o.avatar_url) || o.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : o.name?.[0]?.toUpperCase()}
                               </div>
                               <div style={{ minWidth: 0 }}>
                                 <div style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -375,7 +459,7 @@ function TransferOwnerModal({ university, onClose, onSuccess, showToast }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0', marginBottom: 20 }}>
           <div style={{ width: 36, height: 36, borderRadius: 8, background: TYPE_BG[university.type] || '#f1f5f9', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
             {university.logo_url
-              ? <img src={university.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} onError={e => e.target.style.display='none'} />
+              ? <img src={logoUrl(university.logo_url) || university.logo_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} onError={e => e.target.style.display='none'} />
               : '🏛️'}
           </div>
           <div>
@@ -428,7 +512,7 @@ function TransferOwnerModal({ university, onClose, onSuccess, showToast }) {
                     {/* Avatar */}
                     <div style={{ width: 34, height: 34, borderRadius: '50%', background: isSelected ? '#1B3A6B' : '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: isSelected ? '#fff' : '#64748b', flexShrink: 0, transition: 'all 0.15s' }}>
                       {owner.avatar_url
-                        ? <img src={owner.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => e.target.style.display='none'} />
+                        ? <img src={avatarUrl(owner.avatar_url) || owner.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => e.target.style.display='none'} />
                         : owner.name?.[0]?.toUpperCase() || 'U'}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -535,7 +619,7 @@ export default function AdminUniversities() {
     ), render: u => (
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         {u.logo_url
-          ? <img src={u.logo_url} alt="" style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover', border: '1px solid #e2e8f0' }} onError={e => e.target.style.display='none'} />
+          ? <img src={logoUrl(u.logo_url) || u.logo_url} alt="" style={{ width: 32, height: 32, borderRadius: 8, objectFit: 'cover', border: '1px solid #e2e8f0' }} onError={e => e.target.style.display='none'} />
           : <div style={{ width: 32, height: 32, borderRadius: 8, background: TYPE_BG[u.university_type] || '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, border: '1px solid #e2e8f0' }}>🏛️</div>
         }
         <div>
@@ -548,7 +632,14 @@ export default function AdminUniversities() {
       <Select value={type} onChange={setType} options={TYPE_OPTIONS} style={{ width: '100%', minWidth: 140 }} />
     ), render: u => <Badge label={u.type || 'N/A'} color={TYPE_COLORS[u.type] || '#1B3A6B'} /> },
     { key: 'owner', label: 'Owner', render: u => (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ width: 24, height: 24, borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', color: '#64748b', fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+          {u.Owner?.avatar_url ? (
+            <img src={avatarUrl(u.Owner.avatar_url) || u.Owner.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            u.Owner?.name?.[0]?.toUpperCase() || 'U'
+          )}
+        </div>
         <span style={{ fontSize: 12, color: u.Owner ? '#334155' : '#94a3b8', fontWeight: u.Owner ? 500 : 400 }}>
           {u.Owner?.name || 'No owner'}
         </span>
